@@ -88,14 +88,14 @@ El propósito fundamental es consolidar una plataforma madura, robusta y escalab
 └────────────────┬────────────────────────┘
                  │ HTTP REST (JSON)
 ┌────────────────▼────────────────────────┐
-│  CAPA DE LÓGICA DE NEGOCIO (Módulos)   │
-│  ┌──────────────────────────────────┐  │
-│  │ Módulo Reservas      │ Modelos   │  │
-│  │ Módulo Habitaciones  │ Servicios │  │
+│  CAPA DE LÓGICA DE NEGOCIO (Módulos)    │
+│  ┌──────────────────────────────────┐   │
+│  │ Módulo Reservas      │ Modelos   │   │
+│  │ Módulo Habitaciones  │ Servicios │   │
 │  │ Módulo Facturación   │ Controladores │
 │  │ Módulo Sp/Comedor    │ (Endpoints)   │
-│  │ Módulo Fidelización  │           │  │
-│  └──────────────────────────────────┘  │
+│  │ Módulo Fidelización  │           │   │
+│  └──────────────────────────────────┘   │
 └────────────────┬────────────────────────┘
                  │
 ┌────────────────▼────────────────────────┐
