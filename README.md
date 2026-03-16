@@ -1,26 +1,31 @@
 # HotelBook Pro
 > *Solución integral de gestión hotelera para establecimientos medianos con proyección de crecimiento*
 
-**Versión:** 1.0.0 | **Estado:** En Desarrollo | **Licencia:** MIT
+**Versión:** 1.0.0 | **Estado:** En Desarrollo 
 
 ---
 
 ## 📋 Tabla de Contenidos
-- [Descripción](#descripción)
-- [Características](#características)
-- [Stack Tecnológico](#stack-tecnológico)
+## 📋 Tabla de Contenidos
+- [Descripción](#descripcion)
+- [Características](#caracteristicas)
+- [Stack Tecnológico](#stack-tecnologico)
 - [Arquitectura](#arquitectura)
-- [Instalación](#instalación)
+- [Instalación](#instalacion)
 - [Uso](#uso)
 - [Roles y Permisos](#roles-y-permisos)
 - [Estructura del Proyecto](#estructura-del-proyecto)
 - [API REST](#api-rest)
-- [Guía de Contribución](#guía-de-contribución)
+- [Testing y CI/CD](#testing-y-cicd)
+- [Hitos de Implementación](#hitos-de-implementacion)
+- [Guía de Contribución](#guia-de-contribucion)
+- [Licencia](#licencia)
 - [Contacto](#contacto)
 
 ---
 
 ## 🎯 Descripción
+## 🎯 Descripción {#descripcion}
 
 **HotelBook Pro** es una solución integral orientada a la transformación digital y centralización operativa de establecimientos hoteleros medianos. El sistema resuelve fallos críticos de la gestión manual como:
 
@@ -37,6 +42,7 @@ El propósito fundamental es consolidar una plataforma madura, robusta y escalab
 ---
 
 ## ✨ Características
+## ✨ Características {#caracteristicas}
 
 ### Gestión Principal
 - ✅ **Gestión de Reservas**: Crear, modificar, cancelar y consultar reservas
@@ -63,6 +69,7 @@ El propósito fundamental es consolidar una plataforma madura, robusta y escalab
 ---
 
 ## 🛠️ Stack Tecnológico
+## 🛠️ Stack Tecnológico {#stack-tecnologico}
 
 | Componente | Tecnología | Versión |
 |------------|-----------|---------|
@@ -78,6 +85,7 @@ El propósito fundamental es consolidar una plataforma madura, robusta y escalab
 ---
 
 ## 🏗️ Arquitectura
+## 🏗️ Arquitectura {#arquitectura}
 
 ### Modelo: Arquitectura Monolítica Modular
 
@@ -116,6 +124,7 @@ El propósito fundamental es consolidar una plataforma madura, robusta y escalab
 ---
 
 ## 📦 Instalación
+## 📦 Instalación {#instalacion}
 
 ### Requisitos Previos
 - Python 3.11+
@@ -165,6 +174,7 @@ El propósito fundamental es consolidar una plataforma madura, robusta y escalab
 ---
 
 ## 🚀 Uso
+## 🚀 Uso {#uso}
 
 ### Inicio de Sesión
 ```
@@ -208,6 +218,7 @@ Check-out:
 ---
 
 ## 👥 Roles y Permisos
+## 👥 Roles y Permisos {#roles-y-permisos}
 
 | Rol | Nivel de Acceso | Funciones |
 |-----|--------------|-----------|
@@ -219,6 +230,7 @@ Check-out:
 ---
 
 ## 📁 Estructura del Proyecto
+## 📁 Estructura del Proyecto {#estructura-del-proyecto}
 
 ```
 Proyecto_Hotel/
@@ -260,6 +272,7 @@ Proyecto_Hotel/
 ---
 
 ## 🔌 API REST
+## 🔌 API REST {#api-rest}
 
 ### Autenticación
 Todos los endpoints requieren **JWT (JSON Web Tokens)** en el header:
@@ -358,6 +371,7 @@ git commit -m "fix: validar fechas de salida en reserva"
 ---
 
 ## ✅ Testing y CI/CD
+## ✅ Testing y CI/CD {#testing-y-cicd}
 
 ### Ejecutar Pruebas Locales
 ```bash
@@ -381,6 +395,7 @@ Cada Pull Request activa automáticamente:
 ---
 
 ## 📅 Hitos de Implementación
+## 📅 Hitos de Implementación {#hitos-de-implementacion}
 
 | Semana | Hito | Descripción |
 |--------|------|-------------|
@@ -391,6 +406,7 @@ Cada Pull Request activa automáticamente:
 ---
 
 ## 🤝 Guía de Contribución
+## 🤝 Guía de Contribución {#guia-de-contribucion}
 
 1. Crear rama: `git checkout -b feature/mi-funcionalidad`
 2. Realizar cambios y commits
@@ -401,11 +417,13 @@ Cada Pull Request activa automáticamente:
 ---
 
 ## 📝 Licencia
+## 📝 Licencia {#licencia}
 MIT License - Ver `LICENSE` para más detalles
 
 ---
 
 ## 📞 Contacto
+## 📞 Contacto {#contacto}
 
 - **Repositorio**: [GitHub - Proyecto_Hotel](https://github.com/Rojas-09/Proyecto_Hotel)
 - **Rama Actual**: Development
