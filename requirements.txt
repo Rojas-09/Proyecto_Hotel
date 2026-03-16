@@ -10,7 +10,7 @@ psycopg2-binary==2.9.9
 alembic==1.12.1
 
 # Authentication & Security
-PyJWT==2.8.1
+PyJWT==2.8.0
 bcrypt==4.1.1
 python-dotenv==1.0.0
 
