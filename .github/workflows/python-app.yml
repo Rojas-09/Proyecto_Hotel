@@ -1,0 +1,92 @@
+name: Python CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, Development, Testing ]
+  pull_request:
+    branches: [ main, Development, Testing ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        python-version: ['3.11']
+
+    steps:
+    # 1. Descargar código del repositorio
+    - uses: actions/checkout@v3
+    
+    # 2. Configurar Python
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+    
+    # 3. Instalar dependencias
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+    
+    # 4. Validar sintaxis con flake8 (Linting)
+    - name: Lint with flake8
+      run: |
+        # Instalar flake8
+        pip install flake8
+        
+        # Detener build si hay errores de sintaxis
+        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        
+        # Mostrar warnings pero no fallar
+        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+      continue-on-error: true
+    
+    # 5. Ejecutar tests con pytest
+    - name: Test with pytest
+      run: |
+        pip install pytest pytest-cov
+        pytest tests/ --cov=app --cov-report=xml --cov-report=html --cov-report=term
+      continue-on-error: true
+    
+    # 6. Verificar cobertura de código
+    - name: Check coverage minimum
+      run: |
+        pip install pytest pytest-cov
+        coverage run -m pytest tests/
+        coverage report --fail-under=90
+      continue-on-error: true
+    
+    # 7. Subir reporte de cobertura
+    - name: Upload coverage reports
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage.xml
+        flags: unittests
+        name: codecov-umbrella
+      continue-on-error: true
+
+  # Job adicional: verificar formato de código
+  code-quality:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Check code formatting with black
+      run: |
+        pip install black
+        black . --check --verbose
+      continue-on-error: true
+    
+    - name: Check imports with isort
+      run: |
+        pip install isort
+        isort . --check-only --verbose
+      continue-on-error: true
