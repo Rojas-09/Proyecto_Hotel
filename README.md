@@ -69,8 +69,8 @@ El propósito fundamental es consolidar una plataforma madura, robusta y escalab
 
 | Componente | Tecnología | Versión |
 |------------|-----------|---------|
-| **Backend** | Flask | 3.0+ |
-| **Lenguaje** | Python | 3.11+ |
+| **Backend** | Flask | 3.1.3 |
+| **Lenguaje** | Python | 3.12 |
 | **ORM** | SQLAlchemy | - |
 | **BD (Producción)** | PostgreSQL | 12+ |
 | **BD (Desarrollo)** | SQLite | - |
@@ -417,4 +417,4 @@ MIT License - Ver `LICENSE` para más detalles
 
 ---
 
-**Última actualización**: Marzo 2026 | **Versión**: 1.0.0
+**Última actualización**: Mayo 2026 | **Versión**: 1.0.0
