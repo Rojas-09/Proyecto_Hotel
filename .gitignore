@@ -60,3 +60,7 @@ logs/
 # Archivos generados
 *.pdf
 instance/
+
+#Datos de prueba
+tests/data/
+Datos.md
