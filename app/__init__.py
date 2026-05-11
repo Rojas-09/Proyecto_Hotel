@@ -29,12 +29,17 @@ def create_app(config_name="development"):
     from app.controllers.servicio_controller import servicio_bp
     from app.controllers.reporte_controller import reporte_bp
 
-    app.register_blueprint(auth_bp,       url_prefix="/api/v1/auth")
+    app.register_blueprint(auth_bp, url_prefix="/api/v1/auth")
     app.register_blueprint(habitacion_bp, url_prefix="/api/v1/habitaciones")
-    app.register_blueprint(reserva_bp,    url_prefix="/api/v1/reservas")
-    app.register_blueprint(factura_bp,    url_prefix="/api/v1/facturas")
-    app.register_blueprint(servicio_bp,   url_prefix="/api/v1/servicios")
-    app.register_blueprint(reporte_bp,    url_prefix="/api/v1/reportes")
+    app.register_blueprint(reserva_bp, url_prefix="/api/v1/reservas")
+    app.register_blueprint(factura_bp, url_prefix="/api/v1/facturas")
+    app.register_blueprint(servicio_bp, url_prefix="/api/v1/servicios")
+    app.register_blueprint(reporte_bp, url_prefix="/api/v1/reportes")
+
+    # Importar modelos para que SQLAlchemy los detecte
+    from . import models
+
+    _ = models
 
     # Crear tablas si no existen (solo en desarrollo)
     with app.app_context():

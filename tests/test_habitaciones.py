@@ -6,6 +6,7 @@ Ejecutar: pytest tests/test_habitaciones.py -v
 import pytest
 
 from app.models.habitacion import EstadoHabitacion, Habitacion, TipoHabitacion
+from app.models.usuario import Usuario
 from app import db
 
 
@@ -22,10 +23,13 @@ def habitacion_data():
 
 
 @pytest.fixture
-def habitacion_en_db(app, habitacion_data):
+def habitacion_en_db(app, habitacion_data, request):
+    """Crea una habitación con número único por test."""
+    # Usar el test name como parte del numero para hacerlo único
+    unique_numero = f"{habitacion_data['numero']}{request.node.name[-2:]}"
     with app.app_context():
         h = Habitacion(
-            numero=habitacion_data["numero"],
+            numero=unique_numero,
             tipo=TipoHabitacion.simple,
             descripcion=habitacion_data["descripcion"],
             precio_noche=habitacion_data["precio_noche"],
@@ -35,39 +39,63 @@ def habitacion_en_db(app, habitacion_data):
         )
         db.session.add(h)
         db.session.commit()
-        yield h.to_dict()
-        db.session.query(Habitacion).delete()
+        result = h.to_dict()
+    yield result
+    with app.app_context():
+        db.session.query(Habitacion).filter_by(numero=unique_numero).delete()
         db.session.commit()
 
 
 @pytest.fixture
-def admin_headers(client):
-    client.post("/api/v1/auth/usuarios", json={
+def admin_headers(client, request, app):
+    """Crea un admin usando register-admin (para el primer admin) o usuarios endpoint."""
+    email = f"admin_hab_{id(request)}@test.com"
+    # Intentar crear primer admin
+    resp = client.post("/api/v1/auth/register-admin", json={
         "nombre": "Admin",
         "apellido": "Hotel",
-        "email": "admin_hab@test.com",
-        "password": "Admin1234*",
-        "rol": "admin",
+        "email": email,
+        "password": "Admin1234",
     })
+    
+    # Si ya existe un admin, creamos uno como cliente y luego lo promovemos
+    if resp.status_code != 201:
+        client.post("/api/v1/auth/register", json={
+            "nombre": "Admin",
+            "apellido": "Hotel",
+            "email": email,
+            "password": "Admin1234",
+        })
+    
     resp = client.post("/api/v1/auth/login", json={
-        "email": "admin_hab@test.com",
-        "password": "Admin1234*",
+        "email": email,
+        "password": "Admin1234",
     })
-    token = resp.get_json()["data"]["token"]
-    return {"Authorization": f"Bearer {token}"}
+    
+    if resp.status_code == 200:
+        token = resp.get_json()["data"]["token"]
+        # Cambiar el rol a admin directamente en la BD para tests
+        with app.app_context():
+            user = Usuario.query.filter_by(email=email).first()
+            if user:
+                user.rol = "admin"
+                db.session.commit()
+        return {"Authorization": f"Bearer {token}"}
+    return {"Authorization": ""}
 
 
 @pytest.fixture
-def cliente_headers(client):
+def cliente_headers(client, request):
+    email = f"cliente_hab_{id(request)}@test.com"
     client.post("/api/v1/auth/register", json={
         "nombre": "Cliente",
         "apellido": "Test",
-        "email": "cliente_hab@test.com",
-        "password": "Cliente1234*",
+        "email": email,
+        "password": "Cliente1234",
     })
     resp = client.post("/api/v1/auth/login", json={
-        "email": "cliente_hab@test.com",
-        "password": "Cliente1234*",
+        "email": email,
+        "password": "Cliente1234",
     })
     token = resp.get_json()["data"]["token"]
     return {"Authorization": f"Bearer {token}"}
@@ -88,7 +116,7 @@ class TestListarHabitaciones:
         assert resp.status_code == 200
         data = resp.get_json()
         assert data["total"] == 1
-        assert data["data"][0]["numero"] == "101"
+        assert data["data"][0]["id"] == habitacion_en_db["id"]
 
     def test_listar_filtro_por_tipo_valido(self, client, habitacion_en_db):
         resp = client.get("/api/v1/habitaciones/?tipo=Simple")
@@ -152,6 +180,7 @@ class TestCrearHabitacion:
     def test_crear_habitacion_numero_duplicado_retorna_400(
         self, client, admin_headers, habitacion_en_db, habitacion_data
     ):
+        habitacion_data["numero"] = habitacion_en_db["numero"]
         resp = client.post(
             "/api/v1/habitaciones/",
             json=habitacion_data,
@@ -241,6 +270,7 @@ class TestEliminarHabitacion:
         )
         assert resp.status_code == 200
         assert resp.get_json()["success"] is True
+        # Soft delete: la habitación existe pero no aparece en listado
         resp2 = client.get("/api/v1/habitaciones/")
         assert resp2.get_json()["total"] == 0
 

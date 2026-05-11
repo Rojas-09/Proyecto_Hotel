@@ -2,8 +2,8 @@
 Modelo Usuario - Entidad central de autenticación y roles
 """
 
-from datetime import datetime
 from app import db
+from app.utils.fecha_helper import ahora_colombia
 import bcrypt
 
 
@@ -23,9 +23,9 @@ class Usuario(db.Model):
     )
     puntos_fidelizacion = db.Column(db.Integer, default=0, nullable=False)
     activo = db.Column(db.Boolean, default=True, nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    created_at = db.Column(db.DateTime, default=ahora_colombia, nullable=False)
     updated_at = db.Column(
-        db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
+        db.DateTime, default=ahora_colombia, onupdate=ahora_colombia
     )
 
     @property

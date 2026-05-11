@@ -133,7 +133,10 @@ class AuthService:
                 "success": False,
                 "error": {
                     "code": "FORBIDDEN",
-                    "message": "Ya existe un administrador. Usa el endpoint /usuarios con token de admin.",
+                    "message": (
+                        "Ya existe un administrador. "
+                        "Usa el endpoint /usuarios con token de admin."
+                    ),
                 }
             }, 403
 
@@ -181,3 +184,200 @@ class AuthService:
             },
             "message": "Primer administrador creado exitosamente.",
         }, 201
+
+    @staticmethod
+    def editar_mi_perfil(current_user, data: dict) -> dict:
+        """Cualquier usuario edita su propio perfil."""
+        if "email" in data:
+            return {
+                "success": False,
+                "error": {
+                    "code": "VALIDATION_ERROR",
+                    "message": "No se puede cambiar el email.",
+                }
+            }, 400
+
+        if "rol" in data:
+            return {
+                "success": False,
+                "error": {
+                    "code": "FORBIDDEN",
+                    "message": "No puedes cambiar tu propio rol.",
+                }
+            }, 400
+
+        if "password" in data:
+            if len(data["password"]) < 8:
+                return {
+                    "success": False,
+                    "error": {
+                        "code": "VALIDATION_ERROR",
+                        "message": "La contraseña debe tener al menos 8 caracteres.",
+                    }
+                }, 400
+            current_user.password = data["password"]
+
+        if "nombre" in data:
+            current_user.nombre = data["nombre"].strip()
+        if "apellido" in data:
+            current_user.apellido = data["apellido"].strip()
+        if "telefono" in data:
+            current_user.telefono = data["telefono"].strip() or None
+        if "activo" in data:
+            return {
+                "success": False,
+                "error": {
+                    "code": "FORBIDDEN",
+                    "message": "No puedes cambiar tu propio estado.",
+                }
+            }, 400
+
+        db.session.commit()
+
+        return {
+            "success": True,
+            "data": {"usuario": current_user.to_dict()},
+            "message": "Perfil actualizado correctamente.",
+        }, 200
+
+    @staticmethod
+    def editar_usuario(usuario_id, current_user, data: dict) -> dict:
+        """Editar usuario según permisos jerárquicos."""
+        usuario = Usuario.query.get(usuario_id)
+        if not usuario:
+            return {
+                "success": False,
+                "error": {
+                    "code": "NOT_FOUND",
+                    "message": f"Usuario con id {usuario_id} no encontrado.",
+                }
+            }, 404
+
+        # Admin puede cambiar email de cualquiera
+        if "email" in data:
+            if current_user.rol != "admin":
+                return {
+                    "success": False,
+                    "error": {
+                        "code": "FORBIDDEN",
+                        "message": "Solo el admin puede cambiar el email.",
+                    }
+                }, 403
+            nuevo_email = data["email"].strip().lower()
+            if Usuario.query.filter(
+                Usuario.email == nuevo_email,
+                Usuario.id != usuario_id,
+            ).first():
+                return {
+                    "success": False,
+                    "error": {
+                        "code": "CONFLICT",
+                        "message": "El email ya está en uso.",
+                    }
+                }, 409
+            usuario.email = nuevo_email
+
+        # Verificar permisos según jerarquía
+        if current_user.rol == "cliente":
+            return {
+                "success": False,
+                "error": {
+                    "code": "FORBIDDEN",
+                    "message": "No tienes permiso para editar usuarios.",
+                }
+            }, 403
+
+        # Gerente solo puede editar recepcionista y gerente
+        if current_user.rol == "gerente":
+            if usuario.rol not in ("recepcionista", "gerente"):
+                return {
+                    "success": False,
+                    "error": {
+                        "code": "FORBIDDEN",
+                        "message": "Solo puedes editar recepcionistas y gerentes.",
+                    }
+                }, 403
+
+        # No puede editarse a sí mismo en campo activo
+        if usuario.id == current_user.id and "activo" in data and not data["activo"]:
+            return {
+                "success": False,
+                "error": {
+                    "code": "FORBIDDEN",
+                    "message": "No puedes desactivarte a ti mismo.",
+                }
+            }, 403
+
+        # No puede cambiar su propio rol
+        if usuario.id == current_user.id and "rol" in data:
+            return {
+                "success": False,
+                "error": {
+                    "code": "FORBIDDEN",
+                    "message": "No puedes cambiar tu propio rol.",
+                }
+            }, 403
+
+        if "nombre" in data:
+            usuario.nombre = data["nombre"].strip()
+        if "apellido" in data:
+            usuario.apellido = data["apellido"].strip()
+        if "telefono" in data:
+            usuario.telefono = data["telefono"].strip() or None
+        if "activo" in data:
+            # Solo admin puede desactivar usuarios
+            if current_user.rol != "admin":
+                return {
+                    "success": False,
+                    "error": {
+                        "code": "FORBIDDEN",
+                        "message": "Solo el admin puede activar/desactivar usuarios.",
+                    }
+                }, 403
+            usuario.activo = data["activo"]
+
+        if "rol" in data:
+            roles_validos = {"admin", "recepcionista", "gerente", "cliente"}
+            if data["rol"] not in roles_validos:
+                return {
+                    "success": False,
+                    "error": {
+                        "code": "VALIDATION_ERROR",
+                        "message": f"Rol inválido. Opciones: {', '.join(roles_validos)}",
+                    }
+                }, 400
+            # Admin puede poner cualquier rol, gerente solo recepcionista/gerente
+            if (
+                current_user.rol == "gerente"
+                and data["rol"] not in ("recepcionista", "gerente")
+            ):
+                return {
+                    "success": False,
+                    "error": {
+                        "code": "FORBIDDEN",
+                        "message": (
+                            "Como gerente solo puedes asignar "
+                            "rol recepcionista o gerente."
+                        ),
+                    }
+                }, 403
+            usuario.rol = data["rol"]
+
+        if "password" in data:
+            if len(data["password"]) < 8:
+                return {
+                    "success": False,
+                    "error": {
+                        "code": "VALIDATION_ERROR",
+                        "message": "La contraseña debe tener al menos 8 caracteres.",
+                    }
+                }, 400
+            usuario.password = data["password"]
+
+        db.session.commit()
+
+        return {
+            "success": True,
+            "data": {"usuario": usuario.to_dict()},
+            "message": "Usuario actualizado correctamente.",
+        }, 200

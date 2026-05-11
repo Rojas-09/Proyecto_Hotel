@@ -39,6 +39,7 @@ htmlcov/
 coverage.xml
 *.cover
 .tox/
+pytest_output.txt
 
 # IDEs
 .vscode/

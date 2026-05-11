@@ -1,10 +1,9 @@
-from datetime import datetime
-from decimal import Decimal
 import enum
 
 from sqlalchemy import Numeric
 
 from app import db
+from app.utils.fecha_helper import ahora_colombia
 
 
 class TipoHabitacion(enum.Enum):
@@ -39,11 +38,11 @@ class Habitacion(db.Model):
         default=EstadoHabitacion.disponible
     )
     activo = db.Column(db.Boolean, default=True, nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    created_at = db.Column(db.DateTime, default=ahora_colombia, nullable=False)
     updated_at = db.Column(
         db.DateTime,
-        default=datetime.utcnow,
-        onupdate=datetime.utcnow,
+        default=ahora_colombia,
+        onupdate=ahora_colombia,
         nullable=False
     )
 

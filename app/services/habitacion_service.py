@@ -1,7 +1,10 @@
 from datetime import date, datetime
 
+from sqlalchemy import func
+
 from app import db
 from app.models.habitacion import EstadoHabitacion, Habitacion, TipoHabitacion
+from app.utils.fecha_helper import ahora_colombia
 
 
 def obtener_todas(filtros=None):
@@ -44,10 +47,14 @@ def obtener_por_id(habitacion_id):
 def crear(datos):
     _validar_datos_obligatorios(datos)
 
-    existing = Habitacion.query.filter_by(numero=datos["numero"]).first()
+    numero_normalizado = str(datos["numero"]).strip()
+
+    existing = Habitacion.query.filter(
+        func.lower(func.trim(Habitacion.numero)) == numero_normalizado.lower()
+    ).first()
     if existing:
         raise ValueError(
-            f"Ya existe una habitacion con el numero '{datos['numero']}'."
+            f"Ya existe una habitacion con el numero '{numero_normalizado}'."
         )
 
     try:
@@ -59,7 +66,7 @@ def crear(datos):
         )
 
     habitacion = Habitacion(
-        numero=str(datos["numero"]).strip(),
+        numero=numero_normalizado,
         tipo=tipo,
         descripcion=datos.get("descripcion"),
         precio_noche=datos["precio_noche"],
@@ -80,13 +87,16 @@ def actualizar(habitacion_id, datos):
     if not habitacion:
         raise LookupError(f"Habitacion con id {habitacion_id} no encontrada.")
 
-    if "numero" in datos and datos["numero"] != habitacion.numero:
-        existing = Habitacion.query.filter_by(numero=datos["numero"]).first()
+    if "numero" in datos and str(datos["numero"]).strip() != habitacion.numero:
+        numero_normalizado = str(datos["numero"]).strip()
+        existing = Habitacion.query.filter(
+            func.lower(func.trim(Habitacion.numero)) == numero_normalizado.lower()
+        ).first()
         if existing:
             raise ValueError(
-                f"Ya existe una habitacion con el numero '{datos['numero']}'."
+                f"Ya existe una habitacion con el numero '{numero_normalizado}'."
             )
-        habitacion.numero = str(datos["numero"]).strip()
+        habitacion.numero = numero_normalizado
 
     if "tipo" in datos:
         try:
@@ -122,7 +132,7 @@ def actualizar(habitacion_id, datos):
     if "piso" in datos:
         habitacion.piso = int(datos["piso"])
 
-    habitacion.updated_at = datetime.utcnow()
+    habitacion.updated_at = ahora_colombia()
     db.session.commit()
     return habitacion.to_dict()
 
@@ -135,7 +145,7 @@ def eliminar(habitacion_id):
         raise LookupError(f"Habitacion con id {habitacion_id} no encontrada.")
 
     habitacion.activo = False
-    habitacion.updated_at = datetime.utcnow()
+    habitacion.updated_at = ahora_colombia()
     db.session.commit()
     return {"mensaje": f"Habitacion {habitacion.numero} eliminada correctamente."}
 
