@@ -1,4 +1,9 @@
+"""
+Modelo Reserva - Reservas de habitaciones
+"""
+
 import enum
+from sqlalchemy import Numeric
 
 from app import db
 from app.utils.fecha_helper import ahora_colombia
@@ -16,9 +21,9 @@ class Reserva(db.Model):
     __tablename__ = "reservas"
 
     id = db.Column(db.Integer, primary_key=True)
-    id_cliente = db.Column(
+    id_huesped = db.Column(
         db.Integer,
-        db.ForeignKey("usuarios.id", name="fk_reserva_cliente"),
+        db.ForeignKey("huespedes.id", name="fk_reserva_huesped"),
         nullable=False
     )
     id_habitacion = db.Column(
@@ -30,7 +35,9 @@ class Reserva(db.Model):
     fecha_entrada = db.Column(db.Date, nullable=False)
     fecha_salida = db.Column(db.Date, nullable=False)
     noches = db.Column(db.Integer, nullable=False)
-    total = db.Column(db.Numeric(10, 2), nullable=False)
+    subtotal = db.Column(Numeric(10, 2), nullable=False)
+    impuestos = db.Column(Numeric(10, 2), nullable=False)
+    total = db.Column(Numeric(10, 2), nullable=False)
     estado = db.Column(
         db.Enum(EstadoReserva, native_enum=False),
         nullable=False,
@@ -45,35 +52,60 @@ class Reserva(db.Model):
         nullable=False
     )
 
-    cliente = db.relationship(
-        "Usuario",
-        foreign_keys=[id_cliente],
-        backref="reservas"
+    # Relationships
+    huesped = db.relationship("Huesped", back_populates="reservas")
+    habitacion = db.relationship("Habitacion", back_populates="reservas")
+    checkin_checkout = db.relationship(
+        "CheckInCheckOut",
+        back_populates="reserva",
+        uselist=False
     )
-    habitacion = db.relationship(
-        "Habitacion",
-        foreign_keys=[id_habitacion],
-        backref="reservas"
+    pagos = db.relationship("Pago", back_populates="reserva")
+    factura = db.relationship(
+        "Factura",
+        back_populates="reserva",
+        uselist=False
+    )
+    notificaciones = db.relationship("Notificacion", back_populates="reserva")
+    servicios_adicionales = db.relationship(
+        "ServicioAdicional",
+        back_populates="reserva"
     )
 
-    def to_dict(self):
+    def to_dict(self) -> dict:
         return {
             "id": self.id,
-            "id_cliente": self.id_cliente,
+            "id_huesped": self.id_huesped,
             "id_habitacion": self.id_habitacion,
             "fecha_reserva": self.fecha_reserva.isoformat(),
             "fecha_entrada": self.fecha_entrada.isoformat(),
             "fecha_salida": self.fecha_salida.isoformat(),
             "noches": self.noches,
+            "subtotal": float(self.subtotal),
+            "impuestos": float(self.impuestos),
             "total": float(self.total),
             "estado": self.estado.value,
             "motivo_cancelacion": self.motivo_cancelacion,
+            "huesped_nombre": (
+                f"{self.huesped.usuario.nombre} "
+                f"{self.huesped.usuario.apellido}"
+                if self.huesped and self.huesped.usuario else None
+            ),
+            "huesped_email": (
+                self.huesped.usuario.email
+                if self.huesped and self.huesped.usuario else None
+            ),
+            "huesped_documento": (
+                self.huesped.documento_id if self.huesped else None
+            ),
+            "habitacion_numero": (
+                self.habitacion.numero if self.habitacion else None
+            ),
+            "habitacion_tipo": (
+                self.habitacion.tipo.value if self.habitacion else None
+            ),
             "created_at": self.created_at.isoformat(),
             "updated_at": self.updated_at.isoformat(),
-            "cliente_nombre": self.cliente.nombre + " " + self.cliente.apellido,
-            "cliente_email": self.cliente.email,
-            "habitacion_numero": self.habitacion.numero,
-            "habitacion_tipo": self.habitacion.tipo.value,
         }
 
     def __repr__(self):

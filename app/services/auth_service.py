@@ -3,7 +3,8 @@ Auth Service - Lógica de negocio para autenticación
 """
 
 from app import db
-from app.models.usuario import Usuario
+from app.models.usuario import Usuario, RolEnum
+from app.models.huesped import Huesped
 from app.utils.jwt_helper import generar_token
 
 
@@ -19,6 +20,19 @@ class AuthService:
                     "error": {
                         "code": "VALIDATION_ERROR",
                         "message": f"El campo '{campo}' es requerido.",
+                    }
+                }, 400
+
+        rol = data.get("rol", "cliente").lower()
+        if rol == "cliente":
+            if not data.get("documento_id", "").strip():
+                return {
+                    "success": False,
+                    "error": {
+                        "code": "VALIDATION_ERROR",
+                        "message": (
+                            "El campo 'documento_id' es requerido para clientes."
+                        ),
                     }
                 }, 400
 
@@ -47,14 +61,29 @@ class AuthService:
             apellido=data["apellido"].strip(),
             email=email,
             telefono=data.get("telefono", "").strip() or None,
-            rol="cliente",
+            rol=rol,
         )
         usuario.password = data["password"]
 
         db.session.add(usuario)
+        db.session.flush()
+
+        if rol == "cliente":
+            huesped = Huesped(
+                id_usuario=usuario.id,
+                documento_id=data["documento_id"].strip(),
+                tipo_documento=data.get("tipo_documento", "CC").strip(),
+                preferencias=data.get("preferencias", "").strip() or None,
+            )
+            db.session.add(huesped)
+
         db.session.commit()
 
-        token = generar_token(usuario.id, usuario.email, usuario.rol)
+        token = generar_token(
+            usuario.id,
+            usuario.email,
+            usuario.rol.value if hasattr(usuario.rol, 'value') else usuario.rol
+        )
 
         return {
             "success": True,
@@ -90,7 +119,11 @@ class AuthService:
                 }
             }, 401
 
-        token = generar_token(usuario.id, usuario.email, usuario.rol)
+        token = generar_token(
+            usuario.id,
+            usuario.email,
+            usuario.rol.value if hasattr(usuario.rol, 'value') else usuario.rol
+        )
 
         return {
             "success": True,
@@ -104,7 +137,7 @@ class AuthService:
     @staticmethod
     def crear_usuario_admin(data: dict) -> dict:
         roles_validos = {"admin", "recepcionista", "gerente", "cliente"}
-        rol = data.get("rol", "cliente")
+        rol = data.get("rol", "cliente").lower()
 
         if rol not in roles_validos:
             return {
@@ -115,10 +148,24 @@ class AuthService:
                 }
             }, 400
 
+        if rol == "cliente":
+            if not data.get("documento_id", "").strip():
+                return {
+                    "success": False,
+                    "error": {
+                        "code": "VALIDATION_ERROR",
+                        "message": (
+                            "El campo 'documento_id' es requerido para clientes."
+                        ),
+                    }
+                }, 400
+
         result, status = AuthService.registrar(data)
         if result["success"] and rol != "cliente":
-            usuario = Usuario.query.filter_by(email=data["email"].lower()).first()
-            usuario.rol = rol
+            usuario = Usuario.query.filter_by(
+                email=data["email"].lower()
+            ).first()
+            usuario.rol = RolEnum[rol]
             db.session.commit()
             result["data"]["usuario"] = usuario.to_dict()
 
@@ -167,14 +214,18 @@ class AuthService:
             apellido=data["apellido"].strip(),
             email=email,
             telefono=data.get("telefono", "").strip() or None,
-            rol="admin",
+            rol=RolEnum.admin,
         )
         usuario.password = data["password"]
 
         db.session.add(usuario)
         db.session.commit()
 
-        token = generar_token(usuario.id, usuario.email, usuario.rol)
+        token = generar_token(
+            usuario.id,
+            usuario.email,
+            usuario.rol.value if hasattr(usuario.rol, 'value') else usuario.rol
+        )
 
         return {
             "success": True,
@@ -255,7 +306,12 @@ class AuthService:
 
         # Admin puede cambiar email de cualquiera
         if "email" in data:
-            if current_user.rol != "admin":
+            rol_value = (
+                current_user.rol.value
+                if hasattr(current_user.rol, 'value')
+                else current_user.rol
+            )
+            if rol_value != "admin":
                 return {
                     "success": False,
                     "error": {
@@ -278,7 +334,12 @@ class AuthService:
             usuario.email = nuevo_email
 
         # Verificar permisos según jerarquía
-        if current_user.rol == "cliente":
+        rol_value = (
+            current_user.rol.value
+            if hasattr(current_user.rol, 'value')
+            else current_user.rol
+        )
+        if rol_value == "cliente":
             return {
                 "success": False,
                 "error": {
@@ -288,7 +349,12 @@ class AuthService:
             }, 403
 
         # Gerente solo puede editar recepcionista y gerente
-        if current_user.rol == "gerente":
+        rol_value = (
+            current_user.rol.value
+            if hasattr(current_user.rol, 'value')
+            else current_user.rol
+        )
+        if rol_value == "gerente":
             if usuario.rol not in ("recepcionista", "gerente"):
                 return {
                     "success": False,
@@ -326,7 +392,12 @@ class AuthService:
             usuario.telefono = data["telefono"].strip() or None
         if "activo" in data:
             # Solo admin puede desactivar usuarios
-            if current_user.rol != "admin":
+            rol_value = (
+                current_user.rol.value
+                if hasattr(current_user.rol, 'value')
+                else current_user.rol
+            )
+            if rol_value != "admin":
                 return {
                     "success": False,
                     "error": {
@@ -348,7 +419,12 @@ class AuthService:
                 }, 400
             # Admin puede poner cualquier rol, gerente solo recepcionista/gerente
             if (
-                current_user.rol == "gerente"
+                (
+                    current_user.rol.value
+                    if hasattr(current_user.rol, 'value')
+                    else current_user.rol
+                )
+                == "gerente"
                 and data["rol"] not in ("recepcionista", "gerente")
             ):
                 return {

@@ -1,14 +1,34 @@
 from app import db
-from app.models.usuario import Usuario
+from app.models.usuario import Usuario, RolEnum
+from app.models.huesped import Huesped
 
 
 def _token_para(client, app, email, rol="admin"):
     with app.app_context():
-        u = Usuario(nombre="T", apellido="User", email=email, rol=rol)
+        u = Usuario(
+            nombre="T",
+            apellido="User",
+            email=email,
+            rol=RolEnum.admin if rol == "admin" else RolEnum.cliente
+        )
         u.password = "Password123"
         db.session.add(u)
+        db.session.flush()
+
+        # Si es cliente, crear Huesped automáticamente
+        if rol == "cliente":
+            h = Huesped(
+                id_usuario=u.id,
+                documento_id="99999999",
+                tipo_documento="CC"
+            )
+            db.session.add(h)
+
         db.session.commit()
-    login = client.post("/api/v1/auth/login", json={"email": email, "password": "Password123"})
+    login = client.post(
+        "/api/v1/auth/login",
+        json={"email": email, "password": "Password123"},
+    )
     return login.get_json()["data"]["token"]
 
 
@@ -16,7 +36,10 @@ def test_habitaciones_listar_error_500(client, monkeypatch):
     def _boom(_):
         raise RuntimeError("boom")
 
-    monkeypatch.setattr("app.controllers.habitacion_controller.habitacion_service.obtener_todas", _boom)
+    target = (
+        "app.controllers.habitacion_controller.habitacion_service.obtener_todas"
+    )
+    monkeypatch.setattr(target, _boom)
     resp = client.get("/api/v1/habitaciones/")
     assert resp.status_code == 500
 
@@ -25,11 +48,13 @@ def test_habitaciones_disponibles_error_500(client, monkeypatch):
     def _boom(*_args, **_kwargs):
         raise RuntimeError("boom")
 
-    monkeypatch.setattr(
-        "app.controllers.habitacion_controller.habitacion_service.buscar_disponibles",
-        _boom,
+    target = (
+        "app.controllers.habitacion_controller.habitacion_service.buscar_disponibles"
     )
-    resp = client.get("/api/v1/habitaciones/disponibles?fecha_entrada=2027-01-01&fecha_salida=2027-01-02")
+    monkeypatch.setattr(target, _boom)
+    resp = client.get(
+        "/api/v1/habitaciones/disponibles?fecha_entrada=2027-01-01&fecha_salida=2027-01-02",
+    )
     assert resp.status_code == 500
 
 
@@ -37,7 +62,10 @@ def test_habitaciones_obtener_error_500(client, monkeypatch):
     def _boom(_):
         raise RuntimeError("boom")
 
-    monkeypatch.setattr("app.controllers.habitacion_controller.habitacion_service.obtener_por_id", _boom)
+    target = (
+        "app.controllers.habitacion_controller.habitacion_service.obtener_por_id"
+    )
+    monkeypatch.setattr(target, _boom)
     resp = client.get("/api/v1/habitaciones/1")
     assert resp.status_code == 500
 
@@ -51,7 +79,12 @@ def test_habitaciones_crear_error_500(client, app, monkeypatch):
     monkeypatch.setattr("app.controllers.habitacion_controller.habitacion_service.crear", _boom)
     resp = client.post(
         "/api/v1/habitaciones/",
-        json={"numero": "999", "tipo": "Simple", "precio_noche": 100, "capacidad": 1},
+        json={
+            "numero": "999",
+            "tipo": "Simple",
+            "precio_noche": 100,
+            "capacidad": 1,
+        },
         headers={"Authorization": f"Bearer {token}"},
     )
     assert resp.status_code == 500
@@ -59,7 +92,10 @@ def test_habitaciones_crear_error_500(client, app, monkeypatch):
 
 def test_habitaciones_actualizar_body_requerido(client, app):
     token = _token_para(client, app, "ha2@test.com", "admin")
-    resp = client.put("/api/v1/habitaciones/1", headers={"Authorization": f"Bearer {token}"})
+    resp = client.put(
+        "/api/v1/habitaciones/1",
+        headers={"Authorization": f"Bearer {token}"},
+    )
     assert resp.status_code == 415
 
 
@@ -69,7 +105,10 @@ def test_habitaciones_actualizar_error_500(client, app, monkeypatch):
     def _boom(_id, _data):
         raise RuntimeError("boom")
 
-    monkeypatch.setattr("app.controllers.habitacion_controller.habitacion_service.actualizar", _boom)
+    target = (
+        "app.controllers.habitacion_controller.habitacion_service.actualizar"
+    )
+    monkeypatch.setattr(target, _boom)
     resp = client.put(
         "/api/v1/habitaciones/1",
         json={"precio_noche": 99999},
@@ -85,7 +124,10 @@ def test_habitaciones_eliminar_valor_error(client, app, monkeypatch):
         raise ValueError("invalido")
 
     monkeypatch.setattr("app.controllers.habitacion_controller.habitacion_service.eliminar", _val)
-    resp = client.delete("/api/v1/habitaciones/1", headers={"Authorization": f"Bearer {token}"})
+    resp = client.delete(
+        "/api/v1/habitaciones/1",
+        headers={"Authorization": f"Bearer {token}"},
+    )
     assert resp.status_code == 400
 
 
@@ -96,13 +138,19 @@ def test_habitaciones_eliminar_error_500(client, app, monkeypatch):
         raise RuntimeError("boom")
 
     monkeypatch.setattr("app.controllers.habitacion_controller.habitacion_service.eliminar", _boom)
-    resp = client.delete("/api/v1/habitaciones/1", headers={"Authorization": f"Bearer {token}"})
+    resp = client.delete(
+        "/api/v1/habitaciones/1",
+        headers={"Authorization": f"Bearer {token}"},
+    )
     assert resp.status_code == 500
 
 
 def test_reservas_crear_body_requerido(client, app):
     token = _token_para(client, app, "re1@test.com", "cliente")
-    resp = client.post("/api/v1/reservas/", headers={"Authorization": f"Bearer {token}"})
+    resp = client.post(
+        "/api/v1/reservas/",
+        headers={"Authorization": f"Bearer {token}"},
+    )
     assert resp.status_code == 415
 
 
@@ -115,7 +163,11 @@ def test_reservas_crear_permission_error(client, app, monkeypatch):
     monkeypatch.setattr("app.controllers.reserva_controller.reserva_service.crear", _perm)
     resp = client.post(
         "/api/v1/reservas/",
-        json={"id_habitacion": 1, "fecha_entrada": "2027-01-01", "fecha_salida": "2027-01-02"},
+        json={
+            "id_habitacion": 1,
+            "fecha_entrada": "2027-01-01",
+            "fecha_salida": "2027-01-02",
+        },
         headers={"Authorization": f"Bearer {token}"},
     )
     assert resp.status_code == 403
@@ -143,7 +195,10 @@ def test_reservas_obtener_todas_valor_error(client, app, monkeypatch):
         raise ValueError("bad")
 
     monkeypatch.setattr("app.controllers.reserva_controller.reserva_service.obtener_todas", _val)
-    resp = client.get("/api/v1/reservas/", headers={"Authorization": f"Bearer {token}"})
+    resp = client.get(
+        "/api/v1/reservas/",
+        headers={"Authorization": f"Bearer {token}"},
+    )
     assert resp.status_code == 400
 
 
@@ -154,7 +209,10 @@ def test_reservas_obtener_todas_error_500(client, app, monkeypatch):
         raise RuntimeError("boom")
 
     monkeypatch.setattr("app.controllers.reserva_controller.reserva_service.obtener_todas", _boom)
-    resp = client.get("/api/v1/reservas/", headers={"Authorization": f"Bearer {token}"})
+    resp = client.get(
+        "/api/v1/reservas/",
+        headers={"Authorization": f"Bearer {token}"},
+    )
     assert resp.status_code == 500
 
 
@@ -164,8 +222,14 @@ def test_reservas_mis_reservas_error_500(client, app, monkeypatch):
     def _boom(_user):
         raise RuntimeError("boom")
 
-    monkeypatch.setattr("app.controllers.reserva_controller.reserva_service.obtener_mis_reservas", _boom)
-    resp = client.get("/api/v1/reservas/mis-reservas", headers={"Authorization": f"Bearer {token}"})
+    target = (
+        "app.controllers.reserva_controller.reserva_service.obtener_mis_reservas"
+    )
+    monkeypatch.setattr(target, _boom)
+    resp = client.get(
+        "/api/v1/reservas/mis-reservas",
+        headers={"Authorization": f"Bearer {token}"},
+    )
     assert resp.status_code == 500
 
 
@@ -176,7 +240,10 @@ def test_reservas_obtener_por_id_lookup_error(client, app, monkeypatch):
         raise LookupError("no")
 
     monkeypatch.setattr("app.controllers.reserva_controller.reserva_service.obtener_por_id", _lk)
-    resp = client.get("/api/v1/reservas/1", headers={"Authorization": f"Bearer {token}"})
+    resp = client.get(
+        "/api/v1/reservas/1",
+        headers={"Authorization": f"Bearer {token}"},
+    )
     assert resp.status_code == 404
 
 
@@ -187,7 +254,10 @@ def test_reservas_obtener_por_id_error_500(client, app, monkeypatch):
         raise RuntimeError("boom")
 
     monkeypatch.setattr("app.controllers.reserva_controller.reserva_service.obtener_por_id", _boom)
-    resp = client.get("/api/v1/reservas/1", headers={"Authorization": f"Bearer {token}"})
+    resp = client.get(
+        "/api/v1/reservas/1",
+        headers={"Authorization": f"Bearer {token}"},
+    )
     assert resp.status_code == 500
 
 
@@ -198,14 +268,20 @@ def test_reservas_confirmar_lookup_y_error(client, app, monkeypatch):
         raise LookupError("no")
 
     monkeypatch.setattr("app.controllers.reserva_controller.reserva_service.confirmar", _lk)
-    resp_lk = client.put("/api/v1/reservas/1/confirmar", headers={"Authorization": f"Bearer {token}"})
+    resp_lk = client.put(
+        "/api/v1/reservas/1/confirmar",
+        headers={"Authorization": f"Bearer {token}"},
+    )
     assert resp_lk.status_code == 404
 
     def _boom(_id):
         raise RuntimeError("boom")
 
     monkeypatch.setattr("app.controllers.reserva_controller.reserva_service.confirmar", _boom)
-    resp_boom = client.put("/api/v1/reservas/1/confirmar", headers={"Authorization": f"Bearer {token}"})
+    resp_boom = client.put(
+        "/api/v1/reservas/1/confirmar",
+        headers={"Authorization": f"Bearer {token}"},
+    )
     assert resp_boom.status_code == 500
 
 
@@ -253,21 +329,30 @@ def test_reservas_checkin_lookup_valor_error_500(client, app, monkeypatch):
         raise LookupError("no")
 
     monkeypatch.setattr("app.controllers.reserva_controller.reserva_service.hacer_checkin", _lk)
-    resp_lk = client.put("/api/v1/reservas/1/checkin", headers={"Authorization": f"Bearer {token}"})
+    resp_lk = client.put(
+        "/api/v1/reservas/1/checkin",
+        headers={"Authorization": f"Bearer {token}"},
+    )
     assert resp_lk.status_code == 404
 
     def _val(_id):
         raise ValueError("bad")
 
     monkeypatch.setattr("app.controllers.reserva_controller.reserva_service.hacer_checkin", _val)
-    resp_val = client.put("/api/v1/reservas/1/checkin", headers={"Authorization": f"Bearer {token}"})
+    resp_val = client.put(
+        "/api/v1/reservas/1/checkin",
+        headers={"Authorization": f"Bearer {token}"},
+    )
     assert resp_val.status_code == 400
 
     def _boom(_id):
         raise RuntimeError("boom")
 
     monkeypatch.setattr("app.controllers.reserva_controller.reserva_service.hacer_checkin", _boom)
-    resp_boom = client.put("/api/v1/reservas/1/checkin", headers={"Authorization": f"Bearer {token}"})
+    resp_boom = client.put(
+        "/api/v1/reservas/1/checkin",
+        headers={"Authorization": f"Bearer {token}"},
+    )
     assert resp_boom.status_code == 500
 
 
@@ -278,19 +363,28 @@ def test_reservas_checkout_lookup_valor_error_500(client, app, monkeypatch):
         raise LookupError("no")
 
     monkeypatch.setattr("app.controllers.reserva_controller.reserva_service.hacer_checkout", _lk)
-    resp_lk = client.put("/api/v1/reservas/1/checkout", headers={"Authorization": f"Bearer {token}"})
+    resp_lk = client.put(
+        "/api/v1/reservas/1/checkout",
+        headers={"Authorization": f"Bearer {token}"},
+    )
     assert resp_lk.status_code == 404
 
     def _val(_id):
         raise ValueError("bad")
 
     monkeypatch.setattr("app.controllers.reserva_controller.reserva_service.hacer_checkout", _val)
-    resp_val = client.put("/api/v1/reservas/1/checkout", headers={"Authorization": f"Bearer {token}"})
+    resp_val = client.put(
+        "/api/v1/reservas/1/checkout",
+        headers={"Authorization": f"Bearer {token}"},
+    )
     assert resp_val.status_code == 400
 
     def _boom(_id):
         raise RuntimeError("boom")
 
     monkeypatch.setattr("app.controllers.reserva_controller.reserva_service.hacer_checkout", _boom)
-    resp_boom = client.put("/api/v1/reservas/1/checkout", headers={"Authorization": f"Bearer {token}"})
+    resp_boom = client.put(
+        "/api/v1/reservas/1/checkout",
+        headers={"Authorization": f"Bearer {token}"},
+    )
     assert resp_boom.status_code == 500

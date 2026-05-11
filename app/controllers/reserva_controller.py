@@ -44,7 +44,7 @@ def crear(current_user):
 def obtener_todas(current_user):
     filtros = {
         "estado": request.args.get("estado"),
-        "id_cliente": request.args.get("id_cliente"),
+        "id_huesped": request.args.get("id_huesped"),
         "fecha_entrada": request.args.get("fecha_entrada"),
     }
     filtros = {k: v for k, v in filtros.items() if v is not None}
@@ -168,17 +168,17 @@ def hacer_checkin(current_user, reserva_id):
         return jsonify({
             "success": True,
             "data": reserva,
-            "mensaje": "Check-in realizado correctamente."
+            "message": "Check-in realizado correctamente."
         }), 200
     except LookupError as e:
-        return jsonify({"success": False, "mensaje": str(e)}), 404
+        return jsonify({"success": False, "message": str(e)}), 404
     except ValueError as e:
-        return jsonify({"success": False, "mensaje": str(e)}), 400
+        return jsonify({"success": False, "message": str(e)}), 400
     except Exception as e:
         return jsonify({
             "success": False,
-            "mensaje": "Error interno del servidor.",
-            "detalle": str(e)
+            "message": "Error interno del servidor.",
+            "detail": str(e)
         }), 500
 
 
@@ -191,18 +191,18 @@ def hacer_checkout(current_user, reserva_id):
         return jsonify({
             "success": True,
             "data": reserva,
-            "mensaje": (
+            "message": (
                 "Check-out realizado correctamente. "
                 f"Puntos ganados: {reserva.get('puntos_ganados', 0)}"
             )
         }), 200
     except LookupError as e:
-        return jsonify({"success": False, "mensaje": str(e)}), 404
+        return jsonify({"success": False, "message": str(e)}), 404
     except ValueError as e:
-        return jsonify({"success": False, "mensaje": str(e)}), 400
+        return jsonify({"success": False, "message": str(e)}), 400
     except Exception as e:
         return jsonify({
             "success": False,
-            "mensaje": "Error interno del servidor.",
-            "detalle": str(e)
+            "message": "Error interno del servidor.",
+            "detail": str(e)
         }), 500

@@ -1,6 +1,6 @@
 """
 Auth Controller - Endpoints de autenticación
-POST /api/v1/auth/register        → Registro de cliente
+POST /api/v1/auth/register        → Registro de cliente (requiere documento_id)
 POST /api/v1/auth/register-admin  → Crear primer admin (solo si no hay admins)
 POST /api/v1/auth/login           → Login + JWT
 GET  /api/v1/auth/me              → Datos del usuario autenticado

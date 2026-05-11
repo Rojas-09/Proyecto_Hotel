@@ -235,15 +235,21 @@ def test_editar_usuario_admin_exitoso(app):
         assert status == 200
         assert result["success"] is True
         assert user.email == "u5new@test.com"
-        assert user.rol == "recepcionista"
+        assert user.rol.value == "recepcionista"
 
 
 def test_auth_controller_me_put_body_requerido(client, app):
     with app.app_context():
         _crear_usuario("Me", "User", "me@test.com", "cliente", "Password123")
-    login = client.post("/api/v1/auth/login", json={"email": "me@test.com", "password": "Password123"})
+    login = client.post(
+        "/api/v1/auth/login",
+        json={"email": "me@test.com", "password": "Password123"},
+    )
     token = login.get_json()["data"]["token"]
-    resp = client.put("/api/v1/auth/me", headers={"Authorization": f"Bearer {token}"})
+    resp = client.put(
+        "/api/v1/auth/me",
+        headers={"Authorization": f"Bearer {token}"},
+    )
     assert resp.status_code == 400
 
 
@@ -253,9 +259,15 @@ def test_auth_controller_usuarios_put_body_requerido(client, app):
         target = _crear_usuario("Tar", "Get", "target@test.com", "cliente", "Password123")
         _ = target.id
         _ = admin.id
-    login = client.post("/api/v1/auth/login", json={"email": "admctrl@test.com", "password": "Password123"})
+    login = client.post(
+        "/api/v1/auth/login",
+        json={"email": "admctrl@test.com", "password": "Password123"},
+    )
     token = login.get_json()["data"]["token"]
-    resp = client.put("/api/v1/auth/usuarios/2", headers={"Authorization": f"Bearer {token}"})
+    resp = client.put(
+        "/api/v1/auth/usuarios/2",
+        headers={"Authorization": f"Bearer {token}"},
+    )
     assert resp.status_code == 400
 
 
@@ -265,7 +277,10 @@ def test_auth_controller_listar_usuarios_y_eliminar(client, app):
         user = _crear_usuario("Usr", "List", "usrlist@test.com", "cliente", "Password123")
         user_id = user.id
         admin_id = admin.id
-    login = client.post("/api/v1/auth/login", json={"email": "admlist@test.com", "password": "Password123"})
+    login = client.post(
+        "/api/v1/auth/login",
+        json={"email": "admlist@test.com", "password": "Password123"},
+    )
     token = login.get_json()["data"]["token"]
     headers = {"Authorization": f"Bearer {token}"}
 

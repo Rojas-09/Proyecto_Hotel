@@ -6,7 +6,7 @@ Ejecutar: pytest tests/test_habitaciones.py -v
 import pytest
 
 from app.models.habitacion import EstadoHabitacion, Habitacion, TipoHabitacion
-from app.models.usuario import Usuario
+from app.models.usuario import Usuario, RolEnum
 from app import db
 
 
@@ -57,7 +57,7 @@ def admin_headers(client, request, app):
         "email": email,
         "password": "Admin1234",
     })
-    
+
     # Si ya existe un admin, creamos uno como cliente y luego lo promovemos
     if resp.status_code != 201:
         client.post("/api/v1/auth/register", json={
@@ -65,40 +65,25 @@ def admin_headers(client, request, app):
             "apellido": "Hotel",
             "email": email,
             "password": "Admin1234",
+            "documento_id": "88888888",
+            "tipo_documento": "CC"
         })
-    
+
     resp = client.post("/api/v1/auth/login", json={
         "email": email,
         "password": "Admin1234",
     })
-    
+
     if resp.status_code == 200:
         token = resp.get_json()["data"]["token"]
         # Cambiar el rol a admin directamente en la BD para tests
         with app.app_context():
             user = Usuario.query.filter_by(email=email).first()
             if user:
-                user.rol = "admin"
+                user.rol = RolEnum.admin
                 db.session.commit()
         return {"Authorization": f"Bearer {token}"}
     return {"Authorization": ""}
-
-
-@pytest.fixture
-def cliente_headers(client, request):
-    email = f"cliente_hab_{id(request)}@test.com"
-    client.post("/api/v1/auth/register", json={
-        "nombre": "Cliente",
-        "apellido": "Test",
-        "email": email,
-        "password": "Cliente1234",
-    })
-    resp = client.post("/api/v1/auth/login", json={
-        "email": email,
-        "password": "Cliente1234",
-    })
-    token = resp.get_json()["data"]["token"]
-    return {"Authorization": f"Bearer {token}"}
 
 
 class TestListarHabitaciones:

@@ -83,7 +83,12 @@ def rol_requerido(*roles):
     def decorator(f):
         @wraps(f)
         def decorated(current_user, *args, **kwargs):
-            if current_user.rol not in roles:
+            user_rol = (
+                current_user.rol.value
+                if hasattr(current_user.rol, 'value')
+                else current_user.rol
+            )
+            if user_rol not in roles:
                 return jsonify({
                     "success": False,
                     "error": {

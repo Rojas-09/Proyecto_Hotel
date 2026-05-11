@@ -24,6 +24,7 @@ def create_app(config_name="development"):
     # Registrar Blueprints (controladores)
     from app.controllers.auth_controller import auth_bp
     from app.controllers.habitacion_controller import habitacion_bp
+    from app.controllers.huesped_controller import huesped_bp
     from app.controllers.reserva_controller import reserva_bp
     from app.controllers.factura_controller import factura_bp
     from app.controllers.servicio_controller import servicio_bp
@@ -31,15 +32,23 @@ def create_app(config_name="development"):
 
     app.register_blueprint(auth_bp, url_prefix="/api/v1/auth")
     app.register_blueprint(habitacion_bp, url_prefix="/api/v1/habitaciones")
+    app.register_blueprint(huesped_bp, url_prefix="/api/v1/huespedes")
     app.register_blueprint(reserva_bp, url_prefix="/api/v1/reservas")
     app.register_blueprint(factura_bp, url_prefix="/api/v1/facturas")
     app.register_blueprint(servicio_bp, url_prefix="/api/v1/servicios")
     app.register_blueprint(reporte_bp, url_prefix="/api/v1/reportes")
 
-    # Importar modelos para que SQLAlchemy los detecte
-    from . import models
-
-    _ = models
+    # Importar modelos EN ORDEN para respetar dependencias FK
+    from app.models import usuario  # noqa: F401
+    from app.models import huesped  # noqa: F401
+    from app.models import habitacion  # noqa: F401
+    from app.models import reserva  # noqa: F401
+    from app.models import checkin_checkout  # noqa: F401
+    from app.models import pago  # noqa: F401
+    from app.models import reembolso  # noqa: F401
+    from app.models import factura  # noqa: F401
+    from app.models import servicio_adicional  # noqa: F401
+    from app.models import notificacion  # noqa: F401
 
     # Crear tablas si no existen (solo en desarrollo)
     with app.app_context():

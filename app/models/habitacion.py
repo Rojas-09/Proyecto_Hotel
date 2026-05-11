@@ -46,6 +46,9 @@ class Habitacion(db.Model):
         nullable=False
     )
 
+    # Relationships
+    reservas = db.relationship("Reserva", back_populates="habitacion")
+
     def to_dict(self):
         return {
             "id": self.id,
