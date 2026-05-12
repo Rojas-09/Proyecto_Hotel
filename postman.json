@@ -135,13 +135,20 @@
           "name": "1.2 Listar habitaciones disponibles",
           "request": {
             "method": "GET",
-            "url": "{{base_url}}/habitaciones/disponibles"
+            "url": {
+              "raw": "{{base_url}}/habitaciones/disponibles?fecha_entrada=2026-05-20&fecha_salida=2026-05-23",
+              "query": [
+                { "key": "fecha_entrada", "value": "2026-05-20" },
+                { "key": "fecha_salida", "value": "2026-05-23" }
+              ]
+            }
           },
           "event": [{
             "listen": "test",
             "script": {
               "exec": [
                 "pm.test('Lista OK', () => pm.expect(pm.response.code).to.equal(200));",
+                "pm.test('success true', () => pm.expect(pm.response.json().success).to.be.true);",
                 "pm.test('Array data', () => pm.expect(pm.response.json().data).to.be.an('array'));"
               ]
             }
@@ -244,7 +251,7 @@
             "script": {
               "exec": [
                 "pm.test('Reserva creada', () => pm.expect(pm.response.json().success).to.be.true);",
-                "const id = pm.response.json().data?.reserva?.id || pm.response.json().data?.id;",
+                "const id = pm.response.json().data?.id;",
                 "if (id) pm.collectionVariables.set('reserva_id', id);",
                 "console.log('reserva_id:', id, '| Estado esperado: Pendiente');"
               ]
@@ -278,7 +285,7 @@
             "listen": "test",
             "script": {
               "exec": [
-                "const estado = pm.response.json().data?.reserva?.estado || pm.response.json().data?.estado;",
+                "const estado = pm.response.json().data?.estado;",
                 "console.log('Estado actual:', estado);",
                 "pm.test('Estado Pendiente', () => pm.expect(estado).to.equal('Pendiente'));"
               ]
@@ -308,8 +315,9 @@
             "listen": "test",
             "script": {
               "exec": [
-                "pm.test('Garantía procesada', () => pm.expect(pm.response.json().success).to.be.true);",
-                "console.log('Respuesta garantía:', JSON.stringify(pm.response.json(), null, 2));"
+                "pm.test('Garantía procesada (201)', () => pm.expect(pm.response.code).to.equal(201));",
+                "const pago = pm.response.json().pago;",
+                "console.log('Pago ID:', pago?.id, '| Monto:', pago?.monto);"
               ]
             }
           }]
@@ -341,7 +349,7 @@
             "listen": "test",
             "script": {
               "exec": [
-                "const estado = pm.response.json().data?.reserva?.estado || pm.response.json().data?.estado;",
+                "const estado = pm.response.json().data?.estado;",
                 "console.log('Estado actual:', estado);",
                 "pm.test('Estado Confirmada', () => pm.expect(estado).to.equal('Confirmada'));"
               ]
@@ -364,8 +372,9 @@
             "listen": "test",
             "script": {
               "exec": [
-                "pm.test('Check-in OK', () => pm.expect(pm.response.json().success).to.be.true);",
-                "console.log('Estado esperado: Ocupada');"
+                "pm.test('Check-in OK (200)', () => pm.expect(pm.response.code).to.equal(200));",
+                "const estado = pm.response.json().data?.estado;",
+                "console.log('Estado:', estado);"
               ]
             }
           }]
@@ -381,7 +390,7 @@
             "listen": "test",
             "script": {
               "exec": [
-                "const estado = pm.response.json().data?.reserva?.estado || pm.response.json().data?.estado;",
+                "const estado = pm.response.json().data?.estado;",
                 "console.log('Estado actual:', estado);",
                 "pm.test('Estado Ocupada', () => pm.expect(estado).to.equal('Ocupada'));"
               ]
@@ -411,8 +420,9 @@
             "listen": "test",
             "script": {
               "exec": [
-                "pm.test('Servicio agregado', () => pm.expect(pm.response.json().success).to.be.true);",
-                "const id = pm.response.json().data?.servicio?.id || pm.response.json().data?.id;",
+                "pm.test('Servicio agregado (201)', () => pm.expect(pm.response.code).to.equal(201));",
+                "const servicio = pm.response.json().servicio;",
+                "const id = servicio?.id;",
                 "if (id) pm.collectionVariables.set('servicio_id', id);",
                 "console.log('servicio_id:', id);"
               ]
@@ -446,9 +456,9 @@
             "script": {
               "exec": [
                 "pm.test('Servicios OK', () => pm.expect(pm.response.code).to.equal(200));",
-                "const items = pm.response.json().data;",
-                "const lista = Array.isArray(items) ? items : items?.servicios || [];",
-                "console.log('Servicios registrados:', lista.length);"
+                "const lista = pm.response.json().servicios || [];",
+                "console.log('Servicios registrados:', lista.length);",
+                "console.log('Subtotal:', pm.response.json().subtotal);"
               ]
             }
           }]
@@ -476,8 +486,9 @@
             "listen": "test",
             "script": {
               "exec": [
-                "pm.test('Liquidación procesada', () => pm.expect(pm.response.json().success).to.be.true);",
-                "console.log('Liquidación:', JSON.stringify(pm.response.json().data, null, 2));"
+                "pm.test('Liquidación procesada (201)', () => pm.expect(pm.response.code).to.equal(201));",
+                "const pago = pm.response.json().pago;",
+                "console.log('Liquidación ID:', pago?.id, '| Monto:', pago?.monto);"
               ]
             }
           }]
@@ -494,9 +505,8 @@
             "script": {
               "exec": [
                 "pm.test('Pagos OK', () => pm.expect(pm.response.code).to.equal(200));",
-                "const pagos = pm.response.json().data;",
-                "const lista = Array.isArray(pagos) ? pagos : pagos?.pagos || [];",
-                "const aprobados = lista.filter(p => p.estado === 'Aprobado' || p.estado === 'aprobado');",
+                "const lista = pm.response.json().pagos || [];",
+                "const aprobados = lista.filter(p => p.estado === 'Aprobado');",
                 "console.log('Total pagos:', lista.length, '| Aprobados:', aprobados.length);"
               ]
             }
@@ -518,12 +528,10 @@
             "listen": "test",
             "script": {
               "exec": [
-                "pm.test('Check-out OK', () => pm.expect(pm.response.json().success).to.be.true);",
+                "pm.test('Check-out OK', () => pm.expect(pm.response.code).to.equal(200));",
                 "const resp = pm.response.json().data;",
-                "const fid = resp?.factura?.id || resp?.factura_id;",
-                "if (fid) pm.collectionVariables.set('factura_id', fid);",
-                "console.log('Estado esperado: Completada');",
-                "console.log('factura_id:', fid);"
+                "console.log('Estado:', resp?.estado, '| Puntos ganados:', resp?.puntos_ganados);",
+                "console.log('La factura se crea en el checkout pero no se retorna ID');"
               ]
             }
           }]
@@ -539,7 +547,7 @@
             "listen": "test",
             "script": {
               "exec": [
-                "const estado = pm.response.json().data?.reserva?.estado || pm.response.json().data?.estado;",
+                "const estado = pm.response.json().data?.estado;",
                 "console.log('Estado actual:', estado);",
                 "pm.test('Estado Completada', () => pm.expect(estado).to.equal('Completada'));"
               ]
