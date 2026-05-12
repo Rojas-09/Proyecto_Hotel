@@ -11,6 +11,7 @@ from openpyxl import Workbook
 from openpyxl.styles import Alignment, Font, PatternFill, Border, Side
 from openpyxl.utils import get_column_letter
 from reportlab.lib import colors
+from sqlalchemy import func, select
 from reportlab.lib.pagesizes import A4, landscape
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import mm
@@ -182,19 +183,26 @@ def generar_ocupacion(fecha_inicio: str, fecha_fin: str, formato: str = "xlsx") 
     if inicio > fin:
         raise ValueError("La fecha de inicio debe ser anterior a la fecha de fin.")
 
-    reservas_periodo = Reserva.query.filter(
-        Reserva.fecha_entrada >= inicio,
-        Reserva.fecha_entrada <= fin,
-        Reserva.estado.in_([EstadoReserva.ocupada, EstadoReserva.completada]),
-    ).all()
+    reservas_periodo = db.session.execute(
+        select(Reserva).filter(
+            Reserva.fecha_entrada >= inicio,
+            Reserva.fecha_entrada <= fin,
+            Reserva.estado.in_([EstadoReserva.ocupada, EstadoReserva.completada]),
+        )
+    ).scalars().all()
 
-    total_habitaciones = Habitacion.query.filter_by(activo=True).count()
+    total_habitaciones = db.session.execute(
+        select(func.count()).select_from(Habitacion).filter_by(activo=True)
+    ).scalar()
     total_reservas = len(reservas_periodo)
 
     reservas_por_tipo = {}
     for tipo in TipoHabitacion:
         reservas_tipo = [r for r in reservas_periodo if r.habitacion.tipo == tipo]
-        total_tipo = Habitacion.query.filter_by(tipo=tipo, activo=True).count()
+        total_tipo = db.session.execute(
+            select(func.count()).select_from(Habitacion)
+            .filter_by(tipo=tipo, activo=True)
+        ).scalar()
         ocupacion_tipo = (len(reservas_tipo) / total_tipo * 100) if total_tipo > 0 else 0
         reservas_por_tipo[tipo.value] = {
             "reservas": len(reservas_tipo),
@@ -277,26 +285,30 @@ def generar_ingresos(fecha_inicio: str, fecha_fin: str, formato: str = "xlsx") -
     if inicio > fin:
         raise ValueError("La fecha de inicio debe ser anterior a la fecha de fin.")
 
-    pagos_aprobados = Pago.query.filter(
-        Pago.fecha >= datetime.combine(inicio, datetime.min.time()),
-        Pago.fecha <= datetime.combine(fin, datetime.max.time()),
-        Pago.estado == EstadoPago.aprobado,
-    ).all()
+    pagos_aprobados = db.session.execute(
+        select(Pago).filter(
+            Pago.fecha >= datetime.combine(inicio, datetime.min.time()),
+            Pago.fecha <= datetime.combine(fin, datetime.max.time()),
+            Pago.estado == EstadoPago.aprobado,
+        )
+    ).scalars().all()
 
     total_ingresos = sum(_formatear_numero(p.monto) for p in pagos_aprobados)
 
     ingresos_por_tipo = {}
     for tipo in TipoHabitacion:
-        reservas_tipo = Reserva.query.filter(
-            Reserva.fecha_entrada >= inicio,
-            Reserva.fecha_entrada <= fin,
-            Reserva.habitacion.has(tipo=tipo),
-            Reserva.estado.in_([
-                EstadoReserva.ocupada,
-                EstadoReserva.completada,
-                EstadoReserva.confirmada,
-            ]),
-        ).all()
+        reservas_tipo = db.session.execute(
+            select(Reserva).filter(
+                Reserva.fecha_entrada >= inicio,
+                Reserva.fecha_entrada <= fin,
+                Reserva.habitacion.has(tipo=tipo),
+                Reserva.estado.in_([
+                    EstadoReserva.ocupada,
+                    EstadoReserva.completada,
+                    EstadoReserva.confirmada,
+                ]),
+            )
+        ).scalars().all()
 
         total_tipo = Decimal("0.00")
         servicios_tipo = Decimal("0.00")
@@ -317,17 +329,21 @@ def generar_ingresos(fecha_inicio: str, fecha_fin: str, formato: str = "xlsx") -
 
     subtotal_total = sum(
         _formatear_numero(r.subtotal)
-        for r in Reserva.query.filter(
-            Reserva.fecha_entrada >= inicio,
-            Reserva.fecha_entrada <= fin,
-        ).all()
+        for r in db.session.execute(
+            select(Reserva).filter(
+                Reserva.fecha_entrada >= inicio,
+                Reserva.fecha_entrada <= fin,
+            )
+        ).scalars().all()
     )
     iva_total = sum(
         _formatear_numero(r.impuestos)
-        for r in Reserva.query.filter(
-            Reserva.fecha_entrada >= inicio,
-            Reserva.fecha_entrada <= fin,
-        ).all()
+        for r in db.session.execute(
+            select(Reserva).filter(
+                Reserva.fecha_entrada >= inicio,
+                Reserva.fecha_entrada <= fin,
+            )
+        ).scalars().all()
     )
 
     datos_xlsx = [
@@ -398,17 +414,18 @@ def generar_estadisticas(fecha_inicio: str, fecha_fin: str, formato: str = "xlsx
     if inicio > fin:
         raise ValueError("La fecha de inicio debe ser anterior a la fecha de fin.")
 
-    reservas_periodo = Reserva.query.filter(
-        Reserva.fecha_entrada >= inicio,
-        Reserva.fecha_entrada <= fin,
-    ).all()
+    reservas_periodo = db.session.execute(
+        select(Reserva).filter(
+            Reserva.fecha_entrada >= inicio,
+            Reserva.fecha_entrada <= fin,
+        )
+    ).scalars().all()
 
     reservas_por_estado = {}
     for estado in EstadoReserva:
         count = sum(1 for r in reservas_periodo if r.estado == estado)
         reservas_por_estado[estado.value] = count
 
-    from sqlalchemy import func
     top_habitaciones = (
         db.session.query(
             Habitacion.numero,

@@ -7,6 +7,7 @@ import io
 import os
 
 from flask import Blueprint, jsonify, request, send_file
+from sqlalchemy import select
 
 from app import db
 from app.services import factura_service
@@ -75,7 +76,9 @@ def descargar_factura(current_user, reserva_id):
             else current_user.rol
         )
         if rol_value == "cliente":
-            huesped = Huesped.query.filter_by(id_usuario=current_user.id).first()
+            huesped = db.session.execute(
+                select(Huesped).filter_by(id_usuario=current_user.id)
+            ).scalar_one_or_none()
             reserva = db.session.get(Reserva, reserva_id)
             if not huesped or not reserva or reserva.id_huesped != huesped.id:
                 return jsonify(

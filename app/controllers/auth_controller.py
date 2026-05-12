@@ -12,6 +12,7 @@ DELETE /api/v1/auth/usuarios/<id> → Soft delete usuario (solo admin)
 """
 
 from flask import Blueprint, request, jsonify
+from sqlalchemy import select
 
 from app import db
 from app.models.usuario import Usuario
@@ -115,7 +116,9 @@ def editar_usuario(current_user, usuario_id):
 @rol_requerido("admin")
 def listar_usuarios(current_user):
     """Listar todos los usuarios (solo admin)."""
-    usuarios = Usuario.query.order_by(Usuario.created_at.desc()).all()
+    usuarios = db.session.execute(
+        select(Usuario).order_by(Usuario.created_at.desc())
+    ).scalars().all()
     return jsonify({
         "success": True,
         "data": [u.to_dict() for u in usuarios],

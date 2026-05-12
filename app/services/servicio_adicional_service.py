@@ -8,6 +8,8 @@ from app import db
 from app.models.servicio_adicional import ServicioAdicional, TipoServicio
 from app.models.reserva import EstadoReserva, Reserva
 from app.models.factura import EstadoFactura, Factura
+from sqlalchemy import select
+
 from app.utils.fecha_helper import ahora_colombia
 
 
@@ -46,7 +48,9 @@ def _validar_costo(costo_raw):
 
 
 def _factura_emitida(reserva_id: int) -> bool:
-    factura = Factura.query.filter_by(id_reserva=reserva_id).first()
+    factura = db.session.execute(
+        select(Factura).filter_by(id_reserva=reserva_id)
+    ).scalar_one_or_none()
     if not factura:
         return False
     return factura.estado in (EstadoFactura.emitida, EstadoFactura.pagada)
@@ -94,7 +98,9 @@ def listar(reserva_id: int) -> dict:
     Lista todos los servicios adicionales de una reserva.
     """
     reserva = _get_reserva(reserva_id)
-    servicios = ServicioAdicional.query.filter_by(id_reserva=reserva.id).all()
+    servicios = db.session.execute(
+        select(ServicioAdicional).filter_by(id_reserva=reserva.id)
+    ).scalars().all()
     items = [s.to_dict() for s in servicios]
     subtotal = sum(
         (Decimal(str(s.costo)) for s in servicios),

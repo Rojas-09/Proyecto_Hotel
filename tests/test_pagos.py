@@ -50,7 +50,7 @@ class TestProcesarGarantia:
             assert resultado["estado"] == "Aprobado"
             assert resultado["metodo"] == "Efectivo"
             assert float(resultado["monto"]) == pytest.approx(119000.0, rel=1e-2)
-            reserva = Reserva.query.get(reserva_id)
+            reserva = db.session.get(Reserva, reserva_id)
             assert reserva.estado == EstadoReserva.confirmada
 
     def test_garantia_reserva_no_encontrada(self, app):

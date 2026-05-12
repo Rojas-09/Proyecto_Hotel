@@ -11,6 +11,7 @@ from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import mm
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
+from sqlalchemy import select
 
 from app import db
 from app.models.factura import EstadoFactura, Factura
@@ -20,7 +21,9 @@ from app.utils.fecha_helper import ahora_colombia
 
 
 def _get_factura_por_reserva(reserva_id: int) -> Factura:
-    factura = Factura.query.filter_by(id_reserva=reserva_id).first()
+    factura = db.session.execute(
+        select(Factura).filter_by(id_reserva=reserva_id)
+    ).scalar_one_or_none()
     if not factura:
         raise LookupError(f"No se encontró factura para la reserva {reserva_id}.")
     return factura
@@ -165,7 +168,9 @@ def _generar_pdf_factura(factura: Factura) -> str:
     elements.append(t_estancia)
     elements.append(Spacer(1, 8 * mm))
 
-    servicios = ServicioAdicional.query.filter_by(id_reserva=reserva.id).all()
+    servicios = db.session.execute(
+        select(ServicioAdicional).filter_by(id_reserva=reserva.id)
+    ).scalars().all()
     data_resumen = [["CONCEPTO", "DETALLE", "VALOR"]]
     data_resumen.append(
         ["Hospedaje (Subtotal)", f"{reserva.noches} noches",
@@ -238,7 +243,9 @@ def emitir(reserva_id: int) -> dict:
             f"No se puede volver a emitir."
         )
 
-    servicios = ServicioAdicional.query.filter_by(id_reserva=reserva_id).all()
+    servicios = db.session.execute(
+        select(ServicioAdicional).filter_by(id_reserva=reserva_id)
+    ).scalars().all()
     servicios_total = Decimal("0.00")
     for s in servicios:
         servicios_total += Decimal(str(s.costo))

@@ -2,6 +2,8 @@
 Auth Service - Lógica de negocio para autenticación
 """
 
+from sqlalchemy import select
+
 from app import db
 from app.models.usuario import Usuario, RolEnum
 from app.models.huesped import Huesped
@@ -38,7 +40,9 @@ class AuthService:
 
         email = data["email"].strip().lower()
 
-        if Usuario.query.filter_by(email=email).first():
+        if db.session.execute(
+            select(Usuario).filter_by(email=email)
+        ).scalar_one_or_none():
             return {
                 "success": False,
                 "error": {
@@ -108,7 +112,9 @@ class AuthService:
                 }
             }, 400
 
-        usuario = Usuario.query.filter_by(email=email, activo=True).first()
+        usuario = db.session.execute(
+            select(Usuario).filter_by(email=email, activo=True)
+        ).scalar_one_or_none()
 
         if not usuario or not usuario.verificar_password(password):
             return {
@@ -162,9 +168,9 @@ class AuthService:
 
         result, status = AuthService.registrar(data)
         if result["success"] and rol != "cliente":
-            usuario = Usuario.query.filter_by(
-                email=data["email"].lower()
-            ).first()
+            usuario = db.session.execute(
+                select(Usuario).filter_by(email=data["email"].lower())
+            ).scalar_one_or_none()
             usuario.rol = RolEnum[rol]
             db.session.commit()
             result["data"]["usuario"] = usuario.to_dict()
@@ -174,7 +180,9 @@ class AuthService:
     @staticmethod
     def crear_primer_admin(data: dict) -> dict:
         """Crea el primer admin. Solo funciona si no hay admins en la DB."""
-        admin_existe = Usuario.query.filter_by(rol="admin", activo=True).first()
+        admin_existe = db.session.execute(
+            select(Usuario).filter_by(rol="admin", activo=True)
+        ).scalar_one_or_none()
         if admin_existe:
             return {
                 "success": False,
@@ -320,10 +328,12 @@ class AuthService:
                     }
                 }, 403
             nuevo_email = data["email"].strip().lower()
-            if Usuario.query.filter(
-                Usuario.email == nuevo_email,
-                Usuario.id != usuario_id,
-            ).first():
+            if db.session.execute(
+                select(Usuario).filter(
+                    Usuario.email == nuevo_email,
+                    Usuario.id != usuario_id,
+                )
+            ).scalar_one_or_none():
                 return {
                     "success": False,
                     "error": {

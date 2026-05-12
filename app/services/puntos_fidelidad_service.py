@@ -2,6 +2,8 @@
 PuntosFidelidad Service - Lógica de negocio para puntos de fidelización (RF-12)
 """
 
+from sqlalchemy import select
+
 from app import db
 from app.models.puntos_fidelidad import PuntosFidelidad
 from app.models.reserva import Reserva
@@ -19,7 +21,9 @@ def acreditar(reserva_id):
     if not reserva:
         raise LookupError(f"Reserva con id {reserva_id} no encontrada.")
 
-    existente = PuntosFidelidad.query.filter_by(id_reserva=reserva_id).first()
+    existente = db.session.execute(
+        select(PuntosFidelidad).filter_by(id_reserva=reserva_id)
+    ).scalar_one_or_none()
     if existente:
         raise ValueError(
             f"Ya se acreditaron puntos para la reserva {reserva_id}."
@@ -58,7 +62,8 @@ def listar_historial(huesped_id):
     if not huesped:
         raise LookupError(f"Huésped con id {huesped_id} no encontrado.")
 
-    registros = PuntosFidelidad.query.filter_by(
-        id_huesped=huesped_id
-    ).order_by(PuntosFidelidad.fecha.desc()).all()
+    registros = db.session.execute(
+        select(PuntosFidelidad).filter_by(id_huesped=huesped_id)
+        .order_by(PuntosFidelidad.fecha.desc())
+    ).scalars().all()
     return [r.to_dict() for r in registros]

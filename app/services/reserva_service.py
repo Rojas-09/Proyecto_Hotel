@@ -7,6 +7,7 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import date, datetime
 from decimal import Decimal
+from sqlalchemy import select
 
 from flask import current_app
 
@@ -39,9 +40,9 @@ def crear(datos, current_user):
         )
 
     from app.models.habitacion import Habitacion
-    habitacion = Habitacion.query.filter_by(
-        id=id_habitacion, activo=True
-    ).first()
+    habitacion = db.session.execute(
+        select(Habitacion).filter_by(id=id_habitacion, activo=True)
+    ).scalar_one_or_none()
     if not habitacion:
         raise LookupError(f"Habitación con id {id_habitacion} no encontrada.")
 
@@ -127,9 +128,9 @@ def obtener_por_id(reserva_id, current_user):
     )
     if rol_value == "cliente":
         try:
-            huesped = Huesped.query.filter_by(
-                id_usuario=current_user.id
-            ).first()
+            huesped = db.session.execute(
+                select(Huesped).filter_by(id_usuario=current_user.id)
+            ).scalar_one_or_none()
             if not huesped or reserva.id_huesped != huesped.id:
                 raise PermissionError(
                     "No tienes permiso para ver esta reserva."
@@ -145,15 +146,16 @@ def obtener_por_id(reserva_id, current_user):
 def obtener_mis_reservas(current_user):
     """Obtiene las reservas del usuario actual (solo para clientes)."""
     try:
-        huesped = Huesped.query.filter_by(
-            id_usuario=current_user.id
-        ).first()
+        huesped = db.session.execute(
+            select(Huesped).filter_by(id_usuario=current_user.id)
+        ).scalar_one_or_none()
         if not huesped:
             return []
 
-        reservas = Reserva.query.filter_by(
-            id_huesped=huesped.id
-        ).order_by(Reserva.fecha_entrada.desc()).all()
+        reservas = db.session.execute(
+            select(Reserva).filter_by(id_huesped=huesped.id)
+            .order_by(Reserva.fecha_entrada.desc())
+        ).scalars().all()
         return [r.to_dict() for r in reservas]
     except Exception:
         return []
@@ -177,9 +179,11 @@ def confirmar(reserva_id):
 
     try:
         _enviar_email_confirmacion(reserva)
-        notificacion = Notificacion.query.filter_by(
-            id_reserva=reserva.id, tipo="confirmacion_reserva"
-        ).first()
+        notificacion = db.session.execute(
+            select(Notificacion).filter_by(
+                id_reserva=reserva.id, tipo="confirmacion_reserva"
+            )
+        ).scalar_one_or_none()
         if notificacion:
             notificacion.enviado = True
             notificacion.fecha_envio = ahora_colombia()
@@ -204,9 +208,9 @@ def cancelar(reserva_id, motivo=None, current_user=None):
         )
         if rol_value == "cliente":
             try:
-                huesped = Huesped.query.filter_by(
-                    id_usuario=current_user.id
-                ).first()
+                huesped = db.session.execute(
+                    select(Huesped).filter_by(id_usuario=current_user.id)
+                ).scalar_one_or_none()
                 if not huesped or reserva.id_huesped != huesped.id:
                     raise PermissionError(
                         "No tienes permiso para cancelar esta reserva."
@@ -235,11 +239,13 @@ def cancelar(reserva_id, motivo=None, current_user=None):
     if reserva.habitacion.estado == EstadoHabitacion.ocupada:
         reserva.habitacion.estado = EstadoHabitacion.disponible
 
-    garantia = Pago.query.filter_by(
-        id_reserva=reserva_id,
-        tipo=TipoPago.garantia,
-        estado=EstadoPago.aprobado,
-    ).first()
+    garantia = db.session.execute(
+        select(Pago).filter_by(
+            id_reserva=reserva_id,
+            tipo=TipoPago.garantia,
+            estado=EstadoPago.aprobado,
+        )
+    ).scalar_one_or_none()
     if garantia and not garantia.reembolso:
         reembolso = Reembolso(
             id_pago=garantia.id,
@@ -296,11 +302,13 @@ def hacer_checkout(reserva_id, realizado_por_id=None):
             f"Solo se puede hacer check-out en reservas ocupadas."
         )
 
-    liquidacion = Pago.query.filter_by(
-        id_reserva=reserva_id,
-        tipo=TipoPago.liquidacion,
-        estado=EstadoPago.aprobado,
-    ).first()
+    liquidacion = db.session.execute(
+        select(Pago).filter_by(
+            id_reserva=reserva_id,
+            tipo=TipoPago.liquidacion,
+            estado=EstadoPago.aprobado,
+        )
+    ).scalar_one_or_none()
     if not liquidacion:
         raise ValueError(
             "No se puede hacer check-out. Se requiere el pago de liquidación "
@@ -311,9 +319,9 @@ def hacer_checkout(reserva_id, realizado_por_id=None):
     reserva.habitacion.estado = EstadoHabitacion.disponible
     reserva.updated_at = ahora_colombia()
 
-    checkin_checkout = CheckInCheckOut.query.filter_by(
-        id_reserva=reserva.id
-    ).first()
+    checkin_checkout = db.session.execute(
+        select(CheckInCheckOut).filter_by(id_reserva=reserva.id)
+    ).scalar_one_or_none()
     if checkin_checkout:
         checkin_checkout.fecha_checkout = ahora_colombia()
 
@@ -364,9 +372,9 @@ def _obtener_id_huesped(current_user):
         else current_user.rol
     )
     if rol_value == "cliente":
-        huesped = Huesped.query.filter_by(
-            id_usuario=current_user.id
-        ).first()
+        huesped = db.session.execute(
+            select(Huesped).filter_by(id_usuario=current_user.id)
+        ).scalar_one_or_none()
         if not huesped:
             raise ValueError(
                 "El usuario no tiene un perfil de huésped. "
@@ -403,12 +411,14 @@ def _parse_fecha(fecha_str):
 
 def _validar_reserva_no_solapada(id_habitacion, fecha_entrada, fecha_salida):
     """Valida que no haya reservas solapadas."""
-    reservas_conflicto = Reserva.query.filter(
-        Reserva.id_habitacion == id_habitacion,
-        Reserva.estado != EstadoReserva.cancelada,
-        Reserva.fecha_entrada < fecha_salida,
-        Reserva.fecha_salida > fecha_entrada
-    ).count()
+    reservas_conflicto = db.session.execute(
+        select(db.func.count()).select_from(Reserva).filter(
+            Reserva.id_habitacion == id_habitacion,
+            Reserva.estado != EstadoReserva.cancelada,
+            Reserva.fecha_entrada < fecha_salida,
+            Reserva.fecha_salida > fecha_entrada,
+        )
+    ).scalar()
 
     if reservas_conflicto > 0:
         raise ValueError(

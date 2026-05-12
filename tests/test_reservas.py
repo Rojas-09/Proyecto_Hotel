@@ -423,8 +423,10 @@ class TestFlujoReserva:
 
         with app.app_context():
             from app.models.reserva import Reserva
-            reserva = Reserva.query.get(reserva_id)
-            monto_garantia = (Decimal(str(reserva.total)) * Decimal("0.50")).quantize(Decimal("0.01"))
+            reserva = db.session.get(Reserva, reserva_id)
+            monto_garantia = (
+                Decimal(str(reserva.total)) * Decimal("0.50")
+            ).quantize(Decimal("0.01"))
             pago_garantia = Pago(
                 id_reserva=reserva_id,
                 monto=monto_garantia,

@@ -2,6 +2,7 @@
 Pago Service - Lógica de negocio para pagos y reembolsos (RF-13)
 """
 from decimal import Decimal
+from sqlalchemy import select
 
 from flask import current_app
 
@@ -76,11 +77,13 @@ def procesar_liquidacion(reserva_id, metodo_str, payment_method_id=None):
 
     garantia = _obtener_garantia_aprobada(reserva_id)
 
-    liquidacion_existente = Pago.query.filter_by(
-        id_reserva=reserva_id,
-        tipo=TipoPago.liquidacion,
-        estado=EstadoPago.aprobado,
-    ).first()
+    liquidacion_existente = db.session.execute(
+        select(Pago).filter_by(
+            id_reserva=reserva_id,
+            tipo=TipoPago.liquidacion,
+            estado=EstadoPago.aprobado,
+        )
+    ).scalar_one_or_none()
     if liquidacion_existente:
         raise ValueError(
             "Esta reserva ya tiene un pago de liquidación aprobado."
@@ -115,7 +118,9 @@ def procesar_liquidacion(reserva_id, metodo_str, payment_method_id=None):
 def obtener_pagos_reserva(reserva_id):
     """Retorna todos los pagos de una reserva."""
     _obtener_reserva(reserva_id)   # lanza LookupError si no existe
-    pagos = Pago.query.filter_by(id_reserva=reserva_id).all()
+    pagos = db.session.execute(
+        select(Pago).filter_by(id_reserva=reserva_id)
+    ).scalars().all()
     return [p.to_dict() for p in pagos]
 
 
@@ -168,11 +173,13 @@ def _obtener_reserva(reserva_id):
 
 
 def _verificar_sin_garantia(reserva_id):
-    garantia = Pago.query.filter_by(
-        id_reserva=reserva_id,
-        tipo=TipoPago.garantia,
-        estado=EstadoPago.aprobado,
-    ).first()
+    garantia = db.session.execute(
+        select(Pago).filter_by(
+            id_reserva=reserva_id,
+            tipo=TipoPago.garantia,
+            estado=EstadoPago.aprobado,
+        )
+    ).scalar_one_or_none()
     if garantia:
         raise ValueError(
             "Esta reserva ya tiene un pago de garantía aprobado."
@@ -180,11 +187,13 @@ def _verificar_sin_garantia(reserva_id):
 
 
 def _obtener_garantia_aprobada(reserva_id):
-    garantia = Pago.query.filter_by(
-        id_reserva=reserva_id,
-        tipo=TipoPago.garantia,
-        estado=EstadoPago.aprobado,
-    ).first()
+    garantia = db.session.execute(
+        select(Pago).filter_by(
+            id_reserva=reserva_id,
+            tipo=TipoPago.garantia,
+            estado=EstadoPago.aprobado,
+        )
+    ).scalar_one_or_none()
     if not garantia:
         raise ValueError(
             "No existe pago de garantía aprobado para esta reserva. "

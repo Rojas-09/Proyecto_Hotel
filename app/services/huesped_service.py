@@ -2,7 +2,7 @@
 Huesped Service - Lógica de negocio para huéspedes
 """
 
-from sqlalchemy import or_
+from sqlalchemy import or_, select
 
 from app import db
 from app.models.huesped import Huesped
@@ -11,7 +11,9 @@ from app.models.usuario import Usuario
 
 def obtener_todos():
     """Obtiene todos los huéspedes."""
-    huespedes = Huesped.query.order_by(Huesped.created_at.desc()).all()
+    huespedes = db.session.execute(
+        select(Huesped).order_by(Huesped.created_at.desc())
+    ).scalars().all()
     return [h.to_dict() for h in huespedes]
 
 
@@ -27,7 +29,9 @@ def obtener_por_id(huesped_id):
 
 def obtener_por_usuario(usuario_id):
     """Obtiene un huésped por ID de usuario."""
-    huesped = Huesped.query.filter_by(id_usuario=usuario_id).first()
+    huesped = db.session.execute(
+        select(Huesped).filter_by(id_usuario=usuario_id)
+    ).scalar_one_or_none()
     if not huesped:
         raise LookupError(
             f"Huésped para usuario {usuario_id} no encontrado."
@@ -64,13 +68,15 @@ def buscar(query: str):
         raise ValueError("Debe proporcionar un término de búsqueda.")
 
     q = query.strip().lower()
-    resultados = Huesped.query.join(Usuario).filter(
-        or_(
-            db.func.lower(Usuario.nombre).like(f"%{q}%"),
-            db.func.lower(Usuario.apellido).like(f"%{q}%"),
-            db.func.lower(Usuario.email).like(f"%{q}%"),
-            db.func.lower(Huesped.documento_id).like(f"%{q}%"),
-        )
-    ).order_by(Huesped.created_at.desc()).all()
+    resultados = db.session.execute(
+        select(Huesped).join(Usuario).filter(
+            or_(
+                db.func.lower(Usuario.nombre).like(f"%{q}%"),
+                db.func.lower(Usuario.apellido).like(f"%{q}%"),
+                db.func.lower(Usuario.email).like(f"%{q}%"),
+                db.func.lower(Huesped.documento_id).like(f"%{q}%"),
+            )
+        ).order_by(Huesped.created_at.desc())
+    ).scalars().all()
 
     return [h.to_dict() for h in resultados]
