@@ -111,7 +111,7 @@ def obtener_por_id(current_user, reserva_id):
 
 @reserva_bp.route("/<int:reserva_id>/confirmar", methods=["PUT"])
 @token_required
-@rol_requerido("admin", "recepcionista")
+@rol_requerido("admin")
 def confirmar(current_user, reserva_id):
     try:
         reserva = reserva_service.confirmar(reserva_id)

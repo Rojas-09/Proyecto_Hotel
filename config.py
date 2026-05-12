@@ -60,6 +60,8 @@ class Config:
 class DevelopmentConfig(Config):
     """Entorno de desarrollo: PostgreSQL (si DB_* configurado) o SQLite."""
     DEBUG = True
+    STRIPE_MOCK = True
+    STRIPE_SECRET_KEY = os.environ.get("STRIPE_SECRET_KEY", "")
 
     # Si hay variables DB_* configuradas, usa PostgreSQL; si no, SQLite
     if os.environ.get("DB_HOST") or os.environ.get("DATABASE_URL"):
@@ -68,7 +70,7 @@ class DevelopmentConfig(Config):
         SQLALCHEMY_DATABASE_URI = f"sqlite:///{os.path.join(BASE_DIR, 'hotelbook_dev.db')}"
 
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-    SQLALCHEMY_ECHO = False  # Cambiar a True para ver queries SQL
+    SQLALCHEMY_ECHO = False
 
 
 class TestingConfig(Config):
@@ -77,13 +79,17 @@ class TestingConfig(Config):
     DEBUG = True
     SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-    BCRYPT_LOG_ROUNDS = 4       # Más rápido en tests
+    BCRYPT_LOG_ROUNDS = 4
     WTF_CSRF_ENABLED = False
+    STRIPE_MOCK = True
+    STRIPE_SECRET_KEY = None
 
 
 class ProductionConfig(Config):
     """Entorno de producción: PostgreSQL, debug desactivado."""
     DEBUG = False
+    STRIPE_MOCK = False
+    STRIPE_SECRET_KEY = os.environ.get("STRIPE_SECRET_KEY")
     SQLALCHEMY_DATABASE_URI = get_database_uri()
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 

@@ -17,6 +17,8 @@ from app.models.huesped import Huesped
 from app.models.notificacion import Notificacion
 from app.models.factura import Factura, EstadoFactura
 from app.models.checkin_checkout import CheckInCheckOut
+from app.models.pago import EstadoPago, Pago, TipoPago
+from app.models.reembolso import EstadoReembolso, Reembolso
 from app.utils.fecha_helper import ahora_colombia
 
 
@@ -189,7 +191,7 @@ def confirmar(reserva_id):
 
 
 def cancelar(reserva_id, motivo=None, current_user=None):
-    """Cancela una reserva."""
+    """Cancela una reserva y genera reembolso automático si hay garantía pagada."""
     reserva = Reserva.query.get(reserva_id)
     if not reserva:
         raise LookupError(f"Reserva con id {reserva_id} no encontrada.")
@@ -233,8 +235,22 @@ def cancelar(reserva_id, motivo=None, current_user=None):
     if reserva.habitacion.estado == EstadoHabitacion.ocupada:
         reserva.habitacion.estado = EstadoHabitacion.disponible
 
-    db.session.commit()
+    garantia = Pago.query.filter_by(
+        id_reserva=reserva_id,
+        tipo=TipoPago.garantia,
+        estado=EstadoPago.aprobado,
+    ).first()
+    if garantia and not garantia.reembolso:
+        reembolso = Reembolso(
+            id_pago=garantia.id,
+            monto=garantia.monto,
+            motivo=motivo or "Cancelación de reserva",
+            estado=EstadoReembolso.solicitado,
+        )
+        db.session.add(reembolso)
+        garantia.estado = EstadoPago.reembolsado
 
+    db.session.commit()
     return reserva.to_dict()
 
 
@@ -268,7 +284,7 @@ def hacer_checkin(reserva_id, realizado_por_id=None):
 
 
 def hacer_checkout(reserva_id, realizado_por_id=None):
-    """Realiza el check-out de una reserva."""
+    """Realiza el check-out. Requiere liquidación aprobada (SRS RF-13)."""
     reserva = Reserva.query.get(reserva_id)
     if not reserva:
         raise LookupError(f"Reserva con id {reserva_id} no encontrada.")
@@ -278,6 +294,17 @@ def hacer_checkout(reserva_id, realizado_por_id=None):
             f"No se puede hacer check-out. Estado actual: "
             f"{reserva.estado.value}. "
             f"Solo se puede hacer check-out en reservas ocupadas."
+        )
+
+    liquidacion = Pago.query.filter_by(
+        id_reserva=reserva_id,
+        tipo=TipoPago.liquidacion,
+        estado=EstadoPago.aprobado,
+    ).first()
+    if not liquidacion:
+        raise ValueError(
+            "No se puede hacer check-out. Se requiere el pago de liquidación "
+            "aprobado antes de emitir la factura. (RF-13)"
         )
 
     reserva.estado = EstadoReserva.completada
@@ -299,7 +326,7 @@ def hacer_checkout(reserva_id, realizado_por_id=None):
     servicios_adicionales_total = Decimal("0")
     if reserva.servicios_adicionales:
         servicios_adicionales_total = sum(
-            Decimal(str(s.precio)) for s in reserva.servicios_adicionales
+            Decimal(str(s.costo)) for s in reserva.servicios_adicionales
         )
 
     factura = Factura(

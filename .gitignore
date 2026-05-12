@@ -60,6 +60,7 @@ logs/
 # Archivos generados
 *.pdf
 instance/
+app/static/facturas/*.pdf
 
 #Datos de prueba
 tests/data/

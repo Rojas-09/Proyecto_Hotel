@@ -13,6 +13,7 @@ from app.models.habitacion import (
 )
 from app.models.usuario import Usuario, RolEnum
 from app.models.huesped import Huesped
+from app.models.pago import EstadoPago, MetodoPago, Pago, TipoPago
 from app import db
 
 
@@ -396,10 +397,13 @@ class TestFlujoReserva:
         admin_user,
         habitacion_disponible,
         cliente_user,
-        reserva_data
+        reserva_data,
+        app
     ):
         """Check-out de reserva ocupada."""
-        headers_cliente, _ = cliente_user
+        from decimal import Decimal
+
+        headers_cliente, huesped_id = cliente_user
         reserva_data["id_habitacion"] = habitacion_disponible["id"]
         resp_crear = client.post(
             "/api/v1/reservas/",
@@ -416,6 +420,28 @@ class TestFlujoReserva:
             f"/api/v1/reservas/{reserva_id}/checkin",
             headers=admin_user
         )
+
+        with app.app_context():
+            from app.models.reserva import Reserva
+            reserva = Reserva.query.get(reserva_id)
+            monto_garantia = (Decimal(str(reserva.total)) * Decimal("0.50")).quantize(Decimal("0.01"))
+            pago_garantia = Pago(
+                id_reserva=reserva_id,
+                monto=monto_garantia,
+                metodo=MetodoPago.efectivo,
+                tipo=TipoPago.garantia,
+                estado=EstadoPago.aprobado,
+            )
+            db.session.add(pago_garantia)
+            pago_liq = Pago(
+                id_reserva=reserva_id,
+                monto=Decimal(str(reserva.total)) * Decimal("0.50"),
+                metodo=MetodoPago.efectivo,
+                tipo=TipoPago.liquidacion,
+                estado=EstadoPago.aprobado,
+            )
+            db.session.add(pago_liq)
+            db.session.commit()
 
         resp = client.put(
             f"/api/v1/reservas/{reserva_id}/checkout",
