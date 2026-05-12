@@ -1,11 +1,13 @@
 # HotelBook Pro
+>
 > *Solución integral de gestión hotelera para establecimientos medianos con proyección de crecimiento*
 
-**Versión:** 1.0.0 | **Estado:** En Desarrollo 
+**Versión:** 1.0.0 | **Estado:** Implementado
 
 ---
 
 ## 📋 Tabla de Contenidos
+
 - Descripción
 - Características
 - Stack Tecnológico
@@ -32,6 +34,7 @@
 - ⚠️ **Tiempos de respuesta prolongados** en atención al huésped
 
 El propósito fundamental es consolidar una plataforma madura, robusta y escalable que integre:
+
 - Gestión centralizada de reservas
 - Servicios adicionales (Comedor, Spa)
 - Sistema de fidelización de clientes
@@ -42,23 +45,27 @@ El propósito fundamental es consolidar una plataforma madura, robusta y escalab
 ## ✨ Características
 
 ### Gestión Principal
+
 - ✅ **Gestión de Reservas**: Crear, modificar, cancelar y consultar reservas
 - ✅ **Control de Habitaciones**: Tipos, precios, disponibilidad en tiempo real
 - ✅ **Registro de Huéspedes**: Historial completo, preferencias, documentos
 - ✅ **Check-in/Check-out**: Proceso digital con comprobantes automáticos
 
 ### Operaciones Financieras
+
 - ✅ **Facturación Automatizada**: Generación de facturas en PDF con IVA (19%)
 - ✅ **Gestión de Pagos**: Registro de pagos, reembolsos y cargos
 - ✅ **Pasarela de Pagos**: Integración con proveedores externos
 - ✅ **Garantía de Reserva**: Pago inicial del 50% para confirmar reserva
 
 ### Servicios Ampliados
+
 - ✅ **Gestor de Comedor**: Registro de pedidos vinculados a reservas
 - ✅ **Gestor de Spa**: Agenda de citas con validación de traslapes horarios
 - ✅ **Sistema de Fidelización**: Acumulación automática de puntos (10/noche)
 
 ### Inteligencia de Negocio
+
 - ✅ **Reportes Estratégicos**: Ocupación, ingresos, estadísticas (Excel, PDF)
 - ✅ **Notificaciones**: Confirmaciones de reserva por correo automático
 - ✅ **Análisis de Desempeño**: Métricas institucionales en tiempo real
@@ -109,6 +116,7 @@ El propósito fundamental es consolidar una plataforma madura, robusta y escalab
 ```
 
 **Ventajas del enfoque modular:**
+
 - 💰 Costo operacional mínimo (USD 5-10/mes por servidor VPS)
 - 🚀 Despliegue simple con un único comando (`git push`)
 - 🔍 Depuración rápida (stack trace centralizado)
@@ -121,6 +129,7 @@ El propósito fundamental es consolidar una plataforma madura, robusta y escalab
 ## 📦 Instalación
 
 ### Requisitos Previos
+
 - Python 3.11+
 - PostgreSQL 12+ (o SQLite para desarrollo)
 - Git
@@ -129,29 +138,34 @@ El propósito fundamental es consolidar una plataforma madura, robusta y escalab
 ### Pasos de Instalación
 
 1. **Clonar el repositorio**
+
    ```bash
    git clone https://github.com/Rojas-09/Proyecto_Hotel.git
    cd Proyecto_Hotel
    ```
 
 2. **Crear entorno virtual**
+
    ```bash
    python -m venv venv
    source venv/bin/activate  # En Windows: venv\Scripts\activate
    ```
 
 3. **Instalar dependencias**
+
    ```bash
    pip install -r requirements.txt
    ```
 
 4. **Configurar variables de entorno**
+
    ```bash
    cp .env.example .env
    # Editar .env con tus configuraciones
    ```
 
 5. **Inicializar base de datos**
+
    ```bash
    flask db init
    flask db migrate
@@ -159,6 +173,7 @@ El propósito fundamental es consolidar una plataforma madura, robusta y escalab
    ```
 
 6. **Ejecutar la aplicación**
+
    ```bash
    flask run
    ```
@@ -170,6 +185,7 @@ El propósito fundamental es consolidar una plataforma madura, robusta y escalab
 ## 🚀 Uso
 
 ### Inicio de Sesión
+
 ```
 URL: http://localhost:5000/login
 - Administrador: admin@hotel.com
@@ -180,6 +196,7 @@ URL: http://localhost:5000/login
 ### Casos de Uso Principales
 
 #### 1. Realizar una Reserva (Cliente)
+
 ```
 1. Consultar disponibilidad (rango de fechas)
 2. Seleccionar habitación
@@ -189,6 +206,7 @@ URL: http://localhost:5000/login
 ```
 
 #### 2. Check-in/Check-out (Recepcionista)
+
 ```
 Check-in:
 - Verificar reserva
@@ -202,6 +220,7 @@ Check-out:
 ```
 
 #### 3. Ver Reportes (Gerente)
+
 ```
 1. Acceder a Reportes
 2. Seleccionar período
@@ -265,7 +284,9 @@ Proyecto_Hotel/
 ## 🔌 API REST
 
 ### Autenticación
+
 Todos los endpoints requieren **JWT (JSON Web Tokens)** en el header:
+
 ```
 Authorization: Bearer <token>
 ```
@@ -273,6 +294,7 @@ Authorization: Bearer <token>
 ### Endpoints Principales
 
 #### Reservas
+
 | Método | Endpoint | Descripción |
 |--------|----------|-------------|
 | GET | `/api/reservas/disponibilidad` | Consultar disponibilidad |
@@ -282,24 +304,28 @@ Authorization: Bearer <token>
 | GET | `/api/reservas` | Listar reservas |
 
 #### Check-in/Check-out
+
 | Método | Endpoint | Descripción |
 |--------|----------|-------------|
 | POST | `/api/checkin` | Registrar check-in |
 | POST | `/api/checkout` | Registrar check-out |
 
 #### Facturación
+
 | Método | Endpoint | Descripción |
 |--------|----------|-------------|
 | POST | `/api/facturas` | Generar factura |
 | GET | `/api/facturas/{id}` | Obtener factura (PDF) |
 
 #### Reportes
+
 | Método | Endpoint | Descripción |
 |--------|----------|-------------|
 | GET | `/api/reportes/ocupacion` | Reporte de ocupación |
 | GET | `/api/reportes/ingresos` | Reporte de ingresos |
 
 ### Documentación Completa de API
+
 ```
 Swagger UI: http://localhost:5000/api/docs
 ```
@@ -309,6 +335,7 @@ Swagger UI: http://localhost:5000/api/docs
 ## 📊 Requerimientos de Calidad
 
 ### Requerimientos Funcionales (RF)
+
 - RF-01: Consulta disponibilidad < 500ms
 - RF-02: Gestión completa de reservas
 - RF-03: Notificaciones automáticas por email
@@ -324,6 +351,7 @@ Swagger UI: http://localhost:5000/api/docs
 - RF-13: Pasarela de pagos
 
 ### Requerimientos No Funcionales (RNF)
+
 - ⚡ **Rendimiento**: 50 solicitudes concurrentes, latencia < 2s
 - 🔒 **Seguridad**: bcrypt con factor 12 mínimo
 - 📈 **Disponibilidad**: 99.5% uptime en producción
@@ -335,6 +363,7 @@ Swagger UI: http://localhost:5000/api/docs
 ## 🔄 Flujo de Trabajo (Git)
 
 ### Ramas Principales
+
 ```
 main          → Código productivo (tagged releases)
 develop       → Integración de features
@@ -343,6 +372,7 @@ hotfix/*      → Correcciones urgentes
 ```
 
 ### Convención de Commits
+
 ```
 feat:     Nueva funcionalidad
 fix:      Corrección de errores
@@ -353,6 +383,7 @@ chore:    Tareas de mantenimiento
 ```
 
 ### Ejemplo
+
 ```bash
 git commit -m "feat: integrar pasarela de pagos Stripe"
 git commit -m "fix: validar fechas de salida en reserva"
@@ -363,6 +394,7 @@ git commit -m "fix: validar fechas de salida en reserva"
 ## ✅ Testing y CI/CD
 
 ### Ejecutar Pruebas Locales
+
 ```bash
 # Instalar dependencias de test
 pip install pytest pytest-cov
@@ -375,6 +407,7 @@ pytest --cov=app tests/
 ```
 
 ### Pipeline de CI (GitHub Actions)
+
 Cada Pull Request activa automáticamente:
 
 1. **Linting** (flake8): Validación PEP8
@@ -404,16 +437,17 @@ Cada Pull Request activa automáticamente:
 ---
 
 ## 📝 Licencia
+
 MIT License - Ver `LICENSE` para más detalles
 
 ---
 
 ## 📞 Contacto
 
-- **Repositorio**: GitHub - Proyecto_Hotel (https://github.com/Rojas-09/Proyecto_Hotel)
+- **Repositorio**: GitHub - Proyecto_Hotel (<https://github.com/Rojas-09/Proyecto_Hotel>)
 - **Rama Actual**: Development
 - **Equipo**: Desarrolladores UTP
-- **Email**: contacto@hotelbook.dev
+- **Email**: <sistemahotelbook@gmail.com>
 
 ---
 
