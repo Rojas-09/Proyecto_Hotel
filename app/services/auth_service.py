@@ -13,6 +13,35 @@ from app.utils.jwt_helper import generar_token
 class AuthService:
 
     @staticmethod
+    def _rol_normalizado(usuario) -> str:
+        return (
+            usuario.rol.value
+            if hasattr(usuario.rol, 'value')
+            else usuario.rol
+        )
+
+    @staticmethod
+    def _nivel_rol(rol: str) -> int:
+        niveles = {
+            "cliente": 0,
+            "recepcionista": 1,
+            "gerente": 2,
+            "admin": 3,
+        }
+        return niveles.get(rol, -1)
+
+    @staticmethod
+    def _puede_gestionar_usuario(current_user, usuario) -> bool:
+        rol_actual = AuthService._rol_normalizado(current_user)
+        if rol_actual == "admin":
+            return True
+        if current_user.id == usuario.id:
+            return True
+        return AuthService._nivel_rol(rol_actual) > AuthService._nivel_rol(
+            AuthService._rol_normalizado(usuario)
+        )
+
+    @staticmethod
     def registrar(data: dict) -> dict:
         campos = ["nombre", "apellido", "email", "password"]
         for campo in campos:
@@ -312,14 +341,20 @@ class AuthService:
                 }
             }, 404
 
-        # Admin puede cambiar email de cualquiera
+        rol_actual = AuthService._rol_normalizado(current_user)
+
+        if not AuthService._puede_gestionar_usuario(current_user, usuario):
+            return {
+                "success": False,
+                "error": {
+                    "code": "FORBIDDEN",
+                    "message": "No tienes permiso para editar este usuario.",
+                }
+            }, 403
+
+        # El email solo puede cambiarlo el admin
         if "email" in data:
-            rol_value = (
-                current_user.rol.value
-                if hasattr(current_user.rol, 'value')
-                else current_user.rol
-            )
-            if rol_value != "admin":
+            if rol_actual != "admin":
                 return {
                     "success": False,
                     "error": {
@@ -343,76 +378,20 @@ class AuthService:
                 }, 409
             usuario.email = nuevo_email
 
-        # Verificar permisos según jerarquía
-        rol_value = (
-            current_user.rol.value
-            if hasattr(current_user.rol, 'value')
-            else current_user.rol
-        )
-        if rol_value == "cliente":
-            return {
-                "success": False,
-                "error": {
-                    "code": "FORBIDDEN",
-                    "message": "No tienes permiso para editar usuarios.",
-                }
-            }, 403
-
-        # Gerente solo puede editar recepcionista y gerente
-        rol_value = (
-            current_user.rol.value
-            if hasattr(current_user.rol, 'value')
-            else current_user.rol
-        )
-        if rol_value == "gerente":
-            if usuario.rol not in ("recepcionista", "gerente"):
-                return {
-                    "success": False,
-                    "error": {
-                        "code": "FORBIDDEN",
-                        "message": "Solo puedes editar recepcionistas y gerentes.",
-                    }
-                }, 403
-
-        # No puede editarse a sí mismo en campo activo
-        if usuario.id == current_user.id and "activo" in data and not data["activo"]:
-            return {
-                "success": False,
-                "error": {
-                    "code": "FORBIDDEN",
-                    "message": "No puedes desactivarte a ti mismo.",
-                }
-            }, 403
-
-        # No puede cambiar su propio rol
-        if usuario.id == current_user.id and "rol" in data:
-            return {
-                "success": False,
-                "error": {
-                    "code": "FORBIDDEN",
-                    "message": "No puedes cambiar tu propio rol.",
-                }
-            }, 403
-
         if "nombre" in data:
             usuario.nombre = data["nombre"].strip()
         if "apellido" in data:
             usuario.apellido = data["apellido"].strip()
         if "telefono" in data:
             usuario.telefono = data["telefono"].strip() or None
+
         if "activo" in data:
-            # Solo admin puede desactivar usuarios
-            rol_value = (
-                current_user.rol.value
-                if hasattr(current_user.rol, 'value')
-                else current_user.rol
-            )
-            if rol_value != "admin":
+            if rol_actual != "admin":
                 return {
                     "success": False,
                     "error": {
                         "code": "FORBIDDEN",
-                        "message": "Solo el admin puede activar/desactivar usuarios.",
+                        "message": "Solo el admin puede activar o desactivar usuarios.",
                     }
                 }, 403
             usuario.activo = data["activo"]
@@ -427,24 +406,28 @@ class AuthService:
                         "message": f"Rol inválido. Opciones: {', '.join(roles_validos)}",
                     }
                 }, 400
-            # Admin puede poner cualquier rol, gerente solo recepcionista/gerente
-            if (
-                (
-                    current_user.rol.value
-                    if hasattr(current_user.rol, 'value')
-                    else current_user.rol
-                )
-                == "gerente"
-                and data["rol"] not in ("recepcionista", "gerente")
-            ):
+            if usuario.id == current_user.id:
                 return {
                     "success": False,
                     "error": {
                         "code": "FORBIDDEN",
-                        "message": (
-                            "Como gerente solo puedes asignar "
-                            "rol recepcionista o gerente."
-                        ),
+                        "message": "No puedes cambiar tu propio rol.",
+                    }
+                }, 403
+            if rol_actual == "gerente" and data["rol"] == "admin":
+                return {
+                    "success": False,
+                    "error": {
+                        "code": "FORBIDDEN",
+                        "message": "Como gerente no puedes asignar rol admin.",
+                    }
+                }, 403
+            if rol_actual == "recepcionista" and data["rol"] in ("admin", "gerente"):
+                return {
+                    "success": False,
+                    "error": {
+                        "code": "FORBIDDEN",
+                        "message": "Como recepcionista no puedes asignar roles superiores.",
                     }
                 }, 403
             usuario.rol = data["rol"]

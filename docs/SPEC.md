@@ -96,6 +96,7 @@ Payload: { "user_id": int, "email": str, "role": str }
 | GET | `/api/v1/habitaciones/disponibilidad` | Consultar disponibilidad | Todos |
 
 **Parámetros disponibilidad:**
+
 ```
 ?fecha_entrada=2026-05-15&fecha_salida=2026-05-18
 ```
@@ -114,6 +115,7 @@ Payload: { "user_id": int, "email": str, "role": str }
 | POST | `/api/v1/reservas/{id}/checkout` | Registrar check-out | Recepcionista |
 
 **Validaciones:**
+
 - fecha_salida > fecha_entrada
 - Mínimo 24h de anticipación
 - No overlaping con otra reserva
@@ -130,6 +132,7 @@ Payload: { "user_id": int, "email": str, "role": str }
 | POST | `/api/v1/pagos/{id}/reembolso` | Solicitar reembolso | Admin |
 
 **Factura:**
+
 - IVA: 19% fijo
 - Incluye: noches, servicios adicionales, garantía
 
@@ -174,6 +177,7 @@ Payload: { "user_id": int, "email": str, "role": str }
 | GET | `/api/v1/reportes/ocupacion/pdf` | Exportar PDF | Gerente/Admin |
 
 **Parámetros:**
+
 ```
 ?fecha_inicio=2026-01-01&fecha_fin=2026-12-31
 ```
@@ -228,6 +232,7 @@ Payload: { "user_id": int, "email": str, "role": str }
 ## 5. Esquemas de Datos (Básico)
 
 ### Usuario
+
 ```python
 {
   "id": int,
@@ -242,6 +247,7 @@ Payload: { "user_id": int, "email": str, "role": str }
 ```
 
 ### Habitación
+
 ```python
 {
   "id": int,
@@ -257,6 +263,7 @@ Payload: { "user_id": int, "email": str, "role": str }
 ```
 
 ### Reserva
+
 ```python
 {
   "id": int,
@@ -272,6 +279,7 @@ Payload: { "user_id": int, "email": str, "role": str }
 ```
 
 ### Factura
+
 ```python
 {
   "id": int,
