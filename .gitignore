@@ -59,6 +59,7 @@ logs/
 
 # Archivos generados
 *.pdf
+*.xlsx
 instance/
 app/static/facturas/*.pdf
 app/static/reportes/*.xlsx

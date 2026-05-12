@@ -51,7 +51,7 @@ gunicorn==23.0.0
 whitenoise==6.8.2
 
 # PDF Generation
-reportlab==4.0.0
+reportlab==4.5.0
 
 # Excel Generation
 openpyxl==3.1.2
