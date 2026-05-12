@@ -61,6 +61,8 @@ logs/
 *.pdf
 instance/
 app/static/facturas/*.pdf
+app/static/reportes/*.xlsx
+app/static/reportes/*.pdf
 
 #Datos de prueba
 tests/data/
