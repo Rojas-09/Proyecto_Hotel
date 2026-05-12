@@ -50,4 +50,8 @@ black==25.1.0
 gunicorn==23.0.0
 whitenoise==6.8.2
 
-# OpenAPI Documentation (incluido en flask-restx)
+# PDF Generation
+reportlab==4.0.0
+
+# Excel Generation
+openpyxl==3.1.2

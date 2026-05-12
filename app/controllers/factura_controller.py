@@ -3,8 +3,10 @@ Factura Controller - Endpoints REST para facturación (RF-06)
 Gestión de facturas: consulta, emisión, descarga y anulación.
 """
 
-import os  # noqa: F401
-from flask import Blueprint, jsonify, send_file
+import io
+import os
+
+from flask import Blueprint, jsonify, request, send_file
 
 from app.services import factura_service
 from app.utils.jwt_helper import rol_requerido, token_required
@@ -84,11 +86,16 @@ def descargar_factura(current_user, reserva_id):
                 ), 403
 
         pdf_path = factura_service.descargar(reserva_id)
+        with open(pdf_path, "rb") as f:
+            pdf_bytes = io.BytesIO(f.read())
+
+        os.remove(pdf_path)
+
         return send_file(
-            pdf_path,
+            pdf_bytes,
             mimetype="application/pdf",
             as_attachment=True,
-            download_name=f"factura_reserva_{reserva_id}.pdf",
+            download_name="factura.pdf",
         )
     except LookupError as e:
         return jsonify({"success": False, "data": None, "mensaje": str(e)}), 404
@@ -108,7 +115,6 @@ def anular_factura(current_user, factura_id):
     Anula una factura emitida (no pagada).
     Roles permitidos: admin.
     """
-    from flask import request
     datos = request.get_json() or {}
     motivo = datos.get("motivo", "Sin motivo especificado")
 

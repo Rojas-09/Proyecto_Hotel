@@ -366,8 +366,6 @@ class TestDescargarFactura:
         assert resp.status_code == 200
         assert resp.content_type == "application/pdf"
 
-        os.unlink(temp_path)
-
     def test_descargar_factura_sin_pdf(self, client, app):
         """404 — factura emitida sin archivo PDF."""
         with app.app_context():
@@ -408,8 +406,6 @@ class TestDescargarFactura:
         resp = client.get(f"/api/v1/facturas/reserva/{rid}/descargar", headers=_auth(token))
         assert resp.status_code == 200
         assert resp.content_type == "application/pdf"
-
-        os.unlink(temp_path)
 
     def test_descargar_cliente_otra_reserva(self, client, app):
         """403 — cliente no puede descargar factura de otro huésped."""
