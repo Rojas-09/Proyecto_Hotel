@@ -15,7 +15,7 @@ def acreditar(reserva_id):
     Regla: 10 puntos por noche (noches = fecha_salida - fecha_entrada).
     Solo se acredita una vez por reserva (unique constraint).
     """
-    reserva = Reserva.query.get(reserva_id)
+    reserva = db.session.get(Reserva, reserva_id)
     if not reserva:
         raise LookupError(f"Reserva con id {reserva_id} no encontrada.")
 
@@ -42,7 +42,7 @@ def acreditar(reserva_id):
 
 def obtener_total(huesped_id):
     """Retorna la suma de todos los puntos de un huésped."""
-    huesped = Huesped.query.get(huesped_id)
+    huesped = db.session.get(Huesped, huesped_id)
     if not huesped:
         raise LookupError(f"Huésped con id {huesped_id} no encontrado.")
 
@@ -54,7 +54,7 @@ def obtener_total(huesped_id):
 
 def listar_historial(huesped_id):
     """Retorna el historial de puntos de un huésped, ordenados por fecha desc."""
-    huesped = Huesped.query.get(huesped_id)
+    huesped = db.session.get(Huesped, huesped_id)
     if not huesped:
         raise LookupError(f"Huésped con id {huesped_id} no encontrado.")
 

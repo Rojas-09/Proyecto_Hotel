@@ -461,7 +461,7 @@ def generar_estadisticas(fecha_inicio: str, fecha_fin: str, formato: str = "xlsx
     datos_xlsx.append(["TOP 5 HUÉSPEDES CON MÁS RESERVAS", "", "", ""])
     datos_xlsx.append(["Documento", "Tipo", "Nombre", "Reservas"])
     for h in top_huespedes:
-        huesped_obj = Huesped.query.get(h.huesped_id)
+        huesped_obj = db.session.get(Huesped, h.huesped_id)
         nombre = (
             f"{huesped_obj.usuario.nombre} {huesped_obj.usuario.apellido}"
             if huesped_obj and huesped_obj.usuario else "N/A"
@@ -483,7 +483,7 @@ def generar_estadisticas(fecha_inicio: str, fecha_fin: str, formato: str = "xlsx
         datos_pdf.append(["", "", "", ""])
         datos_pdf.append(["DOCUMENTO", "NOMBRE", "RESERVAS", ""])
         for h in top_huespedes:
-            huesped_obj = Huesped.query.get(h.huesped_id)
+            huesped_obj = db.session.get(Huesped, h.huesped_id)
             nombre = (
                 f"{huesped_obj.usuario.nombre} {huesped_obj.usuario.apellido}"
                 if huesped_obj and huesped_obj.usuario else "N/A"

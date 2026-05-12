@@ -116,7 +116,7 @@ def obtener_todas(filtros=None):
 
 def obtener_por_id(reserva_id, current_user):
     """Obtiene una reserva por ID."""
-    reserva = Reserva.query.get(reserva_id)
+    reserva = db.session.get(Reserva, reserva_id)
     if not reserva:
         raise LookupError(f"Reserva con id {reserva_id} no encontrada.")
 
@@ -161,7 +161,7 @@ def obtener_mis_reservas(current_user):
 
 def confirmar(reserva_id):
     """Confirma una reserva y envía email de confirmación."""
-    reserva = Reserva.query.get(reserva_id)
+    reserva = db.session.get(Reserva, reserva_id)
     if not reserva:
         raise LookupError(f"Reserva con id {reserva_id} no encontrada.")
 
@@ -192,7 +192,7 @@ def confirmar(reserva_id):
 
 def cancelar(reserva_id, motivo=None, current_user=None):
     """Cancela una reserva y genera reembolso automático si hay garantía pagada."""
-    reserva = Reserva.query.get(reserva_id)
+    reserva = db.session.get(Reserva, reserva_id)
     if not reserva:
         raise LookupError(f"Reserva con id {reserva_id} no encontrada.")
 
@@ -256,7 +256,7 @@ def cancelar(reserva_id, motivo=None, current_user=None):
 
 def hacer_checkin(reserva_id, realizado_por_id=None):
     """Realiza el check-in de una reserva."""
-    reserva = Reserva.query.get(reserva_id)
+    reserva = db.session.get(Reserva, reserva_id)
     if not reserva:
         raise LookupError(f"Reserva con id {reserva_id} no encontrada.")
 
@@ -285,7 +285,7 @@ def hacer_checkin(reserva_id, realizado_por_id=None):
 
 def hacer_checkout(reserva_id, realizado_por_id=None):
     """Realiza el check-out. Requiere liquidación aprobada (SRS RF-13)."""
-    reserva = Reserva.query.get(reserva_id)
+    reserva = db.session.get(Reserva, reserva_id)
     if not reserva:
         raise LookupError(f"Reserva con id {reserva_id} no encontrada.")
 
@@ -318,7 +318,7 @@ def hacer_checkout(reserva_id, realizado_por_id=None):
         checkin_checkout.fecha_checkout = ahora_colombia()
 
     puntos = reserva.noches * 10
-    huesped = Huesped.query.get(reserva.id_huesped)
+    huesped = db.session.get(Huesped, reserva.id_huesped)
     if huesped:
         usuario = huesped.usuario
         usuario.puntos_fidelizacion += puntos
@@ -375,7 +375,7 @@ def _obtener_id_huesped(current_user):
         return huesped.id
 
     id_huesped = int(current_user.id)
-    huesped = Huesped.query.get(id_huesped)
+    huesped = db.session.get(Huesped, id_huesped)
     if not huesped:
         raise ValueError("Debes proporcionar el id_huesped en los datos.")
 
@@ -428,7 +428,7 @@ def _enviar_email_confirmacion(reserva):
         if not all([smtp_host, smtp_user, smtp_password]):
             return
 
-        huesped = Huesped.query.get(reserva.id_huesped)
+        huesped = db.session.get(Huesped, reserva.id_huesped)
         if not huesped or not huesped.usuario:
             return
 

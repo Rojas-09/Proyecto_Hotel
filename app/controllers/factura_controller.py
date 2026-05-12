@@ -8,6 +8,7 @@ import os
 
 from flask import Blueprint, jsonify, request, send_file
 
+from app import db
 from app.services import factura_service
 from app.utils.jwt_helper import rol_requerido, token_required
 
@@ -75,7 +76,7 @@ def descargar_factura(current_user, reserva_id):
         )
         if rol_value == "cliente":
             huesped = Huesped.query.filter_by(id_usuario=current_user.id).first()
-            reserva = Reserva.query.get(reserva_id)
+            reserva = db.session.get(Reserva, reserva_id)
             if not huesped or not reserva or reserva.id_huesped != huesped.id:
                 return jsonify(
                     {

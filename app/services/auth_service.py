@@ -294,7 +294,7 @@ class AuthService:
     @staticmethod
     def editar_usuario(usuario_id, current_user, data: dict) -> dict:
         """Editar usuario según permisos jerárquicos."""
-        usuario = Usuario.query.get(usuario_id)
+        usuario = db.session.get(Usuario, usuario_id)
         if not usuario:
             return {
                 "success": False,

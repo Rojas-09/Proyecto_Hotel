@@ -124,7 +124,7 @@ def solicitar_reembolso(pago_id, motivo):
     Registra un reembolso para un pago aprobado y, si el método fue tarjeta,
     procesa el reverso en Stripe.
     """
-    pago = Pago.query.get(pago_id)
+    pago = db.session.get(Pago, pago_id)
     if not pago:
         raise LookupError(f"Pago con id {pago_id} no encontrado.")
 
@@ -161,7 +161,7 @@ def solicitar_reembolso(pago_id, motivo):
 # ---------------------------------------------------------------------------
 
 def _obtener_reserva(reserva_id):
-    reserva = Reserva.query.get(reserva_id)
+    reserva = db.session.get(Reserva, reserva_id)
     if not reserva:
         raise LookupError(f"Reserva con id {reserva_id} no encontrada.")
     return reserva

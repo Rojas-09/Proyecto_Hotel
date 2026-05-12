@@ -135,7 +135,7 @@ def eliminar_usuario(current_user, usuario_id):
             "error": {"code": "FORBIDDEN", "message": "No puedes eliminarte a ti mismo."}
         }), 403
 
-    usuario = Usuario.query.get(usuario_id)
+    usuario = db.session.get(Usuario, usuario_id)
     if not usuario:
         return jsonify({
             "success": False,

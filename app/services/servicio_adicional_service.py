@@ -12,7 +12,7 @@ from app.utils.fecha_helper import ahora_colombia
 
 
 def _get_reserva(reserva_id: int) -> Reserva:
-    reserva = Reserva.query.get(reserva_id)
+    reserva = db.session.get(Reserva, reserva_id)
     if not reserva:
         raise LookupError(f"Reserva {reserva_id} no encontrada.")
     return reserva
@@ -105,7 +105,7 @@ def listar(reserva_id: int) -> dict:
 
 def obtener(servicio_id: int) -> dict:
     """Obtiene un servicio por su id."""
-    servicio = ServicioAdicional.query.get(servicio_id)
+    servicio = db.session.get(ServicioAdicional, servicio_id)
     if not servicio:
         raise LookupError(f"Servicio {servicio_id} no encontrado.")
     return servicio.to_dict()
@@ -115,7 +115,7 @@ def eliminar(servicio_id: int) -> dict:
     """
     Elimina un servicio adicional.
     """
-    servicio = ServicioAdicional.query.get(servicio_id)
+    servicio = db.session.get(ServicioAdicional, servicio_id)
     if not servicio:
         raise LookupError(f"Servicio {servicio_id} no encontrado.")
 
@@ -141,7 +141,7 @@ def actualizar(servicio_id: int, descripcion: str = None, costo_raw=None) -> dic
     """
     Actualiza descripción o costo de un servicio existente.
     """
-    servicio = ServicioAdicional.query.get(servicio_id)
+    servicio = db.session.get(ServicioAdicional, servicio_id)
     if not servicio:
         raise LookupError(f"Servicio {servicio_id} no encontrado.")
 

@@ -62,8 +62,9 @@ def token_required(f):
                 }
             }), 401
 
+        from app import db
         from app.models.usuario import Usuario
-        current_user = Usuario.query.get(payload["user_id"])
+        current_user = db.session.get(Usuario, payload["user_id"])
 
         if not current_user or not current_user.activo:
             return jsonify({

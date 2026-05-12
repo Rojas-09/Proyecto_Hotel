@@ -17,7 +17,7 @@ def obtener_todos():
 
 def obtener_por_id(huesped_id):
     """Obtiene un huésped por ID."""
-    huesped = Huesped.query.get(huesped_id)
+    huesped = db.session.get(Huesped, huesped_id)
     if not huesped:
         raise LookupError(
             f"Huésped con id {huesped_id} no encontrado."
@@ -37,7 +37,7 @@ def obtener_por_usuario(usuario_id):
 
 def actualizar(huesped_id, datos: dict):
     """Actualiza un huésped."""
-    huesped = Huesped.query.get(huesped_id)
+    huesped = db.session.get(Huesped, huesped_id)
     if not huesped:
         raise LookupError(
             f"Huésped con id {huesped_id} no encontrado."

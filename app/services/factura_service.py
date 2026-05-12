@@ -34,7 +34,7 @@ def obtener_por_reserva(reserva_id: int) -> dict:
 
 def obtener_por_id(factura_id: int) -> dict:
     """Obtiene una factura por su ID."""
-    factura = Factura.query.get(factura_id)
+    factura = db.session.get(Factura, factura_id)
     if not factura:
         raise LookupError(f"Factura con ID {factura_id} no encontrada.")
     return factura.to_dict()
@@ -243,7 +243,7 @@ def emitir(reserva_id: int) -> dict:
     for s in servicios:
         servicios_total += Decimal(str(s.costo))
 
-    reserva = Reserva.query.get(reserva_id)
+    reserva = db.session.get(Reserva, reserva_id)
     subtotal_base = Decimal(str(reserva.subtotal))
     impuestos = subtotal_base * Decimal("0.19")
     total = subtotal_base + impuestos + servicios_total
@@ -288,7 +288,7 @@ def anular(factura_id: int, motivo: str) -> dict:
     Anula una factura emitida (no pagada).
     No permite anular facturas ya pagadas.
     """
-    factura = Factura.query.get(factura_id)
+    factura = db.session.get(Factura, factura_id)
     if not factura:
         raise LookupError(f"Factura con ID {factura_id} no encontrada.")
 
