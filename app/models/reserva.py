@@ -71,6 +71,11 @@ class Reserva(db.Model):
         "ServicioAdicional",
         back_populates="reserva"
     )
+    puntos_fidelidad = db.relationship(
+        "PuntosFidelidad",
+        back_populates="reserva",
+        uselist=False
+    )
 
     def to_dict(self) -> dict:
         return {

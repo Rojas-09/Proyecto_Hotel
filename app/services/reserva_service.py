@@ -345,6 +345,12 @@ def hacer_checkout(reserva_id, realizado_por_id=None):
     db.session.add(factura)
     db.session.commit()
 
+    from app.services import puntos_fidelidad_service
+    try:
+        puntos_fidelidad_service.acreditar(reserva_id)
+    except Exception:
+        pass
+
     resultado = reserva.to_dict()
     resultado["puntos_ganados"] = puntos
     return resultado

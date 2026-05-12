@@ -30,6 +30,11 @@ class Huesped(db.Model):
     # Relationships
     usuario = db.relationship("Usuario", back_populates="huesped")
     reservas = db.relationship("Reserva", back_populates="huesped")
+    puntos_fidelidad = db.relationship(
+        "PuntosFidelidad",
+        back_populates="huesped",
+        cascade="all, delete-orphan"
+    )
 
     def to_dict(self) -> dict:
         usuario_data = self.usuario.to_dict() if self.usuario else {}
