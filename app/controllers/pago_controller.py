@@ -20,7 +20,7 @@ def procesar_garantia(current_user, reserva_id):
 
     Body JSON:
         metodo          (str)  — "Tarjeta" | "Efectivo" | "Transferencia"
-        payment_method_id (str, opcional) — requerido solo si metodo=Tarjeta
+        payment_method_id (str, opcional) — requerido si metodo=Tarjeta
     """
     datos = request.get_json() or {}
     metodo = datos.get("metodo")
