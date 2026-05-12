@@ -98,9 +98,8 @@ def editar_mi_perfil(current_user):
 
 @auth_bp.route("/usuarios/<int:usuario_id>", methods=["PUT"])
 @token_required
-@rol_requerido("admin", "gerente")
 def editar_usuario(current_user, usuario_id):
-    """Admin edita cualquier usuario."""
+    """Editar un usuario según jerarquía de roles."""
     data = request.get_json(silent=True)
     if not data:
         return jsonify({
@@ -129,21 +128,22 @@ def listar_usuarios(current_user):
 
 @auth_bp.route("/usuarios/<int:usuario_id>", methods=["DELETE"])
 @token_required
-@rol_requerido("admin")
 def eliminar_usuario(current_user, usuario_id):
-    """Soft delete de usuario (solo admin, no puede eliminarse a sí mismo)."""
-    if usuario_id == current_user.id:
-        return jsonify({
-            "success": False,
-            "error": {"code": "FORBIDDEN", "message": "No puedes eliminarte a ti mismo."}
-        }), 403
-
     usuario = db.session.get(Usuario, usuario_id)
     if not usuario:
         return jsonify({
             "success": False,
             "error": {"code": "NOT_FOUND", "message": f"Usuario con id {usuario_id} no encontrado."}
         }), 404
+
+    if not AuthService._puede_gestionar_usuario(current_user, usuario):
+        return jsonify({
+            "success": False,
+            "error": {
+                "code": "FORBIDDEN",
+                "message": "No tienes permiso para eliminar este usuario."
+            }
+        }), 403
 
     usuario.activo = False
     db.session.commit()
@@ -152,4 +152,47 @@ def eliminar_usuario(current_user, usuario_id):
         "success": True,
         "data": None,
         "mensaje": f"Usuario {usuario.email} eliminado correctamente."
+    }), 200
+
+
+@auth_bp.route("/usuarios/<int:usuario_id>", methods=["GET"])
+@token_required
+def obtener_usuario(current_user, usuario_id):
+    usuario = db.session.get(Usuario, usuario_id)
+    if not usuario:
+        return jsonify({
+            "success": False,
+            "error": {"code": "NOT_FOUND", "message": f"Usuario con id {usuario_id} no encontrado."}
+        }), 404
+
+    if not AuthService._puede_gestionar_usuario(current_user, usuario):
+        return jsonify({
+            "success": False,
+            "error": {"code": "FORBIDDEN", "message": "No autorizado para ver este usuario."}
+        }), 403
+
+    return jsonify({
+        "success": True,
+        "data": {"usuario": usuario.to_dict()}
+    }), 200
+
+
+@auth_bp.route("/me", methods=["DELETE"])
+@token_required
+def eliminar_mi_cuenta(current_user):
+    """Eliminar (soft-delete) la propia cuenta del usuario."""
+    usuario = db.session.get(Usuario, current_user.id)
+    if not usuario:
+        return jsonify({
+            "success": False,
+            "error": {"code": "NOT_FOUND", "message": "Usuario no encontrado."}
+        }), 404
+
+    usuario.activo = False
+    db.session.commit()
+
+    return jsonify({
+        "success": True,
+        "data": None,
+        "mensaje": "Cuenta desactivada correctamente."
     }), 200
