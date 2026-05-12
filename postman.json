@@ -1,0 +1,758 @@
+{
+  "info": {
+    "name": "HotelBook Pro — Flujo E2E",
+    "description": "Flujo completo: registro → garantía → checkin → servicios → liquidación → checkout → verificar puntos y factura",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:5000/api/v1", "type": "string" },
+    { "key": "token_admin", "value": "", "type": "string" },
+    { "key": "token_recep", "value": "", "type": "string" },
+    { "key": "token_cliente", "value": "", "type": "string" },
+    { "key": "habitacion_id", "value": "", "type": "string" },
+    { "key": "huesped_id", "value": "", "type": "string" },
+    { "key": "reserva_id", "value": "", "type": "string" },
+    { "key": "servicio_id", "value": "", "type": "string" },
+    { "key": "factura_id", "value": "", "type": "string" },
+    { "key": "usuario_cliente_id", "value": "", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "0 — Setup",
+      "item": [
+        {
+          "name": "0.1 Crear primer admin",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{base_url}}/auth/register-admin",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Admin\",\n  \"apellido\": \"Principal\",\n  \"email\": \"admin@hotelbook.co\",\n  \"password\": \"Admin1234!\"\n}"
+            }
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Status 201 o 200', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
+                "pm.test('success true', () => pm.expect(pm.response.json().success).to.be.true);"
+              ]
+            }
+          }]
+        },
+        {
+          "name": "0.2 Login admin → token",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{base_url}}/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@hotelbook.co\",\n  \"password\": \"Admin1234!\"\n}"
+            }
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Login exitoso', () => pm.expect(pm.response.json().success).to.be.true);",
+                "const token = pm.response.json().data?.token;",
+                "if (token) pm.collectionVariables.set('token_admin', token);",
+                "console.log('Token admin:', token?.substring(0,30) + '...');"
+              ]
+            }
+          }]
+        },
+        {
+          "name": "0.3 Registrar recepcionista",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token_admin}}" }
+            ],
+            "url": "{{base_url}}/auth/register",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Recepcionista\",\n  \"apellido\": \"Test\",\n  \"email\": \"recep@hotelbook.co\",\n  \"password\": \"Recep1234!\",\n  \"rol\": \"recepcionista\"\n}"
+            }
+          }
+        },
+        {
+          "name": "0.4 Login recepcionista → token",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{base_url}}/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"recep@hotelbook.co\",\n  \"password\": \"Recep1234!\"\n}"
+            }
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const token = pm.response.json().data?.token;",
+                "if (token) pm.collectionVariables.set('token_recep', token);"
+              ]
+            }
+          }]
+        }
+      ]
+    },
+    {
+      "name": "1 — Habitaciones",
+      "item": [
+        {
+          "name": "1.1 Crear habitación (admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token_admin}}" }
+            ],
+            "url": "{{base_url}}/habitaciones",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"numero\": \"101\",\n  \"tipo\": \"Doble\",\n  \"precio_noche\": 150000,\n  \"capacidad\": 2,\n  \"descripcion\": \"Habitación doble con vista al jardín\"\n}"
+            }
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Habitación creada', () => pm.expect(pm.response.json().success).to.be.true);",
+                "const id = pm.response.json().data?.habitacion?.id || pm.response.json().data?.id;",
+                "if (id) pm.collectionVariables.set('habitacion_id', id);",
+                "console.log('habitacion_id:', id);"
+              ]
+            }
+          }]
+        },
+        {
+          "name": "1.2 Listar habitaciones disponibles",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/habitaciones/disponibles"
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Lista OK', () => pm.expect(pm.response.code).to.equal(200));",
+                "pm.test('Array data', () => pm.expect(pm.response.json().data).to.be.an('array'));"
+              ]
+            }
+          }]
+        }
+      ]
+    },
+    {
+      "name": "2 — Huésped / Cliente",
+      "item": [
+        {
+          "name": "2.1 Registrar cliente",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{base_url}}/auth/register",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Carlos\",\n  \"apellido\": \"Rodriguez\",\n  \"email\": \"carlos@cliente.co\",\n  \"password\": \"Cliente1234!\",\n  \"rol\": \"cliente\",\n  \"documento_id\": \"1234567890\",\n  \"telefono\": \"3001234567\"\n}"
+            }
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Registro OK', () => pm.expect(pm.response.json().success).to.be.true);",
+                "const data = pm.response.json().data;",
+                "const uid = data?.usuario?.id;",
+                "if (uid) pm.collectionVariables.set('usuario_cliente_id', uid);"
+              ]
+            }
+          }]
+        },
+        {
+          "name": "2.2 Login cliente → token",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{base_url}}/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"carlos@cliente.co\",\n  \"password\": \"Cliente1234!\"\n}"
+            }
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const token = pm.response.json().data?.token;",
+                "if (token) pm.collectionVariables.set('token_cliente', token);",
+                "const uid = pm.response.json().data?.usuario?.id;",
+                "if (uid) pm.collectionVariables.set('usuario_cliente_id', uid);"
+              ]
+            }
+          }]
+        },
+        {
+          "name": "2.3 Buscar huésped por email (recepcionista)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token_recep}}" }],
+            "url": "{{base_url}}/huespedes/buscar?q=carlos@cliente.co"
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Huesped encontrado', () => pm.expect(pm.response.code).to.equal(200));",
+                "const huespedes = pm.response.json().data;",
+                "if (huespedes && huespedes.length > 0) {",
+                "  const hid = huespedes[0].id;",
+                "  if (hid) pm.collectionVariables.set('huesped_id', hid);",
+                "  console.log('huesped_id:', hid);",
+                "}"
+              ]
+            }
+          }]
+        }
+      ]
+    },
+    {
+      "name": "3 — Reserva",
+      "item": [
+        {
+          "name": "3.1 Crear reserva (cliente)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token_cliente}}" }
+            ],
+            "url": "{{base_url}}/reservas",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id_habitacion\": {{habitacion_id}},\n  \"fecha_entrada\": \"2026-05-20\",\n  \"fecha_salida\": \"2026-05-23\"\n}"
+            }
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Reserva creada', () => pm.expect(pm.response.json().success).to.be.true);",
+                "const id = pm.response.json().data?.reserva?.id || pm.response.json().data?.id;",
+                "if (id) pm.collectionVariables.set('reserva_id', id);",
+                "console.log('reserva_id:', id, '| Estado esperado: Pendiente');"
+              ]
+            }
+          }]
+        },
+        {
+          "name": "3.2 Ver mis reservas (cliente)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token_cliente}}" }],
+            "url": "{{base_url}}/reservas/mis-reservas"
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Lista OK', () => pm.expect(pm.response.code).to.equal(200));"
+              ]
+            }
+          }]
+        },
+        {
+          "name": "3.3 Ver detalle reserva",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token_cliente}}" }],
+            "url": "{{base_url}}/reservas/{{reserva_id}}"
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const estado = pm.response.json().data?.reserva?.estado || pm.response.json().data?.estado;",
+                "console.log('Estado actual:', estado);",
+                "pm.test('Estado Pendiente', () => pm.expect(estado).to.equal('Pendiente'));"
+              ]
+            }
+          }]
+        }
+      ]
+    },
+    {
+      "name": "4 — Pago Garantía (50%)",
+      "item": [
+        {
+          "name": "4.1 Pagar garantía → estado Confirmada",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token_cliente}}" }
+            ],
+            "url": "{{base_url}}/pagos/garantia/{{reserva_id}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"metodo\": \"tarjeta\",\n  \"payment_method_id\": \"tok_visa\"\n}"
+            }
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Garantía procesada', () => pm.expect(pm.response.json().success).to.be.true);",
+                "console.log('Respuesta garantía:', JSON.stringify(pm.response.json(), null, 2));"
+              ]
+            }
+          }]
+        },
+        {
+          "name": "4.2 Confirmar reserva (admin)",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token_admin}}" }],
+            "url": "{{base_url}}/reservas/{{reserva_id}}/confirmar"
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Reserva confirmada', () => pm.expect(pm.response.json().success).to.be.true);"
+              ]
+            }
+          }]
+        },
+        {
+          "name": "4.3 Verificar estado Confirmada",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token_admin}}" }],
+            "url": "{{base_url}}/reservas/{{reserva_id}}"
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const estado = pm.response.json().data?.reserva?.estado || pm.response.json().data?.estado;",
+                "console.log('Estado actual:', estado);",
+                "pm.test('Estado Confirmada', () => pm.expect(estado).to.equal('Confirmada'));"
+              ]
+            }
+          }]
+        }
+      ]
+    },
+    {
+      "name": "5 — Check-in",
+      "item": [
+        {
+          "name": "5.1 Hacer check-in (recepcionista)",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token_recep}}" }],
+            "url": "{{base_url}}/reservas/{{reserva_id}}/checkin"
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Check-in OK', () => pm.expect(pm.response.json().success).to.be.true);",
+                "console.log('Estado esperado: Ocupada');"
+              ]
+            }
+          }]
+        },
+        {
+          "name": "5.2 Verificar estado Ocupada",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token_recep}}" }],
+            "url": "{{base_url}}/reservas/{{reserva_id}}"
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const estado = pm.response.json().data?.reserva?.estado || pm.response.json().data?.estado;",
+                "console.log('Estado actual:', estado);",
+                "pm.test('Estado Ocupada', () => pm.expect(estado).to.equal('Ocupada'));"
+              ]
+            }
+          }]
+        }
+      ]
+    },
+    {
+      "name": "6 — Servicios Adicionales",
+      "item": [
+        {
+          "name": "6.1 Agregar servicio comedor",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token_recep}}" }
+            ],
+            "url": "{{base_url}}/reservas/{{reserva_id}}/servicios",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tipo\": \"comedor\",\n  \"descripcion\": \"Desayuno buffet x2\",\n  \"costo\": 45000\n}"
+            }
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Servicio agregado', () => pm.expect(pm.response.json().success).to.be.true);",
+                "const id = pm.response.json().data?.servicio?.id || pm.response.json().data?.id;",
+                "if (id) pm.collectionVariables.set('servicio_id', id);",
+                "console.log('servicio_id:', id);"
+              ]
+            }
+          }]
+        },
+        {
+          "name": "6.2 Agregar servicio spa",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token_recep}}" }
+            ],
+            "url": "{{base_url}}/reservas/{{reserva_id}}/servicios",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tipo\": \"spa\",\n  \"descripcion\": \"Masaje relajante 60 min\",\n  \"costo\": 80000\n}"
+            }
+          }
+        },
+        {
+          "name": "6.3 Listar servicios de la reserva",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token_recep}}" }],
+            "url": "{{base_url}}/reservas/{{reserva_id}}/servicios"
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Servicios OK', () => pm.expect(pm.response.code).to.equal(200));",
+                "const items = pm.response.json().data;",
+                "const lista = Array.isArray(items) ? items : items?.servicios || [];",
+                "console.log('Servicios registrados:', lista.length);"
+              ]
+            }
+          }]
+        }
+      ]
+    },
+    {
+      "name": "7 — Liquidación (50% restante)",
+      "item": [
+        {
+          "name": "7.1 Pagar liquidación (recepcionista)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token_recep}}" }
+            ],
+            "url": "{{base_url}}/pagos/liquidacion/{{reserva_id}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"metodo\": \"tarjeta\",\n  \"payment_method_id\": \"tok_visa\"\n}"
+            }
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Liquidación procesada', () => pm.expect(pm.response.json().success).to.be.true);",
+                "console.log('Liquidación:', JSON.stringify(pm.response.json().data, null, 2));"
+              ]
+            }
+          }]
+        },
+        {
+          "name": "7.2 Ver pagos de la reserva",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token_recep}}" }],
+            "url": "{{base_url}}/pagos/reserva/{{reserva_id}}"
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Pagos OK', () => pm.expect(pm.response.code).to.equal(200));",
+                "const pagos = pm.response.json().data;",
+                "const lista = Array.isArray(pagos) ? pagos : pagos?.pagos || [];",
+                "const aprobados = lista.filter(p => p.estado === 'Aprobado' || p.estado === 'aprobado');",
+                "console.log('Total pagos:', lista.length, '| Aprobados:', aprobados.length);"
+              ]
+            }
+          }]
+        }
+      ]
+    },
+    {
+      "name": "8 — Check-out",
+      "item": [
+        {
+          "name": "8.1 Hacer check-out (recepcionista)",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token_recep}}" }],
+            "url": "{{base_url}}/reservas/{{reserva_id}}/checkout"
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Check-out OK', () => pm.expect(pm.response.json().success).to.be.true);",
+                "const resp = pm.response.json().data;",
+                "const fid = resp?.factura?.id || resp?.factura_id;",
+                "if (fid) pm.collectionVariables.set('factura_id', fid);",
+                "console.log('Estado esperado: Completada');",
+                "console.log('factura_id:', fid);"
+              ]
+            }
+          }]
+        },
+        {
+          "name": "8.2 Verificar estado Completada",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token_recep}}" }],
+            "url": "{{base_url}}/reservas/{{reserva_id}}"
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const estado = pm.response.json().data?.reserva?.estado || pm.response.json().data?.estado;",
+                "console.log('Estado actual:', estado);",
+                "pm.test('Estado Completada', () => pm.expect(estado).to.equal('Completada'));"
+              ]
+            }
+          }]
+        }
+      ]
+    },
+    {
+      "name": "9 — Verificar Puntos de Fidelidad",
+      "item": [
+        {
+          "name": "9.1 Ver puntos del huésped",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token_recep}}" }],
+            "url": "{{base_url}}/huespedes/{{huesped_id}}/puntos"
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Puntos OK', () => pm.expect(pm.response.code).to.equal(200));",
+                "const data = pm.response.json().data;",
+                "const puntos = data?.puntos_totales ?? data?.puntos ?? data?.total ?? 'Ver respuesta';",
+                "console.log('Puntos acreditados:', puntos, '| Esperado: 30 (3 noches × 10 pts)');"
+              ]
+            }
+          }]
+        },
+        {
+          "name": "9.2 Historial de puntos",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token_recep}}" }],
+            "url": "{{base_url}}/huespedes/{{huesped_id}}/puntos/historial"
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Historial OK', () => pm.expect(pm.response.code).to.equal(200));",
+                "const data = pm.response.json().data;",
+                "const historial = Array.isArray(data) ? data : data?.historial || [];",
+                "console.log('Registros en historial:', historial.length);",
+                "if (historial.length > 0) console.log('Último registro:', JSON.stringify(historial[historial.length-1], null, 2));"
+              ]
+            }
+          }]
+        }
+      ]
+    },
+    {
+      "name": "10 — Factura",
+      "item": [
+        {
+          "name": "10.1 Ver factura",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token_recep}}" }],
+            "url": "{{base_url}}/facturas/reserva/{{reserva_id}}"
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Factura OK', () => pm.expect(pm.response.code).to.equal(200));",
+                "const data = pm.response.json().data;",
+                "const factura = data?.factura || data;",
+                "console.log('Total factura:', factura?.total);",
+                "console.log('IVA (19%):', factura?.iva || factura?.impuesto);",
+                "console.log('Estado factura:', factura?.estado);"
+              ]
+            }
+          }]
+        },
+        {
+          "name": "10.2 Emitir factura",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token_recep}}" }],
+            "url": "{{base_url}}/facturas/reserva/{{reserva_id}}/emitir"
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Factura emitida', () => pm.expect(pm.response.json().success).to.be.true);"
+              ]
+            }
+          }]
+        },
+        {
+          "name": "10.3 Descargar PDF factura",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token_recep}}" }],
+            "url": "{{base_url}}/facturas/reserva/{{reserva_id}}/descargar"
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('PDF descargado', () => pm.expect(pm.response.code).to.equal(200));",
+                "const ct = pm.response.headers.get('Content-Type');",
+                "console.log('Content-Type:', ct);",
+                "pm.test('Es PDF', () => pm.expect(ct).to.include('pdf'));"
+              ]
+            }
+          }]
+        }
+      ]
+    },
+    {
+      "name": "11 — Reportes (admin/gerente)",
+      "item": [
+        {
+          "name": "11.1 Reporte ocupación xlsx",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token_admin}}" }],
+            "url": {
+              "raw": "{{base_url}}/reportes/ocupacion?fecha_inicio=2026-05-01&fecha_fin=2026-05-31&formato=xlsx",
+              "query": [
+                { "key": "fecha_inicio", "value": "2026-05-01" },
+                { "key": "fecha_fin", "value": "2026-05-31" },
+                { "key": "formato", "value": "xlsx" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "11.2 Reporte ingresos pdf",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token_admin}}" }],
+            "url": {
+              "raw": "{{base_url}}/reportes/ingresos?fecha_inicio=2026-05-01&fecha_fin=2026-05-31&formato=pdf",
+              "query": [
+                { "key": "fecha_inicio", "value": "2026-05-01" },
+                { "key": "fecha_fin", "value": "2026-05-31" },
+                { "key": "formato", "value": "pdf" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "11.3 Estadísticas generales",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token_admin}}" }],
+            "url": {
+              "raw": "{{base_url}}/reportes/estadisticas?fecha_inicio=2026-05-01&fecha_fin=2026-05-31",
+              "query": [
+                { "key": "fecha_inicio", "value": "2026-05-01" },
+                { "key": "fecha_fin", "value": "2026-05-31" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "12 — Extras (errores esperados)",
+      "item": [
+        {
+          "name": "12.1 Sin token → 401",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/reservas"
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Sin token → 401', () => pm.expect(pm.response.code).to.equal(401));"
+              ]
+            }
+          }]
+        },
+        {
+          "name": "12.2 Cliente intenta ver todos reservas → 403",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token_cliente}}" }],
+            "url": "{{base_url}}/reservas"
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Sin permiso → 403', () => pm.expect(pm.response.code).to.equal(403));"
+              ]
+            }
+          }]
+        },
+        {
+          "name": "12.3 Reserva inexistente → 404",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token_admin}}" }],
+            "url": "{{base_url}}/reservas/99999"
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('No existe → 404', () => pm.expect(pm.response.code).to.equal(404));"
+              ]
+            }
+          }]
+        }
+      ]
+    }
+  ]
+}
