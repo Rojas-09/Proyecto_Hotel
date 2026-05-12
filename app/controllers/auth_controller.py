@@ -136,6 +136,12 @@ def eliminar_usuario(current_user, usuario_id):
             "error": {"code": "NOT_FOUND", "message": f"Usuario con id {usuario_id} no encontrado."}
         }), 404
 
+    if usuario_id == current_user.id:
+        return jsonify({
+            "success": False,
+            "error": {"code": "FORBIDDEN", "message": "No puedes eliminarte a ti mismo."}
+        }), 403
+
     if not AuthService._puede_gestionar_usuario(current_user, usuario):
         return jsonify({
             "success": False,

@@ -331,6 +331,19 @@ class AuthService:
     @staticmethod
     def editar_usuario(usuario_id, current_user, data: dict) -> dict:
         """Editar usuario según permisos jerárquicos."""
+        if (
+            "activo" in data
+            and data["activo"] is False
+            and usuario_id == current_user.id
+        ):
+            return {
+                "success": False,
+                "error": {
+                    "code": "FORBIDDEN",
+                    "message": "No puedes desactivarte a ti mismo.",
+                }
+            }, 403
+
         usuario = db.session.get(Usuario, usuario_id)
         if not usuario:
             return {
