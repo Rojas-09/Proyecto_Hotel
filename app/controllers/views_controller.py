@@ -1,13 +1,8 @@
 from flask import Blueprint, render_template, request
-
 from sqlalchemy import select
-
 from app import db
 from app.models.habitacion import Habitacion, EstadoHabitacion, TipoHabitacion
-
 views_bp = Blueprint('views', __name__)
-
-
 @views_bp.route('/')
 def home():
     """Renderiza la página de inicio con habitaciones destacadas."""
@@ -19,30 +14,22 @@ def home():
     )
     destacadas = result.scalars().all()
     return render_template('public/home.html', habitaciones=destacadas)
-
-
 @views_bp.route('/login')
 def login():
     return render_template('public/login.html')
-
-
 @views_bp.route('/habitaciones')
 def habitaciones():
     """Renderiza la lista de habitaciones con filtros."""
     tipo_query = request.args.get('tipo', '').lower()
     query = select(Habitacion)
-    
     if tipo_query:
         for tipo_enum in TipoHabitacion:
             if tipo_enum.value == tipo_query:
                 query = query.filter(Habitacion.tipo == tipo_enum)
                 break
-    
     result = db.session.execute(query)
     habitaciones_list = result.scalars().all()
     return render_template('public/habitaciones.html', habitaciones=habitaciones_list)
-
-
 @views_bp.route('/habitaciones/<int:id>')
 def detalle_habitacion(id):
     """Renderiza el detalle de una habitación."""
@@ -50,8 +37,6 @@ def detalle_habitacion(id):
     if not habitacion:
         return render_template('public/habitaciones.html', habitaciones=[])
     return render_template('public/detalle_habitacion.html', habitacion=habitacion)
-
-
 @views_bp.route('/reservar')
 def reserva():
     """Renderiza la página de checkout."""
@@ -60,23 +45,15 @@ def reserva():
     if habitacion_id:
         habitacion = db.session.get(Habitacion, habitacion_id)
     return render_template('cliente/reserva.html', habitacion=habitacion)
-
-
 @views_bp.route('/admin/dashboard')
 def admin_dashboard():
     return render_template('admin/dashboard.html')
-
-
 @views_bp.route('/recepcionista/dashboard')
 def recepcionista_dashboard():
     return render_template('recepcionista/dashboard.html')
-
-
 @views_bp.route('/mis-reservas')
 def mis_reservas():
     return render_template('cliente/mis_reservas.html')
-
-
 @views_bp.route('/endpoints')
 def endpoints():
     """Renderiza la página de documentación de endpoints."""
@@ -119,5 +96,4 @@ def endpoints():
             {'method': 'GET', 'path': '/ingresos', 'description': 'Reporte de ingresos'},
         ]},
     ]
-    
     return render_template('public/endpoints.html', ui_pages=ui_pages, api_groups=api_groups)
