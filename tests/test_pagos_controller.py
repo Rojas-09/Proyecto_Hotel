@@ -276,7 +276,7 @@ class TestPostLiquidacionController:
             headers=_auth(token),
         )
         assert resp.status_code == 400
-        assert "ocupada" in resp.get_json()["error"]
+        assert "ocupada" in resp.get_json()["error"].lower()
 
     def test_liquidacion_metodo_invalido(self, client, app):
         """400 — método de pago no reconocido."""
