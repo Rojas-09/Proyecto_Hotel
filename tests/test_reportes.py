@@ -3,11 +3,10 @@ Tests del módulo Reportes (RF-08).
 Cubre endpoints: ocupación, ingresos, estadísticas.
 """
 
-import os
 from datetime import date, timedelta
 from decimal import Decimal
 
-import pytest
+import pytest  # noqa: F401 (used in conftest.py)
 
 from app import db
 from app.models.factura import EstadoFactura, Factura
@@ -135,7 +134,7 @@ class TestReporteOcupacion:
             huesped_u = _crear_usuario(RolEnum.cliente, "cli_ocup1")
             huesped = _crear_huesped(huesped_u)
             hab = _crear_habitacion(TipoHabitacion.doble)
-            reserva = _crear_reserva(huesped, hab, EstadoReserva.completada)
+            _crear_reserva(huesped, hab, EstadoReserva.completada)
             db.session.commit()
             token = _token(gerente)
             fini, ffin = _fechas()
@@ -155,7 +154,7 @@ class TestReporteOcupacion:
             huesped_u = _crear_usuario(RolEnum.cliente, "cli_ocup2")
             huesped = _crear_huesped(huesped_u)
             hab = _crear_habitacion(TipoHabitacion.suite)
-            reserva = _crear_reserva(huesped, hab, EstadoReserva.completada)
+            _crear_reserva(huesped, hab, EstadoReserva.completada)
             db.session.commit()
             token = _token(gerente)
             fini, ffin = _fechas()
@@ -181,7 +180,7 @@ class TestReporteOcupacion:
             cliente_u = _crear_usuario(RolEnum.cliente, "cli_ocup3")
             huesped = _crear_huesped(cliente_u)
             hab = _crear_habitacion(TipoHabitacion.simple)
-            reserva = _crear_reserva(huesped, hab, EstadoReserva.completada)
+            _crear_reserva(huesped, hab, EstadoReserva.completada)
             db.session.commit()
             token = _token(cliente_u)
             fini, ffin = _fechas()
@@ -307,7 +306,7 @@ class TestReporteEstadisticas:
             huesped_u = _crear_usuario(RolEnum.cliente, "cli_est1")
             huesped = _crear_huesped(huesped_u)
             hab = _crear_habitacion(TipoHabitacion.suite)
-            reserva = _crear_reserva(huesped, hab, EstadoReserva.confirmada)
+            _crear_reserva(huesped, hab, EstadoReserva.confirmada)
             db.session.commit()
             token = _token(gerente)
             fini, ffin = _fechas()
@@ -327,7 +326,7 @@ class TestReporteEstadisticas:
             huesped_u = _crear_usuario(RolEnum.cliente, "cli_est2")
             huesped = _crear_huesped(huesped_u)
             hab = _crear_habitacion(TipoHabitacion.doble)
-            reserva = _crear_reserva(huesped, hab, EstadoReserva.ocupada)
+            _crear_reserva(huesped, hab, EstadoReserva.ocupada)
             db.session.commit()
             token = _token(gerente)
             fini, ffin = _fechas()
@@ -372,7 +371,7 @@ class TestReporteEstadisticas:
             huesped_u = _crear_usuario(RolEnum.cliente, "cli_est3")
             huesped = _crear_huesped(huesped_u)
             hab = _crear_habitacion(TipoHabitacion.simple)
-            reserva = _crear_reserva(huesped, hab, EstadoReserva.completada)
+            _crear_reserva(huesped, hab, EstadoReserva.completada)
             db.session.commit()
             token = _token(admin)
             fini, ffin = _fechas()

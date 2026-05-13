@@ -1,0 +1,82 @@
+/*
+   Checkout / Reserva Styles - Editorial Luxury
+*/
+
+.checkout-page {
+    padding: 160px 0 var(--spacing-xl);
+    background: var(--color-bg);
+}
+
+.breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    font-size: 0.7rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--color-muted);
+    margin-bottom: 3rem;
+}
+.breadcrumb a:hover { color: var(--color-accent); }
+.breadcrumb i { font-size: 0.8rem; }
+
+.checkout-grid {
+    display: grid;
+    grid-template-columns: 1fr 400px;
+    gap: var(--spacing-lg);
+    align-items: start;
+}
+
+.checkout-main h1 { font-size: clamp(3rem, 6vw, 4.5rem); margin-bottom: 3rem; letter-spacing: -2px; line-height: 1; }
+
+.checkout-section {
+    background: var(--color-surface);
+    padding: 2.5rem;
+    margin-bottom: 2rem;
+    border: 1px solid var(--color-border);
+}
+.checkout-section h2 { font-size: 1.25rem; margin-bottom: 2rem; text-transform: uppercase; letter-spacing: 1px; }
+
+.summary-card {
+    background: var(--color-text);
+    color: var(--color-bg);
+    padding: 2.5rem;
+    position: sticky;
+    top: 120px;
+}
+.summary-card h2 { font-size: 1.8rem; margin-bottom: 2rem; border-bottom: 1px solid rgba(245, 240, 235, 0.1); padding-bottom: 1rem; }
+
+.summary-item {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 1.25rem;
+    font-size: 0.85rem;
+    opacity: 0.7;
+}
+.summary-total {
+    margin-top: 2rem;
+    padding-top: 2rem;
+    border-top: 1px solid rgba(245, 240, 235, 0.1);
+    display: flex;
+    justify-content: space-between;
+    font-size: 1.5rem;
+    font-family: var(--font-display);
+    font-weight: 700;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+}
+
+@media (max-width: 1024px) {
+    .checkout-grid { grid-template-columns: 1fr; }
+    .summary-card { position: static; order: -1; }
+    .checkout-page { padding-top: 120px; }
+}
+@media (max-width: 640px) {
+    .form-row { grid-template-columns: 1fr; }
+    .checkout-section { padding: 1.5rem; }
+}

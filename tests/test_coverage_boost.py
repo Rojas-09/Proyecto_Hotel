@@ -20,8 +20,7 @@ from app.models.huesped import Huesped
 from app.models.pago import EstadoPago, MetodoPago, Pago, TipoPago
 from app.models.reserva import EstadoReserva, Reserva
 from app.models.usuario import RolEnum, Usuario
-from app.utils.fecha_helper import ahora_colombia
-from app.utils.jwt_helper import generar_token
+from app.utils.fecha_helper import ahora_colombia  # noqa: F401 (used in conftest.py)
 
 
 # ---------------------------------------------------------------------------
@@ -29,7 +28,12 @@ from app.utils.jwt_helper import generar_token
 # ---------------------------------------------------------------------------
 
 def _usuario(rol: RolEnum, tag: str) -> Usuario:
-    u = Usuario(nombre=f"U", apellido=f"{tag}", email=f"{tag}_{id(tag)}@h.com", rol=rol)
+    u = Usuario(
+        nombre="U",  # noqa: F541
+        apellido=f"{tag}",
+        email=f"{tag}_{id(tag)}@h.com",   # noqa: F541 (unique key)
+        rol=rol,
+    )  # noqa: F541
     u.password = "pass"
     db.session.add(u)
     db.session.flush()

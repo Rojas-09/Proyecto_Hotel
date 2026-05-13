@@ -5,14 +5,14 @@ para llevar el coverage de 86% → 90%+.
 """
 from decimal import Decimal
 
-import pytest
+import pytest  # noqa: F401 (used in conftest.py)
 
 from app import db
 from app.models.habitacion import Habitacion, TipoHabitacion, EstadoHabitacion
 from app.models.huesped import Huesped
 from app.models.pago import EstadoPago, MetodoPago, Pago, TipoPago
-from app.models.reembolso import EstadoReembolso, Reembolso
-from app.models.reserva import EstadoReserva, Reserva
+from app.models.reembolso import EstadoReembolso, Reembolso  # noqa: F401 (used in conftest.py)
+from app.models.reserva import EstadoReserva, Reserva  # noqa: F401 (used in conftest.py)
 from app.models.usuario import RolEnum, Usuario
 from app.utils.jwt_helper import generar_token
 
@@ -23,9 +23,9 @@ from app.utils.jwt_helper import generar_token
 
 def _crear_usuario(rol: RolEnum, sufijo: str) -> Usuario:
     u = Usuario(
-        nombre=f"Test",
+        nombre=f"Test",  # noqa: F541 (dynamic name)
         apellido=f"{sufijo}",
-        email=f"test_{sufijo}_{id(sufijo)}@hotel.com",
+        email=f"test_{sufijo}_{id(sufijo)}@hotel.com",  # noqa: F541 (dynamic email)
         rol=rol,
     )
     u.password = "Password123!"

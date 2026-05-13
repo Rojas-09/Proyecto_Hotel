@@ -70,7 +70,7 @@ def test_actualizar_and_eliminar_checks(app):
         db.session.commit()
 
         h1 = _crear_habitacion("100", TipoHabitacion.simple)
-        h2 = _crear_habitacion("101", TipoHabitacion.doble)
+        _crear_habitacion("101", TipoHabitacion.doble)
 
         # actualizar numero a uno existente -> error
         with pytest.raises(ValueError):
