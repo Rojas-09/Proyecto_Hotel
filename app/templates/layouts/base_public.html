@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}HotelBook Pro{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/functional.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/layouts/base_public.css') }}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+<nav class="navbar">
+    <a href="/" class="navbar-brand">HotelBook Pro</a>
+    <ul class="navbar-nav">
+        <li><a href="/" class="{% if request.path == '/' %}active{% endif %}">Inicio</a></li>
+        <li><a href="{{ url_for('views.habitaciones') }}" class="{% if '/habitaciones' in request.path %}active{% endif %}">Habitaciones</a></li>
+    </ul>
+    <div class="navbar-right">
+        {% if session.get('user_id') %}
+            <a href="{{ url_for('views._dashboard_por_rol') }}" class="btn btn-primary btn-sm">Mi Cuenta</a>
+            <a href="{{ url_for('views.logout') }}" class="btn btn-secondary btn-sm">Cerrar Sesión</a>
+        {% else %}
+            <a href="{{ url_for('views.login_page') }}" class="btn btn-secondary btn-sm">Iniciar Sesión</a>
+            <a href="{{ url_for('views.register_page') }}" class="btn btn-primary btn-sm">Registrarse</a>
+        {% endif %}
+    </div>
+</nav>
+
+<main class="container" style="padding-top:1.5rem; padding-bottom:3rem;">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ 'danger' if category == 'danger' else 'success' if category == 'success' else 'info' }}">
+              {{ message }}
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+    {% block content %}{% endblock %}
+</main>
+
+<footer style="background:var(--bg-secondary); border-top:1px solid var(--border); padding:2rem 0; margin-top:3rem;">
+    <div class="container" style="text-align:center; color:var(--text-muted); font-size:0.85rem;">
+        <p>HotelBook Pro &copy; 2026 &mdash; Universidad Tecnológica de Pereira</p>
+        <p>
+            <a href="{{ url_for('views.home') }}">Inicio</a> ·
+            <a href="{{ url_for('views.habitaciones') }}">Habitaciones</a> ·
+            <a href="{{ url_for('views.login_page') }}">Iniciar Sesión</a>
+        </p>
+    </div>
+</footer>
+
+<script src="{{ url_for('static', filename='js/global.js') }}"></script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

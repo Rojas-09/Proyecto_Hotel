@@ -1,0 +1,121 @@
+{% extends "layouts/base_recepcionista.html" %}
+
+{% block title %}Dashboard Recepción — HotelBook Pro{% endblock %}
+
+{% block content %}
+<div style="padding-top: 2rem;">
+    <div class="container">
+        <div class="page-header">
+            <h1>Panel de Recepción</h1>
+            <p class="text-muted mb-0">Resumen operativo del día</p>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="alert alert-{{ 'danger' if category == 'danger' else 'success' if category == 'success' else 'info' }}">{{ message }}</div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
+        <div class="grid-4 mb-4">
+            <div class="stat-card">
+                <div class="stat-label">Reservas Hoy</div>
+                <div class="stat-value" id="stat-hoy">—</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Check-ins Hoy</div>
+                <div class="stat-value" id="stat-checkins">—</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Check-outs Hoy</div>
+                <div class="stat-value" id="stat-checkouts">—</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Hab. Disponibles</div>
+                <div class="stat-value" id="stat-disponibles">—</div>
+            </div>
+        </div>
+
+        <div class="grid-2">
+            <div class="card">
+                <div class="card-header d-flex-between">
+                    <span>Reservas Pendientes de Hoy</span>
+                    <a href="{{ url_for('views.recepcionista_checkin') }}" class="btn btn-primary btn-sm">Realizar Check-in</a>
+                </div>
+                <div class="card-body" id="reservas-hoy-container">
+                    <p class="text-muted text-center" style="padding:1rem;"><span class="spinner"></span> Cargando...</p>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header d-flex-between">
+                    <span>Habitaciones Disponibles</span>
+                    <a href="{{ url_for('views.recepcionista_reservas') }}" class="btn btn-secondary btn-sm">Ver Todas</a>
+                </div>
+                <div class="card-body" id="habitaciones-container">
+                    <p class="text-muted text-center" style="padding:1rem;"><span class="spinner"></span> Cargando...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/api.js') }}"></script>
+<script>
+(function() {
+    function fmtDate(d) {
+        return new Date(d).toLocaleDateString('es-CO', {year:'numeric', month:'short', day:'numeric'});
+    }
+
+    function cargarDashboard() {
+        Promise.all([
+            HotelBookAPI.get('/api/v1/reservas/'),
+            HotelBookAPI.get('/api/v1/habitaciones/?estado=disponible'),
+        ]).then(function(results) {
+            var reservas = results[0];
+            var habitacion = results[1];
+
+            if (reserva.success) {
+                var todas = reservas.data || [];
+                var pendientes = todas.filter(function(r) {
+                    return r.estado === 'pendiente' || r.estado === 'confirmada';
+                });
+                document.getElementById('stat-hoy').textContent = todas.length;
+                var html = '';
+                if (pendientes.length === 0) {
+                    html = '<p class="text-muted text-center">No hay reservas pendientes.</p>';
+                } else {
+                    html = '<ul style="list-style:none; padding:0;">';
+                    pendientes.slice(0, 5).forEach(function(r) {
+                        html +=                     '<li style="padding:0.5rem 0; border-bottom:1px solid var(--border);">' +
+                            '<strong>#' + r.id + '</strong> — Hbl ' + (r.habitacion_numero || '?') +
+                            '<br><span class="text-sm text-muted">' + fmtDate(r.fecha_entrada) + ' → ' + fmtDate(r.fecha_salida) + '</span></li>';
+                    });
+                    html += '</ul>';
+                }
+                document.getElementById('reservas-hoy-container').innerHTML = html;
+            }
+
+            if (habitacion.success) {
+                document.getElementById('stat-disponibles').textContent = (habitacion.data || []).length;
+                var html = '<ul style="list-style:none; padding:0;">';
+                (habitacion.data || []).slice(0, 6).forEach(function(h) {
+                    html += '<li style="padding:0.3rem 0; border-bottom:1px solid var(--border);">' +
+                        '<strong>' + h.numero + '</strong> — ' + h.tipo + ' ($' + Number(h.precio_noche).toLocaleString('es-CO') + ')</li>';
+                });
+                html += '</ul>';
+                document.getElementById('habitaciones-container').innerHTML = html;
+            }
+        }).catch(function() {
+            document.getElementById('reservas-hoy-container').innerHTML = '<p class="text-danger text-center">Error al cargar datos.</p>';
+            document.getElementById('habitaciones-container').innerHTML = '';
+        });
+    }
+
+    cargarDashboard();
+})();
+</script>
+{% endblock %}

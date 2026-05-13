@@ -1,0 +1,144 @@
+{% extends "layouts/base_recepcionista.html" %}
+
+{% block title %}Check-in / Check-out — HotelBook Pro{% endblock %}
+
+{% block content %}
+<div style="padding-top: 2rem;">
+    <div class="container">
+        <div class="page-header">
+            <h1>Check-in / Check-out</h1>
+            <p class="text-muted mb-0">Procesar llegadas y salidas de huéspedes</p>
+        </div>
+
+        <div class="grid-2">
+            <div class="card">
+                <div class="card-header">Check-in Pendientes</div>
+                <div class="card-body">
+                    <div id="checkin-list">
+                        <p class="text-muted text-center"><span class="spinner"></span> Cargando...</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">Check-out Pendientes</div>
+                <div class="card-body">
+                    <div id="checkout-list">
+                        <p class="text-muted text-center"><span class="spinner"></span> Cargando...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mt-4">
+            <div class="card-header">Procesar por Reserva</div>
+            <div class="card-body">
+                <form id="procesar-form" class="form-row">
+                    <div class="form-group">
+                        <label for="reserva_id">ID de Reserva</label>
+                        <input type="number" id="reserva_id" class="form-control" placeholder="Ej: 5" min="1">
+                    </div>
+                    <div class="form-group">
+                        <label>Acción</label>
+                        <select id="accion" class="form-control">
+                            <option value="checkin">Check-in</option>
+                            <option value="checkout">Check-out</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="display:flex; align-items:flex-end;">
+                        <button type="submit" class="btn btn-primary">Procesar</button>
+                    </div>
+                </form>
+                <div id="procesar-result" class="mt-2"></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/api.js') }}"></script>
+<script>
+(function() {
+    function fmtDate(d) {
+        return new Date(d).toLocaleDateString('es-CO', {year:'numeric', month:'short', day:'numeric'});
+    }
+
+    function renderCheckinList(reservas) {
+        var el = document.getElementById('checkin-list');
+        if (!reservas || reservas.length === 0) {
+            el.innerHTML = '<p class="text-muted text-center">No hay check-ins pendientes.</p>';
+            return;
+        }
+        var html = '<ul style="list-style:none; padding:0;">';
+        reservas.forEach(function(r) {
+            html += '<li style="padding:0.6rem 0; border-bottom:1px solid var(--border);">' +
+                '<strong>#' + r.id + '</strong> — Hbl ' + (r.habitacion_numero || '?') +
+                '<br><span class="text-sm text-muted">' + (r.huesped_nombre || '—') + '</span>' +
+                '<br><span class="text-sm text-muted">Entrada: ' + fmtDate(r.fecha_entrada) + '</span>' +
+                '<br><button onclick="doCheckin(' + r.id + ')" class="btn btn-success btn-sm mt-1">Realizar Check-in</button>' +
+                '</li>';
+        });
+        el.innerHTML = html + '</ul>';
+    }
+
+    function renderCheckoutList(reservas) {
+        var el = document.getElementById('checkout-list');
+        if (!reservas || reservas.length === 0) {
+            el.innerHTML = '<p class="text-muted text-center">No hay check-outs pendientes.</p>';
+            return;
+        }
+        var html = '<ul style="list-style:none; padding:0;">';
+        reservas.forEach(function(r) {
+            html += '<li style="padding:0.6rem 0; border-bottom:1px solid var(--border);">' +
+                '<strong>#' + r.id + '</strong> — Hbl ' + (r.habitacion_numero || '?') +
+                '<br><span class="text-sm text-muted">' + (r.huesped_nombre || '—') + '</span>' +
+                '<br><span class="text-sm text-muted">Salida: ' + fmtDate(r.fecha_salida) + '</span>' +
+                '<br><button onclick="doCheckout(' + r.id + ')" class="btn btn-primary btn-sm mt-1">Realizar Check-out</button>' +
+                '</li>';
+        });
+        el.innerHTML = html + '</ul>';
+    }
+
+    function doAction(id, tipo) {
+        if (!confirm('¿' + (tipo === 'checkin' ? 'Check-in' : 'Check-out') + ' para reserva #' + id + '?')) return;
+        var fn = tipo === 'checkin' ?
+            HotelBookAPI.put('/api/v1/reservas/' + id + '/checkin', {}) :
+            HotelBookAPI.put('/api/v1/reservas/' + id + '/checkout', {});
+        fn.then(function(res) {
+            if (res.success) {
+                window.showToast((tipo === 'checkin' ? 'Check-in' : 'Check-out') + ' realizado.', 'success');
+                cargar();
+            } else {
+                window.showToast(res.error?.message || 'Error.', 'error');
+            }
+        }).catch(function(e) { window.showToast(e.message, 'error'); });
+    }
+
+    window.doCheckin = function(id) { doAction(id, 'checkin'); };
+    window.doCheckout = function(id) { doAction(id, 'checkout'); };
+
+    document.getElementById('procesar-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        var id = parseInt(document.getElementById('reserva_id').value);
+        var tipo = document.getElementById('accion').value;
+        if (!id) { window.showToast('Ingresa un ID de reserva.', 'error'); return; }
+        doAction(id, tipo);
+    });
+
+    function cargar() {
+        HotelBookAPI.get('/api/v1/reservas/').then(function(res) {
+            if (res.success) {
+                var data = res.data || [];
+                renderCheckinList(data.filter(function(r) { return r.estado === 'confirmada' || r.estado === 'pendiente'; }));
+                renderCheckoutList(data.filter(function(r) { return r.estado === 'ocupada'; }));
+            }
+        }).catch(function() {
+            document.getElementById('checkin-list').innerHTML = '<p class="text-danger text-center">Error al cargar.</p>';
+        });
+    }
+
+    cargar();
+})();
+</script>
+{% endblock %}

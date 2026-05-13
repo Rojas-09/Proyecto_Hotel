@@ -73,3 +73,10 @@ Datos.md
 .agents/
 # Postman collection (sensitive)
 postman.json
+
+
+# Agent instructions (privado)
+.agents/postman.json
+
+# Postman collection (sensitive)
+postman.json

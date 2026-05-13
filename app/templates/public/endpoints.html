@@ -1,0 +1,100 @@
+{% extends "layouts/base_public.html" %}
+
+{% block title %}Endpoints API — HotelBook Pro{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Documentación de Endpoints</h1>
+    <p class="text-muted">API REST — HotelBook Pro v1</p>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header">Autenticación</div>
+    <div class="card-body">
+        <div class="table-wrapper">
+            <table>
+                <thead><tr><th>Método</th><th>Ruta</th><th>Descripción</th><th>Auth</th></tr></thead>
+                <tbody>
+                    <tr><td><span class="badge badge-success">POST</span></td><td><code>/api/v1/auth/register</code></td><td>Registro de cliente</td><td>No</td></tr>
+                    <tr><td><span class="badge badge-success">POST</span></td><td><code>/api/v1/auth/login</code></td><td>Inicio de sesión</td><td>No</td></tr>
+                    <tr><td><span class="badge badge-info">GET</span></td><td><code>/api/v1/auth/me</code></td><td>Datos del usuario</td><td>JWT</td></tr>
+                    <tr><td><span class="badge badge-info">GET</span></td><td><code>/api/v1/auth/usuarios</code></td><td>Listar usuarios</td><td>admin</td></tr>
+                    <tr><td><span class="badge badge-warning">PUT</span></td><td><code>/api/v1/auth/usuarios/&lt;id&gt;</code></td><td>Editar usuario</td><td>admin/gerente</td></tr>
+                    <tr><td><span class="badge badge-danger">DELETE</span></td><td><code>/api/v1/auth/usuarios/&lt;id&gt;</code></td><td>Desactivar usuario</td><td>admin</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header">Habitaciones</div>
+    <div class="card-body">
+        <div class="table-wrapper">
+            <table>
+                <thead><tr><th>Método</th><th>Ruta</th><th>Descripción</th><th>Auth</th></tr></thead>
+                <tbody>
+                    <tr><td><span class="badge badge-info">GET</span></td><td><code>/api/v1/habitaciones/</code></td><td>Listar (filtros: tipo, estado)</td><td>No</td></tr>
+                    <tr><td><span class="badge badge-info">GET</span></td><td><code>/api/v1/habitaciones/disponibles</code></td><td>Disponibilidad por fechas</td><td>No</td></tr>
+                    <tr><td><span class="badge badge-info">GET</span></td><td><code>/api/v1/habitaciones/&lt;id&gt;</code></td><td>Detalle de habitación</td><td>No</td></tr>
+                    <tr><td><span class="badge badge-success">POST</span></td><td><code>/api/v1/habitaciones/</code></td><td>Crear habitación</td><td>admin</td></tr>
+                    <tr><td><span class="badge badge-warning">PUT</span></td><td><code>/api/v1/habitaciones/&lt;id&gt;</code></td><td>Editar habitación</td><td>admin</td></tr>
+                    <tr><td><span class="badge badge-danger">DELETE</span></td><td><code>/api/v1/habitaciones/&lt;id&gt;</code></td><td>Eliminar habitación</td><td>admin</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header">Reservas</div>
+    <div class="card-body">
+        <div class="table-wrapper">
+            <table>
+                <thead><tr><th>Método</th><th>Ruta</th><th>Descripción</th><th>Auth</th></tr></thead>
+                <tbody>
+                    <tr><td><span class="badge badge-success">POST</span></td><td><code>/api/v1/reservas/</code></td><td>Crear reserva</td><td>cliente/recep/admin</td></tr>
+                    <tr><td><span class="badge badge-info">GET</span></td><td><code>/api/v1/reservas/</code></td><td>Listar reservas</td><td>admin/recep/gerente</td></tr>
+                    <tr><td><span class="badge badge-info">GET</span></td><td><code>/api/v1/reservas/mis-reservas</code></td><td>Mis reservas</td><td>cliente</td></tr>
+                    <tr><td><span class="badge badge-info">GET</span></td><td><code>/api/v1/reservas/&lt;id&gt;</code></td><td>Detalle reserva</td><td>cliente/recep/admin</td></tr>
+                    <tr><td><span class="badge badge-warning">PUT</span></td><td><code>/api/v1/reservas/&lt;id&gt;/confirmar</code></td><td>Confirmar</td><td>admin</td></tr>
+                    <tr><td><span class="badge badge-warning">PUT</span></td><td><code>/api/v1/reservas/&lt;id&gt;/cancelar</code></td><td>Cancelar</td><td>cliente/recep/admin</td></tr>
+                    <tr><td><span class="badge badge-warning">PUT</span></td><td><code>/api/v1/reservas/&lt;id&gt;/checkin</code></td><td>Check-in</td><td>admin/recepcionista</td></tr>
+                    <tr><td><span class="badge badge-warning">PUT</span></td><td><code>/api/v1/reservas/&lt;id&gt;/checkout</code></td><td>Check-out</td><td>admin/recepcionista</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header">Pagos</div>
+    <div class="card-body">
+        <div class="table-wrapper">
+            <table>
+                <thead><tr><th>Método</th><th>Ruta</th><th>Descripción</th><th>Auth</th></tr></thead>
+                <tbody>
+                    <tr><td><span class="badge badge-success">POST</span></td><td><code>/api/v1/pagos/garantia/&lt;reserva_id&gt;</code></td><td>Pagar garantía</td><td>cliente/recep/admin</td></tr>
+                    <tr><td><span class="badge badge-success">POST</span></td><td><code>/api/v1/pagos/liquidacion/&lt;reserva_id&gt;</code></td><td>Pagar liquidación</td><td>recep/admin</td></tr>
+                    <tr><td><span class="badge badge-info">GET</span></td><td><code>/api/v1/pagos/reserva/&lt;reserva_id&gt;</code></td><td>Ver pagos de reserva</td><td>recep/admin</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">Reportes</div>
+    <div class="card-body">
+        <div class="table-wrapper">
+            <table>
+                <thead><tr><th>Método</th><th>Ruta</th><th>Descripción</th><th>Auth</th></tr></thead>
+                <tbody>
+                    <tr><td><span class="badge badge-info">GET</span></td><td><code>/api/v1/reportes/ocupacion</code></td><td>Ocupación (formato: xlsx/pdf)</td><td>admin/gerente</td></tr>
+                    <tr><td><span class="badge badge-info">GET</span></td><td><code>/api/v1/reportes/ingresos</code></td><td>Ingresos</td><td>admin/gerente</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
