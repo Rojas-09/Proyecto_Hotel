@@ -1,24 +1,43 @@
+<<<<<<< HEAD
 from functools import wraps
 
 from flask import (
     Blueprint, flash, redirect, render_template,
     request, session, url_for,
+=======
+from flask import (
+    Blueprint, render_template, request, redirect,
+    url_for, flash, session, jsonify, abort,
+>>>>>>> origin/Feature-front
 )
 from sqlalchemy import select
 
 from app import db
+<<<<<<< HEAD
 from app.models.habitacion import (
     EstadoHabitacion, Habitacion, TipoHabitacion,
 )
 from app.models.usuario import Usuario
+=======
+from app.models.habitacion import Habitacion, EstadoHabitacion, TipoHabitacion
+from app.models.usuario import Usuario, RolEnum
+>>>>>>> origin/Feature-front
 from app.services.auth_service import AuthService
 
 views_bp = Blueprint("views", __name__)
 
 
+<<<<<<< HEAD
 def login_required(f):
     @wraps(f)
 
+=======
+# ─── Decorators locales ──────────────────────────────────────────────────────
+
+def login_required(f):
+    from functools import wraps
+    @wraps(f)
+>>>>>>> origin/Feature-front
     def decorated(*args, **kwargs):
         if "user_id" not in session:
             return redirect(url_for("views.login_page", next=request.url))
@@ -28,22 +47,36 @@ def login_required(f):
 
 def rol_requerido(*roles):
     def decorator(f):
+<<<<<<< HEAD
         @wraps(f)
 
+=======
+        from functools import wraps
+        @wraps(f)
+>>>>>>> origin/Feature-front
         def decorated(*args, **kwargs):
             rol = session.get("user_rol")
             valores = [r.value if hasattr(r, "value") else r for r in roles]
             if rol not in valores:
+<<<<<<< HEAD
                 flash(
                     "No tienes permisos para acceder a esta sección.",
                     "danger",
                 )
+=======
+                flash("No tienes permisos para acceder a esta sección.", "danger")
+>>>>>>> origin/Feature-front
                 return redirect(url_for("views.home"))
             return f(*args, **kwargs)
         return decorated
     return decorator
 
 
+<<<<<<< HEAD
+=======
+# ─── Auth: Login/Logout ───────────────────────────────────────────────────────
+
+>>>>>>> origin/Feature-front
 @views_bp.route("/login")
 def login_page():
     if "user_id" in session:
@@ -53,8 +86,14 @@ def login_page():
 
 @views_bp.route("/login", methods=["POST"])
 def login_submit():
+<<<<<<< HEAD
     email = request.form.get("email", "").strip()
     password = request.form.get("password", "")
+=======
+    data = request.form
+    email = data.get("email", "").strip()
+    password = data.get("password", "")
+>>>>>>> origin/Feature-front
 
     if not email or not password:
         flash("Email y contraseña son obligatorios.", "danger")
@@ -72,6 +111,10 @@ def login_submit():
         flash("Error interno. Intenta nuevamente.", "danger")
         return redirect(url_for("views.login_page"))
 
+<<<<<<< HEAD
+=======
+    # Decodificar token para extraer user_id y rol
+>>>>>>> origin/Feature-front
     from app.utils.jwt_helper import decodificar_token
     try:
         payload = decodificar_token(token)
@@ -108,10 +151,14 @@ def register_page():
 @views_bp.route("/registro", methods=["POST"])
 def register_submit():
     data = request.form
+<<<<<<< HEAD
     required = [
         "nombre", "apellido", "email", "password",
         "telefono", "documento_id",
     ]
+=======
+    required = ["nombre", "apellido", "email", "password", "telefono", "documento_id"]
+>>>>>>> origin/Feature-front
     for field in required:
         if not data.get(field, "").strip():
             flash(f"El campo {field} es obligatorio.", "danger")
@@ -161,6 +208,11 @@ def _dashboard_por_rol():
     return redirect(url_for("views.home"))
 
 
+<<<<<<< HEAD
+=======
+# ─── Vistas públicas ─────────────────────────────────────────────────────────
+
+>>>>>>> origin/Feature-front
 @views_bp.route("/")
 def home():
     result = db.session.execute(
@@ -169,8 +221,13 @@ def home():
         .order_by(Habitacion.precio_noche.desc())
         .limit(6)
     )
+<<<<<<< HEAD
     habitaciones = result.scalars().all()
     return render_template("public/home.html", habitaciones=habitaciones)
+=======
+    destacadas = result.scalars().all()
+    return render_template("public/home.html", habitaciones=destacadas)
+>>>>>>> origin/Feature-front
 
 
 @views_bp.route("/habitaciones")
@@ -206,11 +263,19 @@ def detalle_habitacion(hab_id):
     if not habitacion:
         flash("Habitación no encontrada.", "warning")
         return redirect(url_for("views.habitaciones"))
+<<<<<<< HEAD
     return render_template(
         "public/detalle_habitacion.html", habitacion=habitacion
     )
 
 
+=======
+    return render_template("public/detalle_habitacion.html", habitacion=habitacion)
+
+
+# ─── Cliente ─────────────────────────────────────────────────────────────────
+
+>>>>>>> origin/Feature-front
 @views_bp.route("/reservar")
 @login_required
 def reserva():
@@ -237,11 +302,19 @@ def mis_reservas():
 @views_bp.route("/mis-reservas/<int:reserva_id>")
 @login_required
 def detalle_reserva(reserva_id):
+<<<<<<< HEAD
     return render_template(
         "cliente/detalle_reserva.html", reserva_id=reserva_id
     )
 
 
+=======
+    return render_template("cliente/detalle_reserva.html", reserva_id=reserva_id)
+
+
+# ─── Recepcionista ───────────────────────────────────────────────────────────
+
+>>>>>>> origin/Feature-front
 @views_bp.route("/recepcionista/dashboard")
 @login_required
 @rol_requerido("recepcionista")
@@ -277,6 +350,11 @@ def recepcionista_huespedes():
     return render_template("recepcionista/huespedes.html")
 
 
+<<<<<<< HEAD
+=======
+# ─── Admin / Gerente ─────────────────────────────────────────────────────────
+
+>>>>>>> origin/Feature-front
 @views_bp.route("/admin/dashboard")
 @login_required
 @rol_requerido("admin", "gerente")
@@ -306,13 +384,21 @@ def editar_habitacion(hab_id):
     if not habitacion:
         flash("Habitación no encontrada.", "warning")
         return redirect(url_for("views.gestion_habitaciones"))
+<<<<<<< HEAD
     return render_template(
         "admin/editar_habitacion.html", habitacion=habitacion
     )
+=======
+    return render_template("admin/editar_habitacion.html", habitacion=habitacion)
+>>>>>>> origin/Feature-front
 
 
 @views_bp.route("/admin/reportes")
 @login_required
 @rol_requerido("admin", "gerente")
 def reportes():
+<<<<<<< HEAD
     return render_template("admin/reportes.html")
+=======
+    return render_template("admin/reportes.html")
+>>>>>>> origin/Feature-front

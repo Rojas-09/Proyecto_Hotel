@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 {% extends "layouts/base_public.html" %}
 
 {% block title %}Dashboard Admin — HotelBook Pro{% endblock %}
@@ -39,3 +40,109 @@
     </div>
 </div>
 {% endblock %}
+=======
+{% extends "layouts/base_admin.html" %}
+
+{% block title %}Dashboard Admin — HotelBook Pro{% endblock %}
+
+{% block content %}
+<div style="padding-top: 2rem;">
+    <div class="container">
+        <div class="page-header">
+            <h1>Panel de Administración</h1>
+            <p class="text-muted mb-0">Resumen general del sistema</p>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="alert alert-{{ 'danger' if category == 'danger' else 'success' if category == 'success' else 'info' }}">{{ message }}</div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
+        <div class="grid-4 mb-4">
+            <div class="stat-card">
+                <div class="stat-label">Total Usuarios</div>
+                <div class="stat-value" id="s-usuarios">—</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Habitaciones</div>
+                <div class="stat-value" id="s-habitaciones">—</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Disponibles</div>
+                <div class="stat-value" id="s-disponibles">—</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Reservas Totales</div>
+                <div class="stat-value" id="s-reservas">—</div>
+            </div>
+        </div>
+
+        <div class="grid-2">
+            <div class="card">
+                <div class="card-header">Usuarios Recientes</div>
+                <div class="card-body" id="usuarios-recientes">
+                    <p class="text-muted text-center"><span class="spinner"></span></p>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-header">Accesos Rápidos</div>
+                <div class="card-body d-flex-gap gap-2 flex-wrap">
+                    <a href="{{ url_for('views.usuarios') }}" class="btn btn-primary">Gestionar Usuarios</a>
+                    <a href="{{ url_for('views.gestion_habitaciones') }}" class="btn btn-primary">Gestionar Habitaciones</a>
+                    <a href="{{ url_for('views.reportes') }}" class="btn btn-primary">Reportes</a>
+                    <a href="{{ url_for('views.recepcionista_reservas') }}" class="btn btn-secondary">Ver Reservas</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/api.js') }}"></script>
+<script>
+(function() {
+    function fmtDate(d) {
+        return new Date(d).toLocaleDateString('es-CO', {year:'numeric', month:'short', day:'numeric'});
+    }
+
+    Promise.all([
+        HotelBookAPI.get('/api/v1/auth/usuarios'),
+        HotelBookAPI.get('/api/v1/habitaciones/'),
+        HotelBookAPI.get('/api/v1/reservas/'),
+    ]).then(function(results) {
+        var usuarios = results[0], habitaciones = results[1], reservas = results[2];
+
+        if (usuarios.success) document.getElementById('s-usuarios').textContent = (usuarios.data || []).length;
+        if (habitaciones.success) {
+            var habs = habitaciones.data || [];
+            document.getElementById('s-habitaciones').textContent = habs.length;
+            document.getElementById('s-disponibles').textContent = habs.filter(function(h) { return h.estado === 'disponible'; }).length;
+        }
+        if (reservas.success) document.getElementById('s-reservas').textContent = (reservas.data || []).length;
+
+        if (usuarios.success) {
+            var reciente = (usuarios.data || []).slice(0, 5);
+            var el = document.getElementById('usuarios-recientes');
+            if (reciente.length === 0) {
+                el.innerHTML = '<p class="text-muted">Sin usuarios.</p>';
+            } else {
+                var html = '<ul style="list-style:none; padding:0;">';
+                reciente.forEach(function(u) {
+                    html += '<li style="padding:0.4rem 0; border-bottom:1px solid var(--border);">' +
+                        '<strong>' + u.nombre + ' ' + u.apellido + '</strong>' +
+                        '<br><span class="text-sm text-muted">' + u.email + '</span> — ' +
+                        '<span class="badge badge-secondary">' + u.rol + '</span>' +
+                        '</li>';
+                });
+                el.innerHTML = html + '</ul>';
+            }
+        }
+    }).catch(function() {});
+})();
+</script>
+{% endblock %}
+>>>>>>> origin/Feature-front

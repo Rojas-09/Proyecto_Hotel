@@ -70,6 +70,10 @@ tests/data/
 Datos.md
 
 # Agent instructions (privado)
+<<<<<<< HEAD
 .agents/
 # Postman collection (sensitive)
 postman.json
+=======
+.agents/
+>>>>>>> origin/Feature-front
