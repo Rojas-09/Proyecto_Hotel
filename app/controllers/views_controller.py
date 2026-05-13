@@ -1,123 +1,316 @@
-from flask import Blueprint, render_template, request
-
+from flask import (
+    Blueprint, render_template, request, redirect,
+    url_for, flash, session, jsonify, abort,
+)
 from sqlalchemy import select
 
 from app import db
 from app.models.habitacion import Habitacion, EstadoHabitacion, TipoHabitacion
+from app.models.usuario import Usuario, RolEnum
+from app.services.auth_service import AuthService
 
-views_bp = Blueprint('views', __name__)
+views_bp = Blueprint("views", __name__)
 
 
-@views_bp.route('/')
+# ─── Decorators locales ──────────────────────────────────────────────────────
+
+def login_required(f):
+    from functools import wraps
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if "user_id" not in session:
+            return redirect(url_for("views.login_page", next=request.url))
+        return f(*args, **kwargs)
+    return decorated
+
+
+def rol_requerido(*roles):
+    def decorator(f):
+        from functools import wraps
+        @wraps(f)
+        def decorated(*args, **kwargs):
+            rol = session.get("user_rol")
+            valores = [r.value if hasattr(r, "value") else r for r in roles]
+            if rol not in valores:
+                flash("No tienes permisos para acceder a esta sección.", "danger")
+                return redirect(url_for("views.home"))
+            return f(*args, **kwargs)
+        return decorated
+    return decorator
+
+
+# ─── Auth: Login/Logout ───────────────────────────────────────────────────────
+
+@views_bp.route("/login")
+def login_page():
+    if "user_id" in session:
+        return redirect(url_for("views._dashboard_por_rol"))
+    return render_template("public/login.html")
+
+
+@views_bp.route("/login", methods=["POST"])
+def login_submit():
+    data = request.form
+    email = data.get("email", "").strip()
+    password = data.get("password", "")
+
+    if not email or not password:
+        flash("Email y contraseña son obligatorios.", "danger")
+        return redirect(url_for("views.login_page"))
+
+    result, status = AuthService.login({"email": email, "password": password})
+
+    if status != 200:
+        msg = result.get("error", {}).get("message", "Credenciales inválidas.")
+        flash(msg, "danger")
+        return redirect(url_for("views.login_page"))
+
+    token = result.get("data", {}).get("token")
+    if not token:
+        flash("Error interno. Intenta nuevamente.", "danger")
+        return redirect(url_for("views.login_page"))
+
+    # Decodificar token para extraer user_id y rol
+    from app.utils.jwt_helper import decodificar_token
+    try:
+        payload = decodificar_token(token)
+    except Exception:
+        flash("Token inválido. Intenta nuevamente.", "danger")
+        return redirect(url_for("views.login_page"))
+
+    user = db.session.get(Usuario, payload["user_id"])
+    if not user or not user.activo:
+        flash("Usuario no encontrado o inactivo.", "danger")
+        return redirect(url_for("views.login_page"))
+
+    session["user_id"] = user.id
+    session["user_email"] = user.email
+    session["user_rol"] = user.rol.value
+    session["user_nombre"] = user.nombre
+    session.permanent = True
+
+    flash(f"Bienvenido, {user.nombre}.", "success")
+
+    next_url = request.args.get("next")
+    if next_url and next_url.startswith("/"):
+        return redirect(next_url)
+    return redirect(url_for("views._dashboard_por_rol"))
+
+
+@views_bp.route("/registro")
+def register_page():
+    if "user_id" in session:
+        return redirect(url_for("views._dashboard_por_rol"))
+    return render_template("public/register.html")
+
+
+@views_bp.route("/registro", methods=["POST"])
+def register_submit():
+    data = request.form
+    required = ["nombre", "apellido", "email", "password", "telefono", "documento_id"]
+    for field in required:
+        if not data.get(field, "").strip():
+            flash(f"El campo {field} es obligatorio.", "danger")
+            return redirect(url_for("views.register_page"))
+
+    if data.get("password") != data.get("password_confirm"):
+        flash("Las contraseñas no coinciden.", "danger")
+        return redirect(url_for("views.register_page"))
+
+    payload = {
+        "nombre": data["nombre"].strip(),
+        "apellido": data["apellido"].strip(),
+        "email": data["email"].strip(),
+        "password": data["password"],
+        "telefono": data.get("telefono", "").strip(),
+        "documento_id": data["documento_id"].strip(),
+        "tipo_documento": data.get("tipo_documento", "CC").strip(),
+    }
+
+    result, status = AuthService.registrar(payload)
+
+    if status != 201:
+        msg = result.get("error", {}).get("message", "Error en el registro.")
+        flash(msg, "danger")
+        return redirect(url_for("views.register_page"))
+
+    flash("Registro exitoso. Ahora puedes iniciar sesión.", "success")
+    return redirect(url_for("views.login_page"))
+
+
+@views_bp.route("/logout")
+def logout():
+    session.clear()
+    flash("Sesión cerrada correctamente.", "info")
+    return redirect(url_for("views.home"))
+
+
+@views_bp.route("/_dashboard")
+def _dashboard_por_rol():
+    rol = session.get("user_rol")
+    if rol == "cliente":
+        return redirect(url_for("views.mis_reservas"))
+    elif rol in ("admin", "gerente"):
+        return redirect(url_for("views.admin_dashboard"))
+    elif rol == "recepcionista":
+        return redirect(url_for("views.recepcionista_dashboard"))
+    return redirect(url_for("views.home"))
+
+
+# ─── Vistas públicas ─────────────────────────────────────────────────────────
+
+@views_bp.route("/")
 def home():
-    """Renderiza la página de inicio con habitaciones destacadas."""
     result = db.session.execute(
         select(Habitacion)
         .filter_by(estado=EstadoHabitacion.disponible)
         .order_by(Habitacion.precio_noche.desc())
-        .limit(3)
+        .limit(6)
     )
     destacadas = result.scalars().all()
-    return render_template('public/home.html', habitaciones=destacadas)
+    return render_template("public/home.html", habitaciones=destacadas)
 
 
-@views_bp.route('/login')
-def login():
-    return render_template('public/login.html')
-
-
-@views_bp.route('/habitaciones')
+@views_bp.route("/habitaciones")
 def habitaciones():
-    """Renderiza la lista de habitaciones con filtros."""
-    tipo_query = request.args.get('tipo', '').lower()
-    query = select(Habitacion)
-    
-    if tipo_query:
-        for tipo_enum in TipoHabitacion:
-            if tipo_enum.value == tipo_query:
-                query = query.filter(Habitacion.tipo == tipo_enum)
+    tipo_q = request.args.get("tipo", "").strip().lower()
+    estado_q = request.args.get("estado", "").strip().lower()
+
+    query = select(Habitacion).filter_by(activo=True)
+    if tipo_q:
+        for t in TipoHabitacion:
+            if t.value == tipo_q:
+                query = query.filter(Habitacion.tipo == t)
                 break
-    
-    result = db.session.execute(query)
+    if estado_q:
+        for e in EstadoHabitacion:
+            if e.value == estado_q:
+                query = query.filter(Habitacion.estado == e)
+                break
+
+    result = db.session.execute(query.order_by(Habitacion.numero))
     habitaciones_list = result.scalars().all()
-    return render_template('public/habitaciones.html', habitaciones=habitaciones_list)
+    return render_template(
+        "public/habitaciones.html",
+        habitaciones=habitaciones_list,
+        filtro_tipo=tipo_q,
+        filtro_estado=estado_q,
+    )
 
 
-@views_bp.route('/habitaciones/<int:id>')
-def detalle_habitacion(id):
-    """Renderiza el detalle de una habitación."""
-    habitacion = db.session.get(Habitacion, id)
+@views_bp.route("/habitaciones/<int:hab_id>")
+def detalle_habitacion(hab_id):
+    habitacion = db.session.get(Habitacion, hab_id)
     if not habitacion:
-        return render_template('public/habitaciones.html', habitaciones=[])
-    return render_template('public/detalle_habitacion.html', habitacion=habitacion)
+        flash("Habitación no encontrada.", "warning")
+        return redirect(url_for("views.habitaciones"))
+    return render_template("public/detalle_habitacion.html", habitacion=habitacion)
 
 
-@views_bp.route('/reservar')
+# ─── Cliente ─────────────────────────────────────────────────────────────────
+
+@views_bp.route("/reservar")
+@login_required
 def reserva():
-    """Renderiza la página de checkout."""
-    habitacion_id = request.args.get('habitacion_id')
+    if session["user_rol"] != "cliente":
+        flash("Solo clientes pueden hacer reservas.", "warning")
+        return redirect(url_for("views.home"))
+
+    hab_id = request.args.get("habitacion_id")
     habitacion = None
-    if habitacion_id:
-        habitacion = db.session.get(Habitacion, habitacion_id)
-    return render_template('cliente/reserva.html', habitacion=habitacion)
+    if hab_id:
+        habitacion = db.session.get(Habitacion, hab_id)
+        if not habitacion or not habitacion.activo:
+            flash("Habitación no disponible.", "warning")
+            return redirect(url_for("views.habitaciones"))
+    return render_template("cliente/reserva.html", habitacion=habitacion)
 
 
-@views_bp.route('/admin/dashboard')
-def admin_dashboard():
-    return render_template('admin/dashboard.html')
-
-
-@views_bp.route('/recepcionista/dashboard')
-def recepcionista_dashboard():
-    return render_template('recepcionista/dashboard.html')
-
-
-@views_bp.route('/mis-reservas')
+@views_bp.route("/mis-reservas")
+@login_required
 def mis_reservas():
-    return render_template('cliente/mis_reservas.html')
+    return render_template("cliente/mis_reservas.html")
 
 
-@views_bp.route('/endpoints')
-def endpoints():
-    """Renderiza la página de documentación de endpoints."""
-    ui_pages = [
-        {'name': 'Inicio', 'path': '/', 'method': 'GET', 'description': 'Página de hero con habitaciones destacadas'},
-        {'name': 'Login', 'path': '/login', 'method': 'GET', 'description': 'Auth页面 para usuario'},
-        {'name': 'Habitaciones', 'path': '/habitaciones', 'method': 'GET', 'description': 'Listado completo con filtros'},
-        {'name': 'Detalle Habitación', 'path': '/habitaciones/<id>', 'method': 'GET', 'description': 'Ficha técnica individual'},
-        {'name': 'Checkout', 'path': '/reservar', 'method': 'GET', 'description': 'Confirmación de reserva'},
-        {'name': 'Endpoints', 'path': '/endpoints', 'method': 'GET', 'description': 'Documentación visual de API'},
-    ]
-    
-    api_groups = [
-        {'title': 'Autenticación', 'prefix': '/api/v1/auth', 'items': [
-            {'method': 'POST', 'path': '/register', 'description': 'Registro de usuario nuevo'},
-            {'method': 'POST', 'path': '/login', 'description': 'Inicio de sesión JWT'},
-            {'method': 'GET', 'path': '/me', 'description': 'Datos del usuario autenticado'},
-            {'method': 'GET', 'path': '/usuarios', 'description': 'Listado de usuarios (admin)'},
-            {'method': 'GET', 'path': '/usuarios/<id>', 'description': 'Obtener usuario específico'},
-        ]},
-        {'title': 'Habitaciones', 'prefix': '/api/v1/habitaciones', 'items': [
-            {'method': 'GET', 'path': '/', 'description': 'Listar habitaciones disponibles'},
-            {'method': 'GET', 'path': '/<id>', 'description': 'Obtener detalle de habitación'},
-            {'method': 'GET', 'path': '/disponibilidad', 'description': 'Consultar disponibilidad por fechas'},
-        ]},
-        {'title': 'Reservas', 'prefix': '/api/v1/reservas', 'items': [
-            {'method': 'GET', 'path': '/', 'description': 'Listar reservas (filtradas por usuario)'},
-            {'method': 'POST', 'path': '/', 'description': 'Crear nueva reserva'},
-            {'method': 'PUT', 'path': '/<id>', 'description': 'Actualizar reserva'},
-            {'method': 'DELETE', 'path': '/<id>', 'description': 'Eliminar reserva'},
-            {'method': 'GET', 'path': '/mis-reservas', 'description': 'Reservas del usuario autenticado'},
-        ]},
-        {'title': 'Pagos', 'prefix': '/api/v1/pagos', 'items': [
-            {'method': 'POST', 'path': '/procesar', 'description': 'Procesar pago con Stripe'},
-            {'method': 'POST', 'path': '/confirmar', 'description': 'Confirmar pago exitoso'},
-            {'method': 'GET', 'path': '/<id>', 'description': 'Obtener detalle de pago'},
-        ]},
-        {'title': 'Reportes', 'prefix': '/api/v1/reportes', 'items': [
-            {'method': 'GET', 'path': '/ocupacion', 'description': 'Reporte de ocupación por fechas'},
-            {'method': 'GET', 'path': '/ingresos', 'description': 'Reporte de ingresos'},
-        ]},
-    ]
-    
-    return render_template('public/endpoints.html', ui_pages=ui_pages, api_groups=api_groups)
+@views_bp.route("/mis-reservas/<int:reserva_id>")
+@login_required
+def detalle_reserva(reserva_id):
+    return render_template("cliente/detalle_reserva.html", reserva_id=reserva_id)
+
+
+# ─── Recepcionista ───────────────────────────────────────────────────────────
+
+@views_bp.route("/recepcionista/dashboard")
+@login_required
+@rol_requerido("recepcionista")
+def recepcionista_dashboard():
+    return render_template("recepcionista/dashboard.html")
+
+
+@views_bp.route("/recepcionista/reservas")
+@login_required
+@rol_requerido("recepcionista")
+def recepcionista_reservas():
+    return render_template("recepcionista/reservas.html")
+
+
+@views_bp.route("/recepcionista/checkin")
+@login_required
+@rol_requerido("recepcionista")
+def recepcionista_checkin():
+    return render_template("recepcionista/checkin_checkout.html")
+
+
+@views_bp.route("/recepcionista/servicios")
+@login_required
+@rol_requerido("recepcionista")
+def recepcionista_servicios():
+    return render_template("recepcionista/servicios.html")
+
+
+@views_bp.route("/recepcionista/huespedes")
+@login_required
+@rol_requerido("recepcionista")
+def recepcionista_huespedes():
+    return render_template("recepcionista/huespedes.html")
+
+
+# ─── Admin / Gerente ─────────────────────────────────────────────────────────
+
+@views_bp.route("/admin/dashboard")
+@login_required
+@rol_requerido("admin", "gerente")
+def admin_dashboard():
+    return render_template("admin/dashboard.html")
+
+
+@views_bp.route("/admin/usuarios")
+@login_required
+@rol_requerido("admin")
+def usuarios():
+    return render_template("admin/usuarios.html")
+
+
+@views_bp.route("/admin/habitaciones")
+@login_required
+@rol_requerido("admin")
+def gestion_habitaciones():
+    return render_template("admin/gestion_habitaciones.html")
+
+
+@views_bp.route("/admin/habitaciones/<int:hab_id>/editar")
+@login_required
+@rol_requerido("admin")
+def editar_habitacion(hab_id):
+    habitacion = db.session.get(Habitacion, hab_id)
+    if not habitacion:
+        flash("Habitación no encontrada.", "warning")
+        return redirect(url_for("views.gestion_habitaciones"))
+    return render_template("admin/editar_habitacion.html", habitacion=habitacion)
+
+
+@views_bp.route("/admin/reportes")
+@login_required
+@rol_requerido("admin", "gerente")
+def reportes():
+    return render_template("admin/reportes.html")

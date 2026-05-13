@@ -1,0 +1,103 @@
+{% extends "layouts/base_recepcionista.html" %}
+
+{% block title %}Huéspedes — HotelBook Pro{% endblock %}
+
+{% block content %}
+<div style="padding-top: 2rem;">
+    <div class="container">
+        <div class="page-header d-flex-between">
+            <div>
+                <h1>Directorio de Huéspedes</h1>
+                <p class="text-muted mb-0">Buscar y gestionar información de huéspedes</p>
+            </div>
+        </div>
+
+        <div class="card mb-3">
+            <div class="card-body">
+                <form id="buscar-form" class="form-row">
+                    <div class="form-group" style="flex:1; margin-bottom:0;">
+                        <label for="q">Buscar</label>
+                        <input type="text" id="q" class="form-control" placeholder="Nombre, email o número de documento..." maxlength="100">
+                    </div>
+                    <div class="form-group" style="display:flex; align-items:flex-end; margin-bottom:0;">
+                        <button type="submit" class="btn btn-primary">Buscar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div id="buscar-result">
+            <div class="empty-state">
+                <p>Ingresa un término de búsqueda para encontrar huéspedes.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/api.js') }}"></script>
+<script>
+(function() {
+    function render(huespedes) {
+        var el = document.getElementById('buscar-result');
+        if (!huespedes || huespedes.length === 0) {
+            el.innerHTML = '<div class="empty-state"><p>No se encontraron huéspedes.</p></div>';
+            return;
+        }
+        var html = '<div class="table-wrapper"><table><thead><tr>' +
+            '<th>Nombre</th><th>Email</th><th>Teléfono</th><th>Documento</th><th>Puntos</th><th>Acciones</th>' +
+            '</tr></thead><tbody>';
+        huespedes.forEach(function(h) {
+            var u = h;
+            html += '<tr>' +
+                '<td>' + (h.nombre || '—') + ' ' + (h.apellido || '') + '</td>' +
+                '<td>' + (h.email || '—') + '</td>' +
+                '<td>' + (h.telefono || '—') + '</td>' +
+                '<td>' + (h.tipo_documento || '—') + ' ' + (h.documento_id || '—') + '</td>' +
+                '<td>—</td>' +
+                '<td><button onclick="verDetalle(' + h.id + ')" class="btn btn-secondary btn-sm">Ver</button></td>' +
+                '</tr>';
+        });
+        el.innerHTML = html + '</tbody></table></div>';
+    }
+
+    window.verDetalle = function(id) {
+        HotelBookAPI.get('/api/v1/huespedes/' + id).then(function(res) {
+            if (res.success) {
+            var h = res.data;
+            alert(
+                'Huésped #' + h.id + '\n' +
+                'Nombre: ' + (h.nombre || '—') + ' ' + (h.apellido || '') + '\n' +
+                'Email: ' + (h.email || '—') + '\n' +
+                'Teléfono: ' + (h.telefono || '—') + '\n' +
+                'Documento: ' + (h.tipo_documento || '—') + ' ' + (h.documento_id || '—') + '\n' +
+                'Preferencias: ' + (h.preferencias || 'Ninguna')
+                );
+            } else {
+                window.showToast(res.error?.message || 'Error.', 'error');
+            }
+        });
+    };
+
+    document.getElementById('buscar-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        var q = document.getElementById('q').value.trim();
+        if (!q) { window.showToast('Ingresa un término de búsqueda.', 'error'); return; }
+        document.getElementById('buscar-result').innerHTML =
+            '<p class="text-muted text-center"><span class="spinner"></span> Buscando...</p>';
+        HotelBookAPI.buscarHuespedes(q).then(function(res) {
+            if (res.success) {
+                render(res.data || []);
+            } else {
+                document.getElementById('buscar-result').innerHTML =
+                    '<div class="alert alert-danger">Error: ' + (res.error?.message || 'desconocido') + '</div>';
+            }
+        }).catch(function(e) {
+            document.getElementById('buscar-result').innerHTML =
+                '<div class="alert alert-danger">Error: ' + e.message + '</div>';
+        });
+    });
+})();
+</script>
+{% endblock %}

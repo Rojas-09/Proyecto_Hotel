@@ -39,7 +39,14 @@
             </ul>
             
             <div class="nav-actions">
-                <a href="{{ url_for('views.login') }}" class="btn btn-outline" style="padding: 0.8rem 2rem;">Acceso</a>
+                {% if session.get('user_id') %}
+                    <div style="display: flex; gap: 1rem; align-items: center;">
+                        <a href="{{ url_for('views._dashboard_por_rol') }}" class="btn btn-gold" style="padding: 0.8rem 1.5rem;">Dashboard</a>
+                        <a href="{{ url_for('views.logout') }}" class="btn btn-outline" style="padding: 0.8rem 1.5rem;">Cerrar Sesión</a>
+                    </div>
+                {% else %}
+                    <a href="{{ url_for('views.login_page') }}" class="btn btn-outline" style="padding: 0.8rem 2rem;">Acceso</a>
+                {% endif %}
             </div>
         </div>
     </nav>
