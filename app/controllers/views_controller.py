@@ -18,7 +18,6 @@ views_bp = Blueprint("views", __name__)
 
 def login_required(f):
     @wraps(f)
-
     def decorated(*args, **kwargs):
         if "user_id" not in session:
             return redirect(url_for("views.login_page", next=request.url))
@@ -29,7 +28,6 @@ def login_required(f):
 def rol_requerido(*roles):
     def decorator(f):
         @wraps(f)
-
         def decorated(*args, **kwargs):
             rol = session.get("user_rol")
             valores = [r.value if hasattr(r, "value") else r for r in roles]
