@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}HotelBook Pro — Luxury Stays{% endblock %}</title>
+    
+    <!-- Google Fonts: Editorial Luxury Pairing -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    
+    <!-- Tabler Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+    
+    <!-- Global CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/global.css') }}">
+    
+    <!-- Layout CSS (Navbar & Footer) -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/layouts/base_public.css') }}">
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+    <nav class="main-nav">
+        <div class="container nav-wrapper">
+            <a href="/" class="logo">HB<span class="gold">.</span></a>
+            
+            <div class="menu-toggle" id="mobile-toggle">
+                <i class="ti ti-menu-deep"></i>
+            </div>
+
+            <ul class="nav-links" id="nav-menu">
+                <li><a href="/" class="{% if request.path == '/' %}active{% endif %}">Inicio</a></li>
+                <li><a href="{{ url_for('views.habitaciones') }}" class="{% if '/habitaciones' in request.path %}active{% endif %}">Colección</a></li>
+                <li><a href="#">Servicios</a></li>
+                <li><a href="#">Contacto</a></li>
+            </ul>
+            
+            <div class="nav-actions">
+                <a href="{{ url_for('views.login') }}" class="btn btn-outline" style="padding: 0.8rem 2rem;">Acceso</a>
+            </div>
+        </div>
+    </nav>
+
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="main-footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-brand" data-reveal>
+                    <h2>HotelBook<span class="gold">.</span></h2>
+                    <p>Redefiniendo el lujo en el corazón de Pereira. Una curaduría de espacios diseñados para el descanso absoluto y la sofisticación editorial.</p>
+                    <div style="display: flex; gap: 2.5rem; font-size: 1.8rem;">
+                        <a href="#" class="gold"><i class="ti ti-brand-instagram"></i></a>
+                        <a href="#"><i class="ti ti-brand-facebook"></i></a>
+                        <a href="#"><i class="ti ti-brand-linkedin"></i></a>
+                    </div>
+                </div>
+                
+                <div class="footer-col" data-reveal>
+                    <h4>Explorar</h4>
+                    <ul>
+                        <li><a href="#">Suites Ejecutivas</a></li>
+                        <li><a href="#">Penthouse Deluxe</a></li>
+                        <li><a href="#">Experiencia Gastronómica</a></li>
+                        <li><a href="#">Spa & Wellness</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-col" data-reveal>
+                    <h4>Ubicación</h4>
+                    <ul>
+                        <li>Pereira, Risaralda</li>
+                        <li>Universidad Tecnológica de Pereira</li>
+                        <li>+57 300 123 4567</li>
+                        <li>concierge@hotelbook.pro</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="footer-bottom">
+                <p>&copy; 2026 HotelBook Pro. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/global.js') }}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

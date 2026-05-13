@@ -1,0 +1,98 @@
+{% extends "layouts/base_public.html" %}
+
+{% block title %}Iniciar Sesión - HotelBook Pro{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/public/login.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="auth-page">
+    <div class="auth-visual">
+        <img src="https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1200&q=80" alt="Hotel">
+        <div class="auth-visual-content">
+            <div class="auth-gold-badge">Experiencia Exclusiva</div>
+            <h2>Bienvenido a la elegancia en Pereira</h2>
+            <p>Accede a tarifas preferenciales y gestiona tus estancias con total comodidad.</p>
+        </div>
+    </div>
+
+    <div class="auth-form-panel">
+        <div class="auth-card">
+            <div class="logo">
+                <i class="ti ti-building-skyscraper"></i> HotelBook <span class="gold">Pro</span>
+            </div>
+
+            <div class="auth-tabs">
+                <button class="auth-tab active" id="tab-login" onclick="switchAuthTab('login')">Iniciar Sesión</button>
+                <button class="auth-tab" id="tab-register" onclick="switchAuthTab('register')">Crear Cuenta</button>
+            </div>
+
+            <!-- Login -->
+            <div id="form-login">
+                <div class="form-group">
+                    <label>Correo Electrónico</label>
+                    <div class="input-icon">
+                        <i class="ti ti-mail"></i>
+                        <input type="email" name="email" placeholder="correo@ejemplo.com" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Contraseña</label>
+                    <div class="input-icon">
+                        <i class="ti ti-lock"></i>
+                        <input type="password" name="password" placeholder="••••••••" required>
+                    </div>
+                </div>
+                <div class="forgot">
+                    <a href="#">¿Olvidaste tu contraseña?</a>
+                </div>
+                <button type="submit" class="btn btn-gold" style="width:100%;">
+                    <i class="ti ti-login"></i> Entrar
+                </button>
+            </div>
+
+            <!-- Register -->
+            <div id="form-register" style="display:none;">
+                <div class="form-group">
+                    <label>Nombre Completo</label>
+                    <div class="input-icon">
+                        <i class="ti ti-user"></i>
+                        <input type="text" name="nombre" placeholder="Juan Pérez" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Correo Electrónico</label>
+                    <div class="input-icon">
+                        <i class="ti ti-mail"></i>
+                        <input type="email" name="email" placeholder="correo@ejemplo.com" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Contraseña</label>
+                    <div class="input-icon">
+                        <i class="ti ti-lock"></i>
+                        <input type="password" name="password" placeholder="Mínimo 8 caracteres" required>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-gold" style="width:100%;">
+                    <i class="ti ti-user-plus"></i> Crear mi Cuenta
+                </button>
+            </div>
+
+            <div class="auth-divider">
+                <span>O continuar con</span>
+            </div>
+
+            <div class="social-btns">
+                <button class="btn btn-outline" disabled style="opacity:0.4;"><i class="ti ti-brand-google"></i> Google</button>
+                <button class="btn btn-outline" disabled style="opacity:0.4;"><i class="ti ti-brand-apple"></i> Apple</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/public/login.js') }}"></script>
+{% endblock %}

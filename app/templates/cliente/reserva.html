@@ -1,0 +1,103 @@
+{% extends "layouts/base_public.html" %}
+
+{% block title %}Finalizar Reserva — HotelBook Pro{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/cliente/reserva.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="checkout-page">
+    <div class="container">
+        <nav class="breadcrumb" data-reveal>
+            <a href="/">Inicio</a>
+            <i class="ti ti-chevron-right"></i>
+            <a href="{{ url_for('views.habitaciones') }}">Colección</a>
+            <i class="ti ti-chevron-right"></i>
+            <span>Confirmación</span>
+        </nav>
+
+        <div class="checkout-grid">
+            <div class="checkout-main" data-reveal>
+                <span class="section-label">Paso Final</span>
+                <h1>Tu Estancia<br>Comienza Aquí<span class="gold">.</span></h1>
+
+                <form action="/api/v1/reservas/" method="POST">
+                    <input type="hidden" name="habitacion_id" value="{{ habitacion.id if habitacion else '' }}">
+                    
+                    <div class="checkout-section">
+                        <h2>Información del Huésped</h2>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Nombre</label>
+                                <input type="text" name="nombre" placeholder="Nombre" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Apellido</label>
+                                <input type="text" name="apellido" placeholder="Apellido" required>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Email de Confirmación</label>
+                            <input type="email" name="email" placeholder="email@ejemplo.com" required>
+                        </div>
+                    </div>
+
+                    <div class="checkout-section">
+                        <h2>Detalles del Pago</h2>
+                        <div class="form-group">
+                            <label>Número de Tarjeta</label>
+                            <input type="text" placeholder="•••• •••• •••• ••••" required>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Expiración</label>
+                                <input type="text" placeholder="MM/YY" required>
+                            </div>
+                            <div class="form-group">
+                                <label>CVC</label>
+                                <input type="text" placeholder="•••" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-gold" style="width: 100%; padding: 1.5rem; font-size: 1rem;">Confirmar Reserva Premium</button>
+                </form>
+            </div>
+
+            <aside class="summary-card" data-reveal>
+                <h2>Resumen</h2>
+                {% if habitacion %}
+                    <div style="margin-bottom: 2rem;">
+                        <span class="section-label" style="color: var(--color-accent); margin-bottom: 1rem;">Selección</span>
+                        <h3 style="font-size: 1.5rem; margin-top: 0.5rem; font-family: var(--font-display);">{{ habitacion.tipo.value }} {{ habitacion.numero }}</h3>
+                        <p style="opacity: 0.6; font-size: 0.8rem;">Piso {{ habitacion.piso }} · Capacidad {{ habitacion.capacidad }} pers.</p>
+                    </div>
+                    
+                    <div class="summary-item">
+                        <span>Tarifa Base</span>
+                        <span>${{ "{:,.0f}".format(habitacion.precio_noche) }}</span>
+                    </div>
+                    <div class="summary-item">
+                        <span>IVA (19%)</span>
+                        <span>${{ "{:,.0f}".format(habitacion.precio_noche * 0.19) }}</span>
+                    </div>
+                    
+                    <div class="summary-total">
+                        <span>Total</span>
+                        <span>${{ "{:,.0f}".format(habitacion.precio_noche * 1.19) }}</span>
+                    </div>
+                {% else %}
+                    <p style="opacity: 0.6;">No se ha seleccionado ninguna habitación. Por favor, vuelve a la colección.</p>
+                    <a href="{{ url_for('views.habitaciones') }}" class="btn btn-outline" style="margin-top: 2rem; color: white; border-color: white;">Ver Colección</a>
+                {% endif %}
+                
+                <div style="margin-top: 3rem; font-size: 0.75rem; opacity: 0.5; line-height: 1.6;">
+                    <p><i class="ti ti-shield-lock"></i> Pago seguro procesado con encriptación de 256 bits.</p>
+                    <p style="margin-top: 1rem;">Al confirmar, aceptas nuestras políticas de cancelación y términos de servicio luxury.</p>
+                </div>
+            </aside>
+        </div>
+    </div>
+</div>
+{% endblock %}

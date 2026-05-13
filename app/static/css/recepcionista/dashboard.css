@@ -1,0 +1,8 @@
+/*
+   Recepcionista Dashboard Styles
+*/
+
+.dashboard-page { padding: var(--spacing-md) 0; }
+.dashboard-header { margin-bottom: var(--spacing-sm); }
+.dashboard-header h1 { font-size: 3rem; }
+.placeholder-note { text-align: center; padding: var(--spacing-lg); color: var(--color-muted); }
