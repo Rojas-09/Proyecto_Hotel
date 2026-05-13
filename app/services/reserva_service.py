@@ -53,7 +53,7 @@ def crear(datos, current_user):
 
     _validar_reserva_no_solapada(id_habitacion, fecha_entrada, fecha_salida)
 
-    id_huesped = _obtener_id_huesped(current_user)
+    id_huesped = _obtener_id_huesped(current_user, datos)
 
     noches = (fecha_salida - fecha_entrada).days
     precio_noche = Decimal(str(habitacion.precio_noche))
@@ -140,20 +140,17 @@ def obtener_por_id(reserva_id, current_user):
 
 def obtener_mis_reservas(current_user):
     """Obtiene las reservas del usuario actual (solo para clientes)."""
-    try:
-        huesped = db.session.execute(
-            select(Huesped).filter_by(id_usuario=current_user.id)
-        ).scalar_one_or_none()
-        if not huesped:
-            return []
-
-        reservas = db.session.execute(
-            select(Reserva).filter_by(id_huesped=huesped.id)
-            .order_by(Reserva.fecha_entrada.desc())
-        ).scalars().all()
-        return [r.to_dict() for r in reservas]
-    except Exception:
+    huesped = db.session.execute(
+        select(Huesped).filter_by(id_usuario=current_user.id)
+    ).scalar_one_or_none()
+    if not huesped:
         return []
+
+    reservas = db.session.execute(
+        select(Reserva).filter_by(id_huesped=huesped.id)
+        .order_by(Reserva.fecha_entrada.desc())
+    ).scalars().all()
+    return [r.to_dict() for r in reservas]
 
 
 def confirmar(reserva_id):
@@ -172,19 +169,16 @@ def confirmar(reserva_id):
     reserva.updated_at = ahora_colombia()
     db.session.commit()
 
-    try:
-        _enviar_email_confirmacion(reserva)
-        notificacion = db.session.execute(
-            select(Notificacion).filter_by(
-                id_reserva=reserva.id, tipo="confirmacion_reserva"
-            )
-        ).scalar_one_or_none()
-        if notificacion:
-            notificacion.enviado = True
-            notificacion.fecha_envio = ahora_colombia()
-            db.session.commit()
-    except Exception:
-        pass
+    _enviar_email_confirmacion(reserva)
+    notificacion = db.session.execute(
+        select(Notificacion).filter_by(
+            id_reserva=reserva.id, tipo="confirmacion_reserva"
+        )
+    ).scalar_one_or_none()
+    if notificacion:
+        notificacion.enviado = True
+        notificacion.fecha_envio = ahora_colombia()
+        db.session.commit()
 
     return reserva.to_dict()
 
@@ -359,7 +353,7 @@ def hacer_checkout(reserva_id, realizado_por_id=None):
     return resultado
 
 
-def _obtener_id_huesped(current_user):
+def _obtener_id_huesped(current_user, datos=None):
     """Obtiene el id_huesped del usuario actual."""
     rol_value = (
         current_user.rol.value
@@ -377,12 +371,11 @@ def _obtener_id_huesped(current_user):
             )
         return huesped.id
 
-    id_huesped = int(current_user.id)
-    huesped = db.session.get(Huesped, id_huesped)
-    if not huesped:
-        raise ValueError("Debes proporcionar el id_huesped en los datos.")
-
-    return id_huesped
+    if not datos or "id_huesped" not in datos:
+        raise ValueError(
+            "Debes proporcionar 'id_huesped' en los datos para este rol."
+        )
+    return datos["id_huesped"]
 
 
 def _validar_campos_obligatorios(datos):

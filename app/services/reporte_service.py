@@ -327,24 +327,15 @@ def generar_ingresos(fecha_inicio: str, fecha_fin: str, formato: str = "xlsx") -
             "reservas": len(reservas_tipo),
         }
 
-    subtotal_total = sum(
-        _formatear_numero(r.subtotal)
-        for r in db.session.execute(
-            select(Reserva).filter(
-                Reserva.fecha_entrada >= inicio,
-                Reserva.fecha_entrada <= fin,
-            )
-        ).scalars().all()
-    )
-    iva_total = sum(
-        _formatear_numero(r.impuestos)
-        for r in db.session.execute(
-            select(Reserva).filter(
-                Reserva.fecha_entrada >= inicio,
-                Reserva.fecha_entrada <= fin,
-            )
-        ).scalars().all()
-    )
+    reservas_rango = db.session.execute(
+        select(Reserva).filter(
+            Reserva.fecha_entrada >= inicio,
+            Reserva.fecha_entrada <= fin,
+        )
+    ).scalars().all()
+
+    subtotal_total = sum(_formatear_numero(r.subtotal) for r in reservas_rango)
+    iva_total = sum(_formatear_numero(r.impuestos) for r in reservas_rango)
 
     datos_xlsx = [
         ["Tipo de Habitación", "Reservas", "Servicios Adicionales ($)",

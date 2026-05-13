@@ -6,6 +6,7 @@ Gestión de facturas: emisión, descarga y anulación.
 import os
 from decimal import Decimal
 
+from flask import current_app
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
@@ -252,7 +253,7 @@ def emitir(reserva_id: int) -> dict:
 
     reserva = db.session.get(Reserva, reserva_id)
     subtotal_base = Decimal(str(reserva.subtotal))
-    impuestos = subtotal_base * Decimal("0.19")
+    impuestos = subtotal_base * Decimal(str(current_app.config["IVA_RATE"]))
     total = subtotal_base + impuestos + servicios_total
 
     factura.subtotal = reserva.subtotal

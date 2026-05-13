@@ -4,6 +4,8 @@ Modelo Usuario - Entidad central de autenticación y roles
 
 import enum
 import bcrypt
+from flask import current_app  # noqa: F401
+
 from app import db
 from app.utils.fecha_helper import ahora_colombia
 
@@ -50,7 +52,7 @@ class Usuario(db.Model):
 
     @password.setter
     def password(self, plain_text: str):
-        rounds = 12
+        rounds = current_app.config.get("BCRYPT_LOG_ROUNDS", 12)
         self._password_hash = bcrypt.hashpw(
             plain_text.encode("utf-8"),
             bcrypt.gensalt(rounds=rounds),
