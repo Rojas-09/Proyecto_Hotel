@@ -14,7 +14,11 @@
     { "key": "reserva_id", "value": "", "type": "string" },
     { "key": "servicio_id", "value": "", "type": "string" },
     { "key": "factura_id", "value": "", "type": "string" },
-    { "key": "usuario_cliente_id", "value": "", "type": "string" }
+    { "key": "usuario_admin_id", "value": "", "type": "string" },
+    { "key": "usuario_cliente_id", "value": "", "type": "string" },
+    { "key": "usuario_recep_id", "value": "", "type": "string" },
+    { "key": "usuario_gerente_id", "value": "", "type": "string" },
+    { "key": "token_gerente", "value": "", "type": "string" }
   ],
   "item": [
     {
@@ -28,7 +32,7 @@
             "url": "{{base_url}}/auth/register-admin",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Admin\",\n  \"apellido\": \"Principal\",\n  \"email\": \"admin@hotelbook.co\",\n  \"password\": \"Admin1234!\"\n}"
+              "raw": "{\n  \"nombre\": \"Admin\",\n  \"apellido\": \"Principal\",\n  \"email\": \"admin@hotelbook.co\",\n  \"password\": \"Admin1234!\",\n  \"telefono\": \"3212178190\"\n}"
             }
           },
           "event": [{
@@ -36,7 +40,10 @@
             "script": {
               "exec": [
                 "pm.test('Status 201 o 200', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
-                "pm.test('success true', () => pm.expect(pm.response.json().success).to.be.true);"
+                "pm.test('success true', () => pm.expect(pm.response.json().success).to.be.true);",
+                "const id = pm.response.json().data?.usuario?.id || pm.response.json().data?.id;",
+                "if (id) pm.collectionVariables.set('usuario_admin_id', id);",
+                "console.log('usuario_admin_id:', id);"
               ]
             }
           }]
@@ -75,9 +82,20 @@
             "url": "{{base_url}}/auth/register",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Recepcionista\",\n  \"apellido\": \"Test\",\n  \"email\": \"recep@hotelbook.co\",\n  \"password\": \"Recep1234!\",\n  \"rol\": \"recepcionista\"\n}"
+              "raw": "{\n  \"nombre\": \"Recepcionista\",\n  \"apellido\": \"Test\",\n  \"email\": \"recep@hotelbook.co\",\n  \"password\": \"Recep1234!\",\n  \"rol\": \"recepcionista\",\n  \"telefono\": \"3213178282\"\n}"
             }
-          }
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Recepcionista creado', () => pm.expect(pm.response.json().success).to.be.true);",
+                "const id = pm.response.json().data?.usuario?.id || pm.response.json().data?.id;",
+                "if (id) pm.collectionVariables.set('usuario_recep_id', id);",
+                "console.log('usuario_recep_id:', id);"
+              ]
+            }
+          }]
         },
         {
           "name": "0.4 Login recepcionista → token",
@@ -98,6 +116,107 @@
                 "if (token) pm.collectionVariables.set('token_recep', token);"
               ]
             }
+          }]
+        }
+        ,
+        {
+          "name": "0.5 Registrar gerente",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token_admin}}" }
+            ],
+            "url": "{{base_url}}/auth/register",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Gerente\",\n  \"apellido\": \"Hotel\",\n  \"email\": \"gerente@hotelbook.co\",\n  \"password\": \"Gerente1234!\",\n  \"rol\": \"gerente\",\n  \"telefono\": \"3215557788\"\n}"
+            }
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Gerente creado', () => pm.expect(pm.response.json().success).to.be.true);",
+                "const id = pm.response.json().data?.usuario?.id || pm.response.json().data?.id;",
+                "if (id) pm.collectionVariables.set('usuario_gerente_id', id);",
+                "console.log('usuario_gerente_id:', id);"
+              ]
+            }
+          }]
+        },
+        {
+          "name": "0.6 Login gerente → token",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{base_url}}/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"gerente@hotelbook.co\",\n  \"password\": \"Gerente1234!\"\n}"
+            }
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const token = pm.response.json().data?.token;",
+                "if (token) pm.collectionVariables.set('token_gerente', token);"
+              ]
+            }
+          }]
+        }
+        ,
+        {
+          "name": "0.7 Editar mi perfil (admin)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token_admin}}" }
+            ],
+            "url": "{{base_url}}/auth/me",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Admin Edited\",\n  \"apellido\": \"Principal\",\n  \"telefono\": \"3212178190\"\n}"
+            }
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Perfil actualizado', () => pm.expect(pm.response.json().success).to.be.true);"
+              ]
+            }
+          }]
+        }
+        ,
+        {
+          "name": "0.8 Obtener mi perfil (GET /me)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token_admin}}" }
+            ],
+            "url": "{{base_url}}/auth/me"
+          },
+          "event": [{
+            "listen": "test",
+            "script": { "exec": [ "pm.test('Me OK', () => pm.expect(pm.response.json().success).to.be.true);" ] }
+          }]
+        },
+        {
+          "name": "0.9 Eliminar mi cuenta (DELETE /me)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token_admin}}" }
+            ],
+            "url": "{{base_url}}/auth/me"
+          },
+          "event": [{
+            "listen": "test",
+            "script": { "exec": [ "pm.test('Cuenta desactivada', () => pm.expect(pm.response.json().success).to.be.true);" ] }
           }]
         }
       ]
@@ -226,6 +345,16 @@
               ]
             }
           }]
+        }
+        ,
+        {
+          "name": "2.4 Ver usuario por id (propio)",
+          "request": {
+            "method": "GET",
+            "header": [ { "key": "Authorization", "value": "Bearer {{token_cliente}}" } ],
+            "url": "{{base_url}}/auth/usuarios/{{usuario_cliente_id}}"
+          },
+          "event": [{ "listen": "test", "script": { "exec": [ "pm.test('Usuario OK', () => pm.expect(pm.response.json().success).to.be.true);" ] } }]
         }
       ]
     },
@@ -756,6 +885,179 @@
             "script": {
               "exec": [
                 "pm.test('No existe → 404', () => pm.expect(pm.response.code).to.equal(404));"
+              ]
+            }
+          }]
+        }
+      ]
+    },
+    {
+      "name": "13 — Pruebas por rol",
+      "item": [
+        {
+          "name": "13.1 Cliente edita su perfil",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token_cliente}}" }
+            ],
+            "url": "{{base_url}}/auth/me",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Carlos\",\n  \"apellido\": \"Rodriguez\",\n  \"telefono\": \"3009998888\"\n}"
+            }
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Cliente puede editarse', () => pm.expect(pm.response.code).to.equal(200));",
+                "pm.test('success true', () => pm.expect(pm.response.json().success).to.be.true);"
+              ]
+            }
+          }]
+        },
+        {
+          "name": "13.2 Recepcionista edita cliente",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token_recep}}" }
+            ],
+            "url": "{{base_url}}/auth/usuarios/{{usuario_cliente_id}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Carlos\",\n  \"apellido\": \"Rodriguez\",\n  \"telefono\": \"3001112233\"\n}"
+            }
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Recepcionista puede editar cliente', () => pm.expect(pm.response.code).to.equal(200));",
+                "pm.test('success true', () => pm.expect(pm.response.json().success).to.be.true);"
+              ]
+            }
+          }]
+        },
+        {
+          "name": "13.3 Gerente edita recepcionista",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token_gerente}}" }
+            ],
+            "url": "{{base_url}}/auth/usuarios/{{usuario_recep_id}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Recepcionista\",\n  \"apellido\": \"Test\",\n  \"telefono\": \"3213178283\"\n}"
+            }
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Gerente puede editar recepcionista', () => pm.expect(pm.response.code).to.equal(200));",
+                "pm.test('success true', () => pm.expect(pm.response.json().success).to.be.true);"
+              ]
+            }
+          }]
+        },
+        {
+          "name": "13.4 Admin edita cliente",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token_admin}}" }
+            ],
+            "url": "{{base_url}}/auth/usuarios/{{usuario_cliente_id}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Carlos\",\n  \"apellido\": \"Rodriguez\",\n  \"telefono\": \"3002223344\"\n}"
+            }
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Admin puede editar cualquiera', () => pm.expect(pm.response.code).to.equal(200));",
+                "pm.test('success true', () => pm.expect(pm.response.json().success).to.be.true);"
+              ]
+            }
+          }]
+        },
+        {
+          "name": "13.5 Recepcionista intenta editar gerente → 403",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token_recep}}" }
+            ],
+            "url": "{{base_url}}/auth/usuarios/{{usuario_gerente_id}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Gerente\",\n  \"apellido\": \"Hotel\"\n}"
+            }
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Recepcionista no puede editar gerente', () => pm.expect(pm.response.code).to.equal(403));",
+                "pm.test('error FORBIDDEN', () => pm.expect(pm.response.json().error.code).to.equal('FORBIDDEN'));"
+              ]
+            }
+          }]
+        },
+        {
+          "name": "13.6 Gerente intenta editar admin → 403",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token_gerente}}" }
+            ],
+            "url": "{{base_url}}/auth/usuarios/{{usuario_admin_id}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Admin\",\n  \"apellido\": \"Principal\"\n}"
+            }
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Gerente no puede editar admin', () => pm.expect(pm.response.code).to.equal(403));",
+                "pm.test('error FORBIDDEN', () => pm.expect(pm.response.json().error.code).to.equal('FORBIDDEN'));"
+              ]
+            }
+          }]
+        },
+        {
+          "name": "13.7 Cliente intenta editar recepcionista → 403",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token_cliente}}" }
+            ],
+            "url": "{{base_url}}/auth/usuarios/{{usuario_recep_id}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Recepcionista\",\n  \"apellido\": \"Test\"\n}"
+            }
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Cliente no puede editar recepcionista', () => pm.expect(pm.response.code).to.equal(403));",
+                "pm.test('error FORBIDDEN', () => pm.expect(pm.response.json().error.code).to.equal('FORBIDDEN'));"
               ]
             }
           }]

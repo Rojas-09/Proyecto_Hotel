@@ -81,7 +81,7 @@ def test_habitaciones_crear_error_500(client, app, monkeypatch):
         "/api/v1/habitaciones/",
         json={
             "numero": "999",
-            "tipo": "Simple",
+            "tipo": "simple",
             "precio_noche": 100,
             "capacidad": 1,
         },

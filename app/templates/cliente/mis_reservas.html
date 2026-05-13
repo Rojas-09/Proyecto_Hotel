@@ -1,0 +1,30 @@
+{% extends "layouts/base_public.html" %}
+
+{% block title %}Mis Reservas — HotelBook Pro{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/cliente/reservas.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container" style="padding-top: var(--spacing-md); padding-bottom: var(--spacing-lg);">
+    <div class="page-header" data-reveal>
+        <span class="section-label">Panel del Cliente</span>
+        <h1>Mis Reservas</h1>
+    </div>
+
+    <div id="reservas-list">
+        <div class="empty-state" data-reveal>
+            <i class="ti ti-calendar-x" style="font-size: 4rem; margin-bottom: 1rem;"></i>
+            <h2>No tienes reservas aún</h2>
+            <p>Explora nuestras habitaciones y realiza tu primera reserva.</p>
+            <br>
+            <a href="/habitaciones" class="btn btn-gold">Ver Habitaciones</a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/cliente/reservas.js') }}"></script>
+{% endblock %}
