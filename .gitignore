@@ -70,4 +70,7 @@ tests/data/
 Datos.md
 
 # Agent instructions (privado)
-.agents/
+.agents/postman.json
+
+# Postman collection (sensitive)
+postman.json
