@@ -58,7 +58,7 @@ def crear(datos, current_user):
     noches = (fecha_salida - fecha_entrada).days
     precio_noche = Decimal(str(habitacion.precio_noche))
     subtotal = precio_noche * noches
-    impuestos = subtotal * Decimal("0.19")
+    impuestos = subtotal * Decimal(str(current_app.config["IVA_RATE"]))
     total = subtotal + impuestos
 
     reserva = Reserva(
@@ -127,15 +127,10 @@ def obtener_por_id(reserva_id, current_user):
         else current_user.rol
     )
     if rol_value == "cliente":
-        try:
-            huesped = db.session.execute(
-                select(Huesped).filter_by(id_usuario=current_user.id)
-            ).scalar_one_or_none()
-            if not huesped or reserva.id_huesped != huesped.id:
-                raise PermissionError(
-                    "No tienes permiso para ver esta reserva."
-                )
-        except Exception:
+        huesped = db.session.execute(
+            select(Huesped).filter_by(id_usuario=current_user.id)
+        ).scalar_one_or_none()
+        if not huesped or reserva.id_huesped != huesped.id:
             raise PermissionError(
                 "No tienes permiso para ver esta reserva."
             )

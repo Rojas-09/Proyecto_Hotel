@@ -194,17 +194,24 @@ class AuthService:
                         ),
                     }
                 }, 400
+            return AuthService.registrar(data)
 
-        result, status = AuthService.registrar(data)
-        if result["success"] and rol != "cliente":
-            usuario = db.session.execute(
-                select(Usuario).filter_by(email=data["email"].lower())
-            ).scalar_one_or_none()
-            usuario.rol = RolEnum[rol]
-            db.session.commit()
-            result["data"]["usuario"] = usuario.to_dict()
-
-        return result, status
+        usuario = Usuario(
+            nombre=data["nombre"].strip(),
+            apellido=data.get("apellido", "").strip(),
+            email=data["email"].lower().strip(),
+            telefono=data.get("telefono", "").strip(),
+            rol=RolEnum[rol],
+        )
+        usuario.password = data["password"]
+        db.session.add(usuario)
+        db.session.flush()
+        db.session.commit()
+        return {
+            "success": True,
+            "data": {"usuario": usuario.to_dict()},
+            "mensaje": f"Usuario {rol} creado correctamente."
+        }, 201
 
     @staticmethod
     def crear_primer_admin(data: dict) -> dict:

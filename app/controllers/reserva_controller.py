@@ -168,17 +168,17 @@ def hacer_checkin(current_user, reserva_id):
         return jsonify({
             "success": True,
             "data": reserva,
-            "message": "Check-in realizado correctamente."
+            "mensaje": "Check-in realizado correctamente."
         }), 200
     except LookupError as e:
-        return jsonify({"success": False, "message": str(e)}), 404
+        return jsonify({"success": False, "mensaje": str(e)}), 404
     except ValueError as e:
-        return jsonify({"success": False, "message": str(e)}), 400
+        return jsonify({"success": False, "mensaje": str(e)}), 400
     except Exception as e:
         return jsonify({
             "success": False,
-            "message": "Error interno del servidor.",
-            "detail": str(e)
+            "mensaje": "Error interno del servidor.",
+            "detalle": str(e)
         }), 500
 
 
@@ -191,18 +191,18 @@ def hacer_checkout(current_user, reserva_id):
         return jsonify({
             "success": True,
             "data": reserva,
-            "message": (
+            "mensaje": (
                 "Check-out realizado correctamente. "
                 f"Puntos ganados: {reserva.get('puntos_ganados', 0)}"
             )
         }), 200
     except LookupError as e:
-        return jsonify({"success": False, "message": str(e)}), 404
+        return jsonify({"success": False, "mensaje": str(e)}), 404
     except ValueError as e:
-        return jsonify({"success": False, "message": str(e)}), 400
+        return jsonify({"success": False, "mensaje": str(e)}), 400
     except Exception as e:
         return jsonify({
             "success": False,
-            "message": "Error interno del servidor.",
-            "detail": str(e)
+            "mensaje": "Error interno del servidor.",
+            "detalle": str(e)
         }), 500

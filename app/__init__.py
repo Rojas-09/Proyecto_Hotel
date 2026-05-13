@@ -60,7 +60,8 @@ def create_app(config_name="development"):
     from app.models import puntos_fidelidad  # noqa: F401
 
     # Crear tablas si no existen (solo en desarrollo)
-    with app.app_context():
-        db.create_all()
+    if config_name in ("development", "testing"):
+        with app.app_context():
+            db.create_all()
 
     return app
