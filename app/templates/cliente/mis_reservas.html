@@ -1,36 +1,3 @@
-<<<<<<< HEAD
-<<<<<<< HEAD
-{% extends "layouts/base_public.html" %}
-=======
-{% extends "layouts/base_private.html" %}
->>>>>>> origin/Test-endpoint
-
-{% block title %}Mis Reservas — HotelBook Pro{% endblock %}
-
-{% block nav_links %}
-<li><a href="{{ url_for('views.reserva') }}">Nueva Reserva</a></li>
-{% endblock %}
-
-{% block content %}
-<div style="padding-top: 2rem;">
-    <div class="container">
-        <div class="page-header d-flex-between">
-            <div>
-                <h1>Mis Reservas</h1>
-                <p class="text-muted mb-0">Historial y estado de tus reservas</p>
-            </div>
-            <a href="{{ url_for('views.reserva') }}" class="btn btn-primary">Nueva Reserva</a>
-        </div>
-
-<<<<<<< HEAD
-    <div id="reservas-list">
-        <div class="empty-state" data-reveal>
-            <i class="ti ti-calendar-x" style="font-size: 4rem; margin-bottom: 1rem;"></i>
-            <h2>No tienes reservas aún</h2>
-            <p>Explora nuestras habitaciones y realiza tu primera reserva.</p>
-            <br>
-            <a href="/habitaciones" class="btn btn-gold">Ver Habitaciones</a>
-=======
 {% extends "layouts/base_private.html" %}
 
 {% block title %}Mis Reservas — HotelBook Pro{% endblock %}
@@ -50,8 +17,6 @@
             <a href="{{ url_for('views.reserva') }}" class="btn btn-primary">Nueva Reserva</a>
         </div>
 
-=======
->>>>>>> origin/Test-endpoint
         {% with messages = get_flashed_messages(with_categories=true) %}
           {% if messages %}
             {% for category, message in messages %}
@@ -81,22 +46,12 @@
                     <p class="mt-2">Cargando...</p>
                 </div>
             </div>
-<<<<<<< HEAD
->>>>>>> origin/Feature-front
-=======
->>>>>>> origin/Test-endpoint
         </div>
     </div>
 </div>
 {% endblock %}
 
 {% block extra_js %}
-<<<<<<< HEAD
-<<<<<<< HEAD
-<script src="{{ url_for('static', filename='js/cliente/reservas.js') }}"></script>
-=======
-=======
->>>>>>> origin/Test-endpoint
 <script src="{{ url_for('static', filename='js/api.js') }}"></script>
 <script>
 (function() {
@@ -177,8 +132,4 @@
     });
 })();
 </script>
-<<<<<<< HEAD
->>>>>>> origin/Feature-front
-=======
->>>>>>> origin/Test-endpoint
 {% endblock %}
