@@ -310,6 +310,7 @@ Payload: { "user_id": int, "email": str, "role": str }
 | R6 | Check-out: hora máxima 12:00 |
 | R7 | Spa: no permitir citas superpuestas |
 | R8 | Fidelización: 10 puntos/noche efectiva |
+| R9 | Auth: Un usuario no puede eliminarse ni desactivarse a sí mismo |
 
 ---
 
@@ -319,6 +320,7 @@ Payload: { "user_id": int, "email": str, "role": str }
 |---------|-------|---------|
 | 1.0.0 | Mayo 2026 | Primera versión API |
 | 1.0.1 | Mayo 2026 | Módulo Auth implementado (registro, login, JWT) |
+| 1.0.2 | Mayo 2026 | Regla de negocio Auth: prevenir auto-eliminación y auto-desactivación |
 
 ---
 

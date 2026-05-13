@@ -78,7 +78,7 @@ El propósito fundamental es consolidar una plataforma madura, robusta y escalab
 |------------|-----------|---------|
 | **Backend** | Flask | 3.1.3 |
 | **Lenguaje** | Python | 3.12 |
-| **ORM** | SQLAlchemy | - |
+| **ORM** | SQLAlchemy | 2.0+ |
 | **BD (Producción)** | PostgreSQL | 12+ |
 | **BD (Desarrollo)** | SQLite | - |
 | **API Doc** | Swagger/OpenAPI | - |
