@@ -1,19 +1,28 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
 {% extends "layouts/base_public.html" %}
+=======
+{% extends "layouts/base_private.html" %}
+>>>>>>> origin/Test-endpoint
 
 {% block title %}Mis Reservas — HotelBook Pro{% endblock %}
 
-{% block extra_css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/cliente/reservas.css') }}">
+{% block nav_links %}
+<li><a href="{{ url_for('views.reserva') }}">Nueva Reserva</a></li>
 {% endblock %}
 
 {% block content %}
-<div class="container" style="padding-top: var(--spacing-md); padding-bottom: var(--spacing-lg);">
-    <div class="page-header" data-reveal>
-        <span class="section-label">Panel del Cliente</span>
-        <h1>Mis Reservas</h1>
-    </div>
+<div style="padding-top: 2rem;">
+    <div class="container">
+        <div class="page-header d-flex-between">
+            <div>
+                <h1>Mis Reservas</h1>
+                <p class="text-muted mb-0">Historial y estado de tus reservas</p>
+            </div>
+            <a href="{{ url_for('views.reserva') }}" class="btn btn-primary">Nueva Reserva</a>
+        </div>
 
+<<<<<<< HEAD
     <div id="reservas-list">
         <div class="empty-state" data-reveal>
             <i class="ti ti-calendar-x" style="font-size: 4rem; margin-bottom: 1rem;"></i>
@@ -41,6 +50,8 @@
             <a href="{{ url_for('views.reserva') }}" class="btn btn-primary">Nueva Reserva</a>
         </div>
 
+=======
+>>>>>>> origin/Test-endpoint
         {% with messages = get_flashed_messages(with_categories=true) %}
           {% if messages %}
             {% for category, message in messages %}
@@ -70,7 +81,10 @@
                     <p class="mt-2">Cargando...</p>
                 </div>
             </div>
+<<<<<<< HEAD
 >>>>>>> origin/Feature-front
+=======
+>>>>>>> origin/Test-endpoint
         </div>
     </div>
 </div>
@@ -78,8 +92,11 @@
 
 {% block extra_js %}
 <<<<<<< HEAD
+<<<<<<< HEAD
 <script src="{{ url_for('static', filename='js/cliente/reservas.js') }}"></script>
 =======
+=======
+>>>>>>> origin/Test-endpoint
 <script src="{{ url_for('static', filename='js/api.js') }}"></script>
 <script>
 (function() {
@@ -160,5 +177,8 @@
     });
 })();
 </script>
+<<<<<<< HEAD
 >>>>>>> origin/Feature-front
+=======
+>>>>>>> origin/Test-endpoint
 {% endblock %}

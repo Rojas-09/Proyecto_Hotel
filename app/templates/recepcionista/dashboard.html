@@ -1,26 +1,72 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
 {% extends "layouts/base_public.html" %}
+=======
+{% extends "layouts/base_recepcionista.html" %}
+>>>>>>> origin/Test-endpoint
 
-{% block title %}Panel Recepcionista — HotelBook Pro{% endblock %}
-
-{% block extra_css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/recepcionista/dashboard.css') }}">
-{% endblock %}
+{% block title %}Dashboard Recepción — HotelBook Pro{% endblock %}
 
 {% block content %}
-<div class="dashboard-page container" data-reveal>
-    <div class="dashboard-header">
-        <span class="section-label">Panel Operativo</span>
-        <h1>Recepción<span class="gold">.</span></h1>
-    </div>
+<div style="padding-top: 2rem;">
+    <div class="container">
+        <div class="page-header">
+            <h1>Panel de Recepción</h1>
+            <p class="text-muted mb-0">Resumen operativo del día</p>
+        </div>
 
-    <div class="placeholder-note" data-reveal>
-        <i class="ti ti-user-check" style="font-size: 4rem; margin-bottom: 1rem;"></i>
-        <h2>Panel de recepcionista en desarrollo</h2>
-        <p>Gestión de check-in, check-out y reservas activas.</p>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="alert alert-{{ 'danger' if category == 'danger' else 'success' if category == 'success' else 'info' }}">{{ message }}</div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
+        <div class="grid-4 mb-4">
+            <div class="stat-card">
+                <div class="stat-label">Reservas Hoy</div>
+                <div class="stat-value" id="stat-hoy">—</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Check-ins Hoy</div>
+                <div class="stat-value" id="stat-checkins">—</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Check-outs Hoy</div>
+                <div class="stat-value" id="stat-checkouts">—</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Hab. Disponibles</div>
+                <div class="stat-value" id="stat-disponibles">—</div>
+            </div>
+        </div>
+
+        <div class="grid-2">
+            <div class="card">
+                <div class="card-header d-flex-between">
+                    <span>Reservas Pendientes de Hoy</span>
+                    <a href="{{ url_for('views.recepcionista_checkin') }}" class="btn btn-primary btn-sm">Realizar Check-in</a>
+                </div>
+                <div class="card-body" id="reservas-hoy-container">
+                    <p class="text-muted text-center" style="padding:1rem;"><span class="spinner"></span> Cargando...</p>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header d-flex-between">
+                    <span>Habitaciones Disponibles</span>
+                    <a href="{{ url_for('views.recepcionista_reservas') }}" class="btn btn-secondary btn-sm">Ver Todas</a>
+                </div>
+                <div class="card-body" id="habitaciones-container">
+                    <p class="text-muted text-center" style="padding:1rem;"><span class="spinner"></span> Cargando...</p>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 {% endblock %}
+<<<<<<< HEAD
 =======
 {% extends "layouts/base_recepcionista.html" %}
 
@@ -85,6 +131,8 @@
     </div>
 </div>
 {% endblock %}
+=======
+>>>>>>> origin/Test-endpoint
 
 {% block extra_js %}
 <script src="{{ url_for('static', filename='js/api.js') }}"></script>
@@ -143,4 +191,7 @@
 })();
 </script>
 {% endblock %}
+<<<<<<< HEAD
 >>>>>>> origin/Feature-front
+=======
+>>>>>>> origin/Test-endpoint

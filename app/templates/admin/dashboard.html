@@ -1,45 +1,68 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
 {% extends "layouts/base_public.html" %}
+=======
+{% extends "layouts/base_admin.html" %}
+>>>>>>> origin/Test-endpoint
 
 {% block title %}Dashboard Admin — HotelBook Pro{% endblock %}
 
-{% block extra_css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/admin/dashboard.css') }}">
-{% endblock %}
-
 {% block content %}
-<div class="dashboard-page container" data-reveal>
-    <div class="dashboard-header">
-        <span class="section-label">Panel de Administración</span>
-        <h1>Dashboard<span class="gold">.</span></h1>
-    </div>
+<div style="padding-top: 2rem;">
+    <div class="container">
+        <div class="page-header">
+            <h1>Panel de Administración</h1>
+            <p class="text-muted mb-0">Resumen general del sistema</p>
+        </div>
 
-    <div class="stats-grid" data-reveal>
-        <div class="stat-card">
-            <div class="stat-value">12</div>
-            <div class="stat-label">Habitaciones</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-value">8</div>
-            <div class="stat-label">Reservas Activas</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-value">$4.2M</div>
-            <div class="stat-label">Ingresos Mes</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-value">78%</div>
-            <div class="stat-label">Ocupación</div>
-        </div>
-    </div>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="alert alert-{{ 'danger' if category == 'danger' else 'success' if category == 'success' else 'info' }}">{{ message }}</div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
 
-    <div class="placeholder-note" data-reveal>
-        <i class="ti ti-layout-dashboard" style="font-size: 4rem; margin-bottom: 1rem;"></i>
-        <h2>Dashboard en desarrollo</h2>
-        <p>Métricas y gráficos se cargarán aquí.</p>
+        <div class="grid-4 mb-4">
+            <div class="stat-card">
+                <div class="stat-label">Total Usuarios</div>
+                <div class="stat-value" id="s-usuarios">—</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Habitaciones</div>
+                <div class="stat-value" id="s-habitaciones">—</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Disponibles</div>
+                <div class="stat-value" id="s-disponibles">—</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Reservas Totales</div>
+                <div class="stat-value" id="s-reservas">—</div>
+            </div>
+        </div>
+
+        <div class="grid-2">
+            <div class="card">
+                <div class="card-header">Usuarios Recientes</div>
+                <div class="card-body" id="usuarios-recientes">
+                    <p class="text-muted text-center"><span class="spinner"></span></p>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-header">Accesos Rápidos</div>
+                <div class="card-body d-flex-gap gap-2 flex-wrap">
+                    <a href="{{ url_for('views.usuarios') }}" class="btn btn-primary">Gestionar Usuarios</a>
+                    <a href="{{ url_for('views.gestion_habitaciones') }}" class="btn btn-primary">Gestionar Habitaciones</a>
+                    <a href="{{ url_for('views.reportes') }}" class="btn btn-primary">Reportes</a>
+                    <a href="{{ url_for('views.recepcionista_reservas') }}" class="btn btn-secondary">Ver Reservas</a>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 {% endblock %}
+<<<<<<< HEAD
 =======
 {% extends "layouts/base_admin.html" %}
 
@@ -100,6 +123,8 @@
     </div>
 </div>
 {% endblock %}
+=======
+>>>>>>> origin/Test-endpoint
 
 {% block extra_js %}
 <script src="{{ url_for('static', filename='js/api.js') }}"></script>
@@ -145,4 +170,7 @@
 })();
 </script>
 {% endblock %}
+<<<<<<< HEAD
 >>>>>>> origin/Feature-front
+=======
+>>>>>>> origin/Test-endpoint
