@@ -49,7 +49,7 @@ def register():
         'email': request.form.get('email'),
         'password': request.form.get('password'),
         'telefono': request.form.get('telefono', ''),
-        'documento_id': request.form.get('documento_id', '00000000') # Valor por defecto si no está en el form
+        'documento_id': request.form.get('documento_id', '00000000'),
     }
     
     result, status = AuthService.registrar(data)
