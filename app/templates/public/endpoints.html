@@ -1,131 +1,100 @@
 {% extends "layouts/base_public.html" %}
 
-{% block title %}Centro de Endpoints — HotelBook Pro{% endblock %}
-
-{% block extra_css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/public/endpoints.css') }}">
-{% endblock %}
+{% block title %}Endpoints API — HotelBook Pro{% endblock %}
 
 {% block content %}
-<section class="endpoint-hero">
-    <div class="container endpoint-hero-grid">
-        <div data-reveal>
-            <span class="section-label">Centro de navegación</span>
-            <h1>HTML básico para<br>ver cada endpoint<span class="gold">.</span></h1>
-            <p style="max-width: 760px; margin-top: 1.5rem; font-size: 1.05rem; opacity: 0.8;">
-                Este panel reúne las pantallas visuales del proyecto y el catálogo de endpoints REST.
-                Sirve como base para probar, documentar y seguir ampliando la interfaz sin perder el mapa de rutas.
-            </p>
+<div class="page-header">
+    <h1>Documentación de Endpoints</h1>
+    <p class="text-muted">API REST — HotelBook Pro v1</p>
+</div>
 
-            <div class="search-bar">
-                <input id="endpoint-search" type="search" placeholder="Buscar ruta, módulo o método">
-                <a href="#api-endpoints" class="btn btn-gold">Ver API</a>
-            </div>
-        </div>
-
-        <div class="hero-panel" data-reveal>
-            <span class="section-label">Resumen rápido</span>
-            <div style="display: grid; gap: 1rem;">
-                <div>
-                    <h3 style="font-size: 2.4rem; margin-bottom: 0.4rem;">{{ ui_pages|length }}</h3>
-                    <p>Vistas HTML principales</p>
-                </div>
-                <div>
-                    <h3 style="font-size: 2.4rem; margin-bottom: 0.4rem;">{{ api_groups|length }}</h3>
-                    <p>Módulos REST agrupados</p>
-                </div>
-                <div>
-                    <h3 style="font-size: 2.4rem; margin-bottom: 0.4rem;">JWT</h3>
-                    <p>Autenticación requerida en la mayoría de acciones operativas.</p>
-                </div>
-            </div>
+<div class="card mb-4">
+    <div class="card-header">Autenticación</div>
+    <div class="card-body">
+        <div class="table-wrapper">
+            <table>
+                <thead><tr><th>Método</th><th>Ruta</th><th>Descripción</th><th>Auth</th></tr></thead>
+                <tbody>
+                    <tr><td><span class="badge badge-success">POST</span></td><td><code>/api/v1/auth/register</code></td><td>Registro de cliente</td><td>No</td></tr>
+                    <tr><td><span class="badge badge-success">POST</span></td><td><code>/api/v1/auth/login</code></td><td>Inicio de sesión</td><td>No</td></tr>
+                    <tr><td><span class="badge badge-info">GET</span></td><td><code>/api/v1/auth/me</code></td><td>Datos del usuario</td><td>JWT</td></tr>
+                    <tr><td><span class="badge badge-info">GET</span></td><td><code>/api/v1/auth/usuarios</code></td><td>Listar usuarios</td><td>admin</td></tr>
+                    <tr><td><span class="badge badge-warning">PUT</span></td><td><code>/api/v1/auth/usuarios/&lt;id&gt;</code></td><td>Editar usuario</td><td>admin/gerente</td></tr>
+                    <tr><td><span class="badge badge-danger">DELETE</span></td><td><code>/api/v1/auth/usuarios/&lt;id&gt;</code></td><td>Desactivar usuario</td><td>admin</td></tr>
+                </tbody>
+            </table>
         </div>
     </div>
-</section>
+</div>
 
-<section class="endpoint-section">
-    <div class="container">
-        <div class="section-heading" data-reveal>
-            <div>
-                <span class="section-label">Pantallas visuales</span>
-                <h2>Vistas HTML disponibles</h2>
-            </div>
-            <p style="max-width: 500px; opacity: 0.7;">Accesos pensados para el navegador y para continuar desarrollando el frontend por rol.</p>
-        </div>
-
-        <div class="card-grid">
-            {% for page in ui_pages %}
-            <article class="page-card endpoint-search-item" data-reveal data-search="{{ page['name'] }} {{ page['path'] }} {{ page['description'] }}">
-                <div class="meta-row">
-                    <span class="badge method">{{ page['method'] }}</span>
-                    <span class="badge">HTML</span>
-                </div>
-                <h3 style="font-size: 1.4rem;">{{ page['name'] }}</h3>
-                <p style="opacity: 0.75;">{{ page['description'] }}</p>
-                <div class="route-pill">{{ page['path'] }}</div>
-                <a href="{{ page['path'] if page['path'].startswith('/') else '#' }}" class="page-link">
-                    Abrir vista <i class="ti ti-arrow-right"></i>
-                </a>
-            </article>
-            {% endfor %}
+<div class="card mb-4">
+    <div class="card-header">Habitaciones</div>
+    <div class="card-body">
+        <div class="table-wrapper">
+            <table>
+                <thead><tr><th>Método</th><th>Ruta</th><th>Descripción</th><th>Auth</th></tr></thead>
+                <tbody>
+                    <tr><td><span class="badge badge-info">GET</span></td><td><code>/api/v1/habitaciones/</code></td><td>Listar (filtros: tipo, estado)</td><td>No</td></tr>
+                    <tr><td><span class="badge badge-info">GET</span></td><td><code>/api/v1/habitaciones/disponibles</code></td><td>Disponibilidad por fechas</td><td>No</td></tr>
+                    <tr><td><span class="badge badge-info">GET</span></td><td><code>/api/v1/habitaciones/&lt;id&gt;</code></td><td>Detalle de habitación</td><td>No</td></tr>
+                    <tr><td><span class="badge badge-success">POST</span></td><td><code>/api/v1/habitaciones/</code></td><td>Crear habitación</td><td>admin</td></tr>
+                    <tr><td><span class="badge badge-warning">PUT</span></td><td><code>/api/v1/habitaciones/&lt;id&gt;</code></td><td>Editar habitación</td><td>admin</td></tr>
+                    <tr><td><span class="badge badge-danger">DELETE</span></td><td><code>/api/v1/habitaciones/&lt;id&gt;</code></td><td>Eliminar habitación</td><td>admin</td></tr>
+                </tbody>
+            </table>
         </div>
     </div>
-</section>
+</div>
 
-<section class="endpoint-section" id="api-endpoints">
-    <div class="container">
-        <div class="section-heading" data-reveal>
-            <div>
-                <span class="section-label">API REST</span>
-                <h2>Rutas por módulo</h2>
-            </div>
-            <p style="max-width: 500px; opacity: 0.7;">Cada tarjeta resume un grupo de endpoints. El filtro de arriba ayuda a localizarlos rápido.</p>
-        </div>
-
-        <div class="api-groups">
-            {% for group in api_groups %}
-            <section class="group-shell endpoint-search-item" data-reveal data-search="{{ group['title'] }} {{ group['prefix'] }} {% for item in group['items'] %}{{ item['method'] }} {{ item['path'] }} {{ item['description'] }} {% endfor %}">
-                <div>
-                    <span class="group-prefix">{{ group['prefix'] or 'Sin prefijo compartido' }}</span>
-                    <h3 class="group-title">{{ group['title'] }}</h3>
-                </div>
-
-                <div class="group-grid">
-                    {% for item in group['items'] %}
-                    <article class="endpoint-card">
-                        <div class="meta-row">
-                            <span class="badge method">{{ item['method'] }}</span>
-                            <span class="badge">API</span>
-                        </div>
-                        <div class="route-pill">{{ group['prefix'] }}{{ item['path'] }}</div>
-                        <p style="opacity: 0.75;">{{ item['description'] }}</p>
-                        <button type="button" class="btn btn-outline copy-endpoint" data-copy="{{ group['prefix'] }}{{ item['path'] }}" style="padding: 0.9rem 1.3rem; width: fit-content;">
-                            Copiar ruta
-                        </button>
-                    </article>
-                    {% endfor %}
-                </div>
-            </section>
-            {% endfor %}
+<div class="card mb-4">
+    <div class="card-header">Reservas</div>
+    <div class="card-body">
+        <div class="table-wrapper">
+            <table>
+                <thead><tr><th>Método</th><th>Ruta</th><th>Descripción</th><th>Auth</th></tr></thead>
+                <tbody>
+                    <tr><td><span class="badge badge-success">POST</span></td><td><code>/api/v1/reservas/</code></td><td>Crear reserva</td><td>cliente/recep/admin</td></tr>
+                    <tr><td><span class="badge badge-info">GET</span></td><td><code>/api/v1/reservas/</code></td><td>Listar reservas</td><td>admin/recep/gerente</td></tr>
+                    <tr><td><span class="badge badge-info">GET</span></td><td><code>/api/v1/reservas/mis-reservas</code></td><td>Mis reservas</td><td>cliente</td></tr>
+                    <tr><td><span class="badge badge-info">GET</span></td><td><code>/api/v1/reservas/&lt;id&gt;</code></td><td>Detalle reserva</td><td>cliente/recep/admin</td></tr>
+                    <tr><td><span class="badge badge-warning">PUT</span></td><td><code>/api/v1/reservas/&lt;id&gt;/confirmar</code></td><td>Confirmar</td><td>admin</td></tr>
+                    <tr><td><span class="badge badge-warning">PUT</span></td><td><code>/api/v1/reservas/&lt;id&gt;/cancelar</code></td><td>Cancelar</td><td>cliente/recep/admin</td></tr>
+                    <tr><td><span class="badge badge-warning">PUT</span></td><td><code>/api/v1/reservas/&lt;id&gt;/checkin</code></td><td>Check-in</td><td>admin/recepcionista</td></tr>
+                    <tr><td><span class="badge badge-warning">PUT</span></td><td><code>/api/v1/reservas/&lt;id&gt;/checkout</code></td><td>Check-out</td><td>admin/recepcionista</td></tr>
+                </tbody>
+            </table>
         </div>
     </div>
-</section>
+</div>
 
-<section class="endpoint-section">
-    <div class="container">
-        <div class="hero-panel" data-reveal>
-            <span class="section-label">Nota de trabajo</span>
-            <h2>Base visual lista para seguir creciendo</h2>
-            <p style="margin-top: 1rem; opacity: 0.75; max-width: 900px;">
-                Los endpoints REST siguen respondiendo JSON y se prueban mejor con JWT o con la colección de Postman.
-                Esta pantalla deja organizadas las rutas clave y sirve como punto de partida para convertir más módulos
-                en formularios, tablas y flujos completos.
-            </p>
+<div class="card mb-4">
+    <div class="card-header">Pagos</div>
+    <div class="card-body">
+        <div class="table-wrapper">
+            <table>
+                <thead><tr><th>Método</th><th>Ruta</th><th>Descripción</th><th>Auth</th></tr></thead>
+                <tbody>
+                    <tr><td><span class="badge badge-success">POST</span></td><td><code>/api/v1/pagos/garantia/&lt;reserva_id&gt;</code></td><td>Pagar garantía</td><td>cliente/recep/admin</td></tr>
+                    <tr><td><span class="badge badge-success">POST</span></td><td><code>/api/v1/pagos/liquidacion/&lt;reserva_id&gt;</code></td><td>Pagar liquidación</td><td>recep/admin</td></tr>
+                    <tr><td><span class="badge badge-info">GET</span></td><td><code>/api/v1/pagos/reserva/&lt;reserva_id&gt;</code></td><td>Ver pagos de reserva</td><td>recep/admin</td></tr>
+                </tbody>
+            </table>
         </div>
     </div>
-</section>
-{% endblock %}
+</div>
 
-{% block extra_js %}
-<script src="{{ url_for('static', filename='js/public/endpoints.js') }}"></script>
+<div class="card">
+    <div class="card-header">Reportes</div>
+    <div class="card-body">
+        <div class="table-wrapper">
+            <table>
+                <thead><tr><th>Método</th><th>Ruta</th><th>Descripción</th><th>Auth</th></tr></thead>
+                <tbody>
+                    <tr><td><span class="badge badge-info">GET</span></td><td><code>/api/v1/reportes/ocupacion</code></td><td>Ocupación (formato: xlsx/pdf)</td><td>admin/gerente</td></tr>
+                    <tr><td><span class="badge badge-info">GET</span></td><td><code>/api/v1/reportes/ingresos</code></td><td>Ingresos</td><td>admin/gerente</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
 {% endblock %}

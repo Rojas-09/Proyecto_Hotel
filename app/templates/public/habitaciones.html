@@ -1,53 +1,99 @@
 {% extends "layouts/base_public.html" %}
 
-{% block title %}Colección de Habitaciones — HotelBook Pro{% endblock %}
-
-{% block extra_css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/public/habitaciones.css') }}">
-{% endblock %}
+{% block title %}Habitaciones Disponibles — HotelBook Pro{% endblock %}
 
 {% block content %}
-<header class="page-header">
-    <div class="container" data-reveal>
-        <span class="section-label">Curaduría Exclusiva</span>
-        <h1>Nuestra<br>Colección<span class="gold">.</span></h1>
+<div class="page-header d-flex-between">
+    <div>
+        <h1>Nuestras Habitaciones</h1>
+        <p class="text-muted mb-0">{{ habitaciones|length }} habitación(es) disponible(s)</p>
     </div>
-</header>
+    <a href="{{ url_for('views.reserva') }}" class="btn btn-primary">Reservar</a>
+</div>
 
-<div class="container">
-    <div class="filter-bar" data-reveal>
-        <a href="{{ url_for('views.habitaciones') }}" class="filter-item {% if not request.args.get('tipo') %}active{% endif %}">Todas</a>
-        <a href="{{ url_for('views.habitaciones', tipo='simple') }}" class="filter-item {% if request.args.get('tipo') == 'simple' %}active{% endif %}">Simples</a>
-        <a href="{{ url_for('views.habitaciones', tipo='doble') }}" class="filter-item {% if request.args.get('tipo') == 'doble' %}active{% endif %}">Dobles</a>
-        <a href="{{ url_for('views.habitaciones', tipo='suite') }}" class="filter-item {% if request.args.get('tipo') == 'suite' %}active{% endif %}">Suites</a>
-        <a href="{{ url_for('views.habitaciones', tipo='deluxe') }}" class="filter-item {% if request.args.get('tipo') == 'deluxe' %}active{% endif %}">Deluxe</a>
-    </div>
-
-    <div class="rooms-list">
-        {% if habitaciones %}
-            {% for room in habitaciones %}
-            <article class="room-item" data-reveal>
-                <a href="{{ url_for('views.detalle_habitacion', id=room.id) }}">
-                    <div class="img-wrapper">
-                        <img src="https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=800&q=85" 
-                             alt="{{ room.tipo.value }}"
-                             onerror="this.src='https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=800&q=85'">
-                        <div class="img-overlay"></div>
-                    </div>
-                    <div class="room-content">
-                        <span class="meta">{{ room.tipo.value }} · Piso {{ room.piso }} · Capacidad: {{ room.capacidad }}</span>
-                        <h3>Habitación {{ room.numero }}</h3>
-                        <p class="price">${{ "{:,.0f}".format(room.precio_noche) }} <span style="font-size: 0.9rem; opacity: 0.5; font-weight: 400;">/ noche</span></p>
-                    </div>
-                </a>
-            </article>
-            {% endfor %}
-        {% else %}
-            <div style="grid-column: 1 / -1; padding: var(--spacing-lg) 0; text-align: center;">
-                <p style="opacity: 0.5; font-size: 1.2rem;">No se encontraron habitaciones disponibles con estos criterios.</p>
-                <a href="{{ url_for('views.habitaciones') }}" class="btn btn-outline" style="margin-top: 3rem;">Ver Todas</a>
+<div class="card mb-4">
+    <div class="card-body" style="display:flex; gap:0.5rem; flex-wrap:wrap; align-items:flex-end;">
+        <form method="GET" action="{{ url_for('views.habitaciones') }}">
+            <div class="d-flex-gap gap-1" style="flex-wrap:wrap;">
+                <div class="form-group" style="margin-bottom:0;">
+                    <label class="text-sm">Tipo</label>
+                    <select name="tipo" class="form-control" onchange="this.form.submit()">
+                        <option value="">Todas</option>
+                        <option value="simple" {% if filtro_tipo=='simple' %}selected{% endif %}>Simple</option>
+                        <option value="doble" {% if filtro_tipo=='doble' %}selected{% endif %}>Doble</option>
+                        <option value="suite" {% if filtro_tipo=='suite' %}selected{% endif %}>Suite</option>
+                        <option value="deluxe" {% if filtro_tipo=='deluxe' %}selected{% endif %}>Deluxe</option>
+                    </select>
+                </div>
+                <div class="form-group" style="margin-bottom:0;">
+                    <label class="text-sm">Estado</label>
+                    <select name="estado" class="form-control" onchange="this.form.submit()">
+                        <option value="">Todos</option>
+                        <option value="disponible" {% if filtro_estado=='disponible' %}selected{% endif %}>Disponible</option>
+                        <option value="ocupada" {% if filtro_estado=='ocupada' %}selected{% endif %}>Ocupada</option>
+                        <option value="mantenimiento" {% if filtro_estado=='mantenimiento' %}selected{% endif %}>Mantenimiento</option>
+                    </select>
+                </div>
+                {% if filtro_tipo or filtro_estado %}
+                    <a href="{{ url_for('views.habitaciones') }}" class="btn btn-secondary btn-sm" style="align-self:flex-end;">Limpiar</a>
+                {% endif %}
             </div>
-        {% endif %}
+        </form>
     </div>
 </div>
+
+{% if habitaciones %}
+<div class="table-wrapper">
+    <table>
+        <thead>
+            <tr>
+                <th>Número</th>
+                <th>Tipo</th>
+                <th>Descripción</th>
+                <th>Capacidad</th>
+                <th>Piso</th>
+                <th>Precio/Noche</th>
+                <th>Estado</th>
+                <th>Acción</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for h in habitaciones %}
+            <tr>
+                <td><strong>{{ h.numero }}</strong></td>
+                <td>{{ h.tipo.value|capitalize }}</td>
+                <td class="text-muted text-sm">{{ h.descripcion[:60] if h.descripcion else '—' }}</td>
+                <td>{{ h.capacidad }} pers.</td>
+                <td>{{ h.piso }}</td>
+                <td><strong>${{ "{:,.0f}".format(h.precio_noche) }}</strong></td>
+                <td>
+                    {% if h.estado.value == 'disponible' %}
+                        <span class="badge badge-success">Disponible</span>
+                    {% elif h.estado.value == 'ocupada' %}
+                        <span class="badge badge-danger">Ocupada</span>
+                    {% else %}
+                        <span class="badge badge-warning">Mantenimiento</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <a href="{{ url_for('views.detalle_habitacion', hab_id=h.id) }}" class="btn btn-secondary btn-sm">Ver</a>
+                    {% if h.estado.value == 'disponible' %}
+                        {% if session.get('user_id') and session.get('user_rol') == 'cliente' %}
+                            <a href="{{ url_for('views.reserva') }}?habitacion_id={{ h.id }}" class="btn btn-primary btn-sm">Reservar</a>
+                        {% elif not session.get('user_id') %}
+                            <a href="{{ url_for('views.login_page') }}?next={{ url_for('views.reserva', habitacion_id=h.id, _external=True) }}" class="btn btn-primary btn-sm">Reservar</a>
+                        {% endif %}
+                    {% endif %}
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="empty-state">
+    <p>No se encontraron habitaciones con los filtros seleccionados.</p>
+    <a href="{{ url_for('views.habitaciones') }}" class="btn btn-secondary">Ver todas</a>
+</div>
+{% endif %}
 {% endblock %}
