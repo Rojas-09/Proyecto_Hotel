@@ -3,7 +3,6 @@
 {% block title %}Inicio — HotelBook Pro{% endblock %}
 
 {% block content %}
-<<<<<<< HEAD
 <div class="page-header">
     <h1>Bienvenido a HotelBook Pro</h1>
     <p class="text-muted">Sistema de gestión hotelera</p>
@@ -105,110 +104,12 @@
         <a href="{{ url_for('views.register_page') }}" class="btn btn-primary">Crear Cuenta</a>
     {% endif %}
 </div>
-=======
-<div style="padding: 2rem 0;">
-    <div class="page-header">
-        <div class="container">
-            <h1>Bienvenido a HotelBook Pro</h1>
-            <p class="text-muted">Sistema de gestión hotelera</p>
-        </div>
-    </div>
-
-    <div class="container">
-        <div class="card mb-4">
-            <div class="card-header">Buscar Disponibilidad</div>
-            <div class="card-body">
-                <form id="search-form" action="{{ url_for('views.habitaciones') }}" method="GET">
-                    <div class="form-row-3">
-                        <div class="form-group">
-                            <label for="fecha_entrada">Fecha de Entrada</label>
-                            <input type="date" id="fecha_entrada" name="fecha_entrada" class="form-control" required min="">
-                        </div>
-                        <div class="form-group">
-                            <label for="fecha_salida">Fecha de Salida</label>
-                            <input type="date" id="fecha_salida" name="fecha_salida" class="form-control" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="tipo">Tipo de Habitación</label>
-                            <select id="tipo" name="tipo" class="form-control">
-                                <option value="">Cualquiera</option>
-                                <option value="simple">Simple</option>
-                                <option value="doble">Doble</option>
-                                <option value="suite">Suite</option>
-                                <option value="deluxe">Deluxe</option>
-                            </select>
-                        </div>
-                    </div>
-                    <button type="submit" class="btn btn-primary">Buscar Habitaciones</button>
-                </form>
-            </div>
-        </div>
-
-        {% with messages = get_flashed_messages(with_categories=true) %}
-          {% if messages %}
-            {% for category, message in messages %}
-              <div class="alert alert-{{ 'danger' if category == 'danger' else 'success' if category == 'success' else 'info' }}">{{ message }}</div>
-            {% endfor %}
-          {% endif %}
-        {% endwith %}
-
-        <h2 class="mb-3">Habitaciones Destacadas</h2>
-        {% if habitaciones %}
-        <div class="table-wrapper">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Número</th>
-                        <th>Tipo</th>
-                        <th>Capacidad</th>
-                        <th>Piso</th>
-                        <th>Precio/Noche</th>
-                        <th>Estado</th>
-                        <th>Acción</th>
-                    </tr>
-                </thead>
-                <tbody>
-                {% for h in habitaciones %}
-                    <tr>
-                        <td>{{ h.numero }}</td>
-                        <td>{{ h.tipo.value|capitalize }}</td>
-                        <td>{{ h.capacidad }} persona(s)</td>
-                        <td>{{ h.piso }}</td>
-                        <td>${{ "{:,.0f}".format(h.precio_noche) }}</td>
-                        <td><span class="badge badge-success">{{ h.estado.value|capitalize }}</span></td>
-                        <td>
-                            <a href="{{ url_for('views.detalle_habitacion', hab_id=h.id) }}" class="btn btn-primary btn-sm">Ver Detalle</a>
-                            {% if session.get('user_id') and session.get('user_rol') == 'cliente' %}
-                            <a href="{{ url_for('views.reserva') }}?habitacion_id={{ h.id }}" class="btn btn-success btn-sm">Reservar</a>
-                            {% endif %}
-                        </td>
-                    </tr>
-                {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        {% else %}
-        <div class="empty-state">
-            <p>No hay habitaciones disponibles en este momento.</p>
-        </div>
-        {% endif %}
-
-        <div class="mt-4 d-flex-gap gap-2 flex-wrap">
-            <a href="{{ url_for('views.habitaciones') }}" class="btn btn-secondary">Ver Todas las Habitaciones</a>
-            {% if not session.get('user_id') %}
-            <a href="{{ url_for('views.register_page') }}" class="btn btn-primary">Crear Cuenta</a>
-            {% endif %}
-        </div>
-    </div>
-</div>
->>>>>>> origin/Feature-front
 {% endblock %}
 
 {% block extra_js %}
 <script>
 (function() {
     var hoy = new Date().toISOString().split('T')[0];
-<<<<<<< HEAD
     var fe = document.getElementById('fecha_entrada');
     if (fe) fe.min = hoy;
     document.getElementById('fecha_salida')?.addEventListener('change', function() {
@@ -225,17 +126,6 @@
             document.getElementById('s-disponibles').textContent = habs.filter(function(h) { return h.estado === 'disponible'; }).length;
             document.getElementById('s-ocupadas').textContent = habs.filter(function(h) { return h.estado === 'ocupada'; }).length;
             document.getElementById('s-mantenimiento').textContent = habs.filter(function(h) { return h.estado === 'mantenimiento'; }).length;
-=======
-    document.getElementById('fecha_entrada').min = hoy;
-    document.getElementById('fecha_salida').min = hoy;
-
-    document.getElementById('search-form').addEventListener('submit', function(e) {
-        var entrada = document.getElementById('fecha_entrada').value;
-        var salida = document.getElementById('fecha_salida').value;
-        if (entrada && salida && entrada >= salida) {
-            e.preventDefault();
-            alert('La fecha de salida debe ser posterior a la fecha de entrada.');
->>>>>>> origin/Feature-front
         }
     });
 })();
