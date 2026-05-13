@@ -1,21 +1,21 @@
+from functools import wraps
+
 from flask import (
-    Blueprint, render_template, request, redirect,
-    url_for, flash, session, jsonify, abort,
+    Blueprint, flash, redirect, request, session, url_for,
 )
 from sqlalchemy import select
 
 from app import db
-from app.models.habitacion import Habitacion, EstadoHabitacion, TipoHabitacion
-from app.models.usuario import Usuario, RolEnum
+from app.models.habitacion import (
+    EstadoHabitacion, Habitacion, TipoHabitacion,
+)
+from app.models.usuario import Usuario
 from app.services.auth_service import AuthService
 
 views_bp = Blueprint("views", __name__)
 
 
-# ─── Decorators locales ──────────────────────────────────────────────────────
-
 def login_required(f):
-    from functools import wraps
     @wraps(f)
     def decorated(*args, **kwargs):
         if "user_id" not in session:
@@ -26,7 +26,6 @@ def login_required(f):
 
 def rol_requerido(*roles):
     def decorator(f):
-        from functools import wraps
         @wraps(f)
         def decorated(*args, **kwargs):
             rol = session.get("user_rol")
@@ -39,8 +38,6 @@ def rol_requerido(*roles):
     return decorator
 
 
-# ─── Auth: Login/Logout ───────────────────────────────────────────────────────
-
 @views_bp.route("/login")
 def login_page():
     if "user_id" in session:
@@ -50,9 +47,8 @@ def login_page():
 
 @views_bp.route("/login", methods=["POST"])
 def login_submit():
-    data = request.form
-    email = data.get("email", "").strip()
-    password = data.get("password", "")
+    email = request.form.get("email", "").strip()
+    password = request.form.get("password", "")
 
     if not email or not password:
         flash("Email y contraseña son obligatorios.", "danger")
@@ -70,7 +66,6 @@ def login_submit():
         flash("Error interno. Intenta nuevamente.", "danger")
         return redirect(url_for("views.login_page"))
 
-    # Decodificar token para extraer user_id y rol
     from app.utils.jwt_helper import decodificar_token
     try:
         payload = decodificar_token(token)
@@ -157,8 +152,6 @@ def _dashboard_por_rol():
     return redirect(url_for("views.home"))
 
 
-# ─── Vistas públicas ─────────────────────────────────────────────────────────
-
 @views_bp.route("/")
 def home():
     result = db.session.execute(
@@ -167,8 +160,8 @@ def home():
         .order_by(Habitacion.precio_noche.desc())
         .limit(6)
     )
-    destacadas = result.scalars().all()
-    return render_template("public/home.html", habitaciones=destacadas)
+    habitaciones = result.scalars().all()
+    return render_template("public/home.html", habitaciones=habitaciones)
 
 
 @views_bp.route("/habitaciones")
@@ -204,10 +197,10 @@ def detalle_habitacion(hab_id):
     if not habitacion:
         flash("Habitación no encontrada.", "warning")
         return redirect(url_for("views.habitaciones"))
-    return render_template("public/detalle_habitacion.html", habitacion=habitacion)
+    return render_template(
+        "public/detalle_habitacion.html", habitacion=habitacion
+    )
 
-
-# ─── Cliente ─────────────────────────────────────────────────────────────────
 
 @views_bp.route("/reservar")
 @login_required
@@ -237,8 +230,6 @@ def mis_reservas():
 def detalle_reserva(reserva_id):
     return render_template("cliente/detalle_reserva.html", reserva_id=reserva_id)
 
-
-# ─── Recepcionista ───────────────────────────────────────────────────────────
 
 @views_bp.route("/recepcionista/dashboard")
 @login_required
@@ -274,8 +265,6 @@ def recepcionista_servicios():
 def recepcionista_huespedes():
     return render_template("recepcionista/huespedes.html")
 
-
-# ─── Admin / Gerente ─────────────────────────────────────────────────────────
 
 @views_bp.route("/admin/dashboard")
 @login_required
