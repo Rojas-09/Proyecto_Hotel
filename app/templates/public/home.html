@@ -1,70 +1,120 @@
 {% extends "layouts/base_public.html" %}
 
-{% block title %}HotelBook Pro — El Arte del Descanso{% endblock %}
-
-{% block extra_css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/public/home.css') }}">
-{% endblock %}
+{% block title %}Inicio — HotelBook Pro{% endblock %}
 
 {% block content %}
-<section class="hero">
-    <div class="hero-content" data-reveal>
-        <span class="section-label">Est. 2026 — Pereira</span>
-        <h1>La Nueva<br>Elegancia<span class="gold">.</span></h1>
-        <p>Una curaduría de espacios diseñados para el descanso absoluto, donde el diseño editorial se encuentra con la hospitalidad de lujo.</p>
-        <div style="display: flex; gap: 1.5rem; justify-content: inherit;">
-            <a href="{{ url_for('views.habitaciones') }}" class="btn btn-gold">Explorar Colección</a>
-            <a href="#habitaciones" class="btn btn-outline">Ver Suites</a>
+<div style="padding: 2rem 0;">
+    <div class="page-header">
+        <div class="container">
+            <h1>Bienvenido a HotelBook Pro</h1>
+            <p class="text-muted">Sistema de gestión hotelera</p>
         </div>
     </div>
-    <div class="hero-img-wrapper" data-reveal>
-        <img src="https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=1400&q=85" class="hero-img" alt="Luxury Hotel Lobby">
-        <div class="hero-img-overlay"></div>
-    </div>
-</section>
 
-<section class="rooms-section" id="habitaciones">
     <div class="container">
-        <div class="rooms-header" data-reveal>
-            <div>
-                <span class="section-label">Nuestra Selección</span>
-                <h2>Espacios Curados para el Descanso</h2>
+        <div class="card mb-4">
+            <div class="card-header">Buscar Disponibilidad</div>
+            <div class="card-body">
+                <form id="search-form" action="{{ url_for('views.habitaciones') }}" method="GET">
+                    <div class="form-row-3">
+                        <div class="form-group">
+                            <label for="fecha_entrada">Fecha de Entrada</label>
+                            <input type="date" id="fecha_entrada" name="fecha_entrada" class="form-control" required min="">
+                        </div>
+                        <div class="form-group">
+                            <label for="fecha_salida">Fecha de Salida</label>
+                            <input type="date" id="fecha_salida" name="fecha_salida" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="tipo">Tipo de Habitación</label>
+                            <select id="tipo" name="tipo" class="form-control">
+                                <option value="">Cualquiera</option>
+                                <option value="simple">Simple</option>
+                                <option value="doble">Doble</option>
+                                <option value="suite">Suite</option>
+                                <option value="deluxe">Deluxe</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Buscar Habitaciones</button>
+                </form>
             </div>
-            <a href="{{ url_for('views.habitaciones') }}" class="btn btn-outline">Ver Todas</a>
         </div>
 
-        <div class="editorial-grid">
-            {% if habitaciones %}
-                {% for room in habitaciones %}
-                <article class="room-card" data-reveal>
-                    <a href="{{ url_for('views.detalle_habitacion', id=room.id) }}">
-                        <div class="img-wrapper">
-                            <img src="https://images.unsplash.com/photo-1631049307264-da0ec9d70304?auto=format&fit=crop&w=1000&q=85" 
-                                 alt="{{ room.tipo.value }}"
-                                 onerror="this.src='https://images.unsplash.com/photo-1566665797739-1674de7a421a?auto=format&fit=crop&w=1000&q=85'">
-                            <div class="img-overlay"></div>
-                        </div>
-                        <div class="room-info">
-                            <span class="section-label" style="margin-bottom: 1rem;">{{ room.tipo.value }} — Piso {{ room.piso }}</span>
-                            <h3>Habitación {{ room.numero }}</h3>
-                            <p class="price">${{ "{:,.0f}".format(room.precio_noche) }} <span style="font-size: 0.9rem; opacity: 0.5; font-weight: 400;">/ noche</span></p>
-                        </div>
-                    </a>
-                </article>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="alert alert-{{ 'danger' if category == 'danger' else 'success' if category == 'success' else 'info' }}">{{ message }}</div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
+        <h2 class="mb-3">Habitaciones Destacadas</h2>
+        {% if habitaciones %}
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Número</th>
+                        <th>Tipo</th>
+                        <th>Capacidad</th>
+                        <th>Piso</th>
+                        <th>Precio/Noche</th>
+                        <th>Estado</th>
+                        <th>Acción</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for h in habitaciones %}
+                    <tr>
+                        <td>{{ h.numero }}</td>
+                        <td>{{ h.tipo.value|capitalize }}</td>
+                        <td>{{ h.capacidad }} persona(s)</td>
+                        <td>{{ h.piso }}</td>
+                        <td>${{ "{:,.0f}".format(h.precio_noche) }}</td>
+                        <td><span class="badge badge-success">{{ h.estado.value|capitalize }}</span></td>
+                        <td>
+                            <a href="{{ url_for('views.detalle_habitacion', hab_id=h.id) }}" class="btn btn-primary btn-sm">Ver Detalle</a>
+                            {% if session.get('user_id') and session.get('user_rol') == 'cliente' %}
+                            <a href="{{ url_for('views.reserva') }}?habitacion_id={{ h.id }}" class="btn btn-success btn-sm">Reservar</a>
+                            {% endif %}
+                        </td>
+                    </tr>
                 {% endfor %}
-            {% else %}
-                <p style="grid-column: 1/-1; text-align: center; padding: 5rem 0; opacity: 0.5;">No hay habitaciones disponibles en este momento.</p>
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <p>No hay habitaciones disponibles en este momento.</p>
+        </div>
+        {% endif %}
+
+        <div class="mt-4 d-flex-gap gap-2 flex-wrap">
+            <a href="{{ url_for('views.habitaciones') }}" class="btn btn-secondary">Ver Todas las Habitaciones</a>
+            {% if not session.get('user_id') %}
+            <a href="{{ url_for('views.register_page') }}" class="btn btn-primary">Crear Cuenta</a>
             {% endif %}
         </div>
     </div>
-</section>
+</div>
+{% endblock %}
 
-<section style="padding: var(--spacing-xl) 0; background: var(--color-text); color: var(--color-bg); position: relative; overflow: hidden;">
-    <div class="container" style="text-align: center; position: relative; z-index: 2;" data-reveal>
-        <span class="section-label" style="color: var(--color-accent);">Reserva Directa</span>
-        <h2 style="font-size: clamp(3rem, 8vw, 6rem); margin-bottom: 4rem; letter-spacing: -2px;">Vive la Experiencia<br>HotelBook Pro<span class="gold">.</span></h2>
-        <a href="{{ url_for('views.login') }}" class="btn btn-gold" style="padding: 1.5rem 4rem;">Comenzar Reserva</a>
-    </div>
-    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 20vw; font-family: var(--font-display); font-weight: 900; opacity: 0.03; pointer-events: none; white-space: nowrap;">LUXURY STAY</div>
-</section>
+{% block extra_js %}
+<script>
+(function() {
+    var hoy = new Date().toISOString().split('T')[0];
+    document.getElementById('fecha_entrada').min = hoy;
+    document.getElementById('fecha_salida').min = hoy;
+
+    document.getElementById('search-form').addEventListener('submit', function(e) {
+        var entrada = document.getElementById('fecha_entrada').value;
+        var salida = document.getElementById('fecha_salida').value;
+        if (entrada && salida && entrada >= salida) {
+            e.preventDefault();
+            alert('La fecha de salida debe ser posterior a la fecha de entrada.');
+        }
+    });
+})();
+</script>
 {% endblock %}

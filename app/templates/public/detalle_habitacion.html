@@ -1,83 +1,210 @@
 {% extends "layouts/base_public.html" %}
 
-{% block title %}{{ habitacion.tipo.value }} {{ habitacion.numero }} — HotelBook Pro{% endblock %}
-
-{% block extra_css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/public/detalle_habitacion.css') }}">
-{% endblock %}
+{% block title %}{{ habitacion.numero }} — HotelBook Pro{% endblock %}
 
 {% block content %}
-<div class="container">
-    <nav class="breadcrumb" data-reveal>
-        <a href="/">Inicio</a>
-        <i class="ti ti-chevron-right"></i>
-        <a href="{{ url_for('views.habitaciones') }}">Colección</a>
-        <i class="ti ti-chevron-right"></i>
-        <span>{{ habitacion.tipo.value }} {{ habitacion.numero }}</span>
-    </nav>
+<div style="padding: 2rem 0;">
+    <div class="container-sm">
+        <div class="breadcrumb">
+            <a href="/">Inicio</a>
+            <span class="breadcrumb-sep">/</span>
+            <a href="{{ url_for('views.habitaciones') }}">Habitaciones</a>
+            <span class="breadcrumb-sep">/</span>
+            <span>Habitación {{ habitacion.numero }}</span>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="alert alert-{{ 'danger' if category == 'danger' else 'success' if category == 'success' else 'info' }}">{{ message }}</div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
+        <div class="card mb-4">
+            <div class="card-header d-flex-between">
+                <div>
+                    <strong>Habitación {{ habitacion.numero }}</strong>
+                    — {{ habitacion.tipo.value|capitalize }}
+                </div>
+                {% if habitacion.estado.value == 'disponible' %}
+                    <span class="badge badge-success">Disponible</span>
+                {% elif habitacion.estado.value == 'ocupada' %}
+                    <span class="badge badge-danger">Ocupada</span>
+                {% else %}
+                    <span class="badge badge-warning">En Mantenimiento</span>
+                {% endif %}
+            </div>
+            <div class="card-body">
+                <div class="grid-2 mb-3">
+                    <div>
+                        <p><strong>Tipo:</strong> {{ habitacion.tipo.value|capitalize }}</p>
+                        <p><strong>Capacidad:</strong> {{ habitacion.capacidad }} persona(s)</p>
+                        <p><strong>Piso:</strong> {{ habitacion.piso }}</p>
+                    </div>
+                    <div>
+                        <p><strong>Precio por noche:</strong></p>
+                        <p style="font-size: 1.5rem; font-weight: 700;">${{ "{:,.0f}".format(habitacion.precio_noche) }}</p>
+                        <p class="text-muted text-sm">Impuestos incluidos (IVA 19%)</p>
+                    </div>
+                </div>
+
+                {% if habitacion.descripcion %}
+                <div class="mb-3">
+                    <strong>Descripción:</strong>
+                    <p>{{ habitacion.descripcion }}</p>
+                </div>
+                {% endif %}
+
+                <div class="d-flex-gap gap-2">
+                    <a href="{{ url_for('views.habitaciones') }}" class="btn btn-secondary">Volver</a>
+                    {% if habitacion.estado.value == 'disponible' %}
+                        {% if session.get('user_id') %}
+                            {% if session.get('user_rol') == 'cliente' %}
+                            <a href="{{ url_for('views.reserva') }}?habitacion_id={{ habitacion.id }}" class="btn btn-primary btn-lg">Reservar Ahora</a>
+                            {% else %}
+                            <span class="text-muted text-sm">Solo clientes pueden hacer reservas.</span>
+                            {% endif %}
+                        {% else %}
+                        <a href="{{ url_for('views.login_page') }}?next={{ url_for('views.reserva', habitacion_id=habitacion.id, _external=True) }}" class="btn btn-primary btn-lg">Iniciar Sesión para Reservar</a>
+                        {% endif %}
+                    {% else %}
+                    <span class="badge badge-danger">No disponible actualmente</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">Reservar esta Habitación</div>
+            <div class="card-body">
+                <form id="quick-book-form">
+                    <input type="hidden" name="habitacion_id" value="{{ habitacion.id }}">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="fecha_entrada">Fecha de Entrada</label>
+                            <input type="date" id="fecha_entrada" name="fecha_entrada" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="fecha_salida">Fecha de Salida</label>
+                            <input type="date" id="fecha_salida" name="fecha_salida" class="form-control" required>
+                        </div>
+                    </div>
+                    <div id="booking-summary" class="mt-3" style="display:none;">
+                        <div class="card" style="background: var(--bg-secondary);">
+                            <div class="card-body">
+                                <div class="d-flex-between mb-2">
+                                    <span>Noches:</span>
+                                    <strong id="summary-noches">—</strong>
+                                </div>
+                                <div class="d-flex-between mb-2">
+                                    <span>Tarifa base:</span>
+                                    <span>${{ "{:,.0f}".format(habitacion.precio_noche) }} / noche</span>
+                                </div>
+                                <div class="d-flex-between mb-2">
+                                    <span>Subtotal:</span>
+                                    <span id="summary-subtotal">—</span>
+                                </div>
+                                <div class="d-flex-between mb-2">
+                                    <span>IVA (19%):</span>
+                                    <span id="summary-iva">—</span>
+                                </div>
+                                <hr>
+                                <div class="d-flex-between">
+                                    <strong>Total:</strong>
+                                    <strong id="summary-total" style="color: var(--success);">—</strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="booking-error" class="alert alert-danger mt-2" style="display:none;"></div>
+                    <button type="submit" id="book-btn" class="btn btn-success btn-block btn-lg mt-3"
+                        {% if not session.get('user_id') or session.get('user_rol') != 'cliente' %}disabled{% endif %}>
+                        {% if session.get('user_id') and session.get('user_rol') == 'cliente' %}
+                        Confirmar Reserva
+                        {% else %}
+                        Inicia sesión para reservar
+                        {% endif %}
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
 </div>
+{% endblock %}
 
-<section class="detail-hero">
-    <div class="detail-img-wrapper" data-reveal>
-        <img src="https://images.unsplash.com/photo-1618773928121-c32242e63f39?auto=format&fit=crop&w=1200&q=80" 
-             class="detail-img"
-             onerror="this.src='https://images.unsplash.com/photo-1595576508898-0ad5c879a061?auto=format&fit=crop&w=1200&q=80'">
-    </div>
-    <div class="detail-content" data-reveal>
-        <span class="section-label">{{ habitacion.tipo.value }} · Piso {{ habitacion.piso }}</span>
-        <h1>{{ habitacion.tipo.value }}<br>{{ habitacion.numero }}<span class="gold">.</span></h1>
-        <p class="description">{{ habitacion.descripcion or "Una experiencia de lujo diseñada para el descanso absoluto, con acabados premium y vistas inigualables al paisaje urbano de Pereira." }}</p>
-        
-        <div style="margin-bottom: 3rem;">
-            <div class="price-tag">${{ "{:,.0f}".format(habitacion.precio_noche) }} <span style="font-size: 1rem; font-family: var(--font-body); opacity: 0.5;">/ noche (Base)</span></div>
-            <p style="font-size: 0.85rem; opacity: 0.6; margin-top: -0.5rem;">+ 19% IVA: ${{ "{:,.0f}".format(habitacion.precio_noche * 1.19) }} Total aproximado</p>
-        </div>
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/api.js') }}"></script>
+<script>
+(function() {
+    var precio = {{ habitacion.precio_noche }};
+    var hoy = new Date().toISOString().split('T')[0];
+    document.getElementById('fecha_entrada').min = hoy;
+    document.getElementById('fecha_entrada').addEventListener('change', function() {
+        document.getElementById('fecha_salida').min = this.value;
+    });
 
-        <div style="background: var(--color-surface); padding: 2rem; border: 1px solid var(--color-border); margin-bottom: 3rem;">
-            <label>Seleccionar Fechas (Simulación)</label>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
-                <input type="date" id="checkin" class="form-control">
-                <input type="date" id="checkout" class="form-control">
-            </div>
-        </div>
+    function calcular() {
+        var entrada = document.getElementById('fecha_entrada').value;
+        var salida = document.getElementById('fecha_salida').value;
+        if (!entrada || !salida || entrada >= salida) return;
 
-        <a href="{{ url_for('views.reserva', habitacion_id=habitacion.id) }}" class="btn btn-gold" style="width: 100%;">Reservar Ahora</a>
-    </div>
-</section>
+        var d1 = new Date(entrada);
+        var d2 = new Date(salida);
+        var noches = Math.round((d2 - d1) / (1000 * 60 * 60 * 24));
+        var subtotal = noches * precio;
+        var iva = Math.round(subtotal * 0.19);
+        var total = subtotal + iva;
 
-<section class="amenities-section">
-    <div class="container">
-        <span class="section-label" style="text-align: center; display: block; margin-bottom: 4rem;">Comodidades Premium</span>
-        <div class="amenities-grid">
-            <div class="amenity-item" data-reveal>
-                <i class="ti ti-wifi"></i>
-                <h4>Fibra Óptica</h4>
-            </div>
-            <div class="amenity-item" data-reveal>
-                <i class="ti ti-snowflake"></i>
-                <h4>Climatización</h4>
-            </div>
-            <div class="amenity-item" data-reveal>
-                <i class="ti ti-coffee"></i>
-                <h4>Nespresso Bar</h4>
-            </div>
-            <div class="amenity-item" data-reveal>
-                <i class="ti ti-device-tv"></i>
-                <h4>Smart Entertainment</h4>
-            </div>
-        </div>
-    </div>
-</section>
+        document.getElementById('summary-noches').textContent = noches;
+        document.getElementById('summary-subtotal').textContent = '$' + subtotal.toLocaleString('es-CO');
+        document.getElementById('summary-iva').textContent = '$' + iva.toLocaleString('es-CO');
+        document.getElementById('summary-total').textContent = '$' + total.toLocaleString('es-CO');
+        document.getElementById('booking-summary').style.display = 'block';
+    }
 
-<section class="booking-fixed">
-    <div class="container">
-        <div class="booking-bar" data-reveal>
-            <div>
-                <h3 style="margin-bottom: 0.5rem; font-family: var(--font-display);">¿Listo para tu estancia?</h3>
-                <p style="opacity: 0.6; font-size: 0.9rem;">Capacidad: {{ habitacion.capacidad }} personas · Suite de lujo en el piso {{ habitacion.piso }}</p>
-            </div>
-            <a href="{{ url_for('views.reserva', habitacion_id=habitacion.id) }}" class="btn btn-outline">Confirmar Selección</a>
-        </div>
-    </div>
-</section>
+    document.getElementById('fecha_entrada').addEventListener('change', calcular);
+    document.getElementById('fecha_salida').addEventListener('change', calcular);
+
+    document.getElementById('quick-book-form').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        var entrada = document.getElementById('fecha_entrada').value;
+        var salida = document.getElementById('fecha_salida').value;
+        var habId = {{ habitacion.id }};
+        var errEl = document.getElementById('booking-error');
+        var btn = document.getElementById('book-btn');
+
+        errEl.style.display = 'none';
+
+        if (!entrada || !salida || entrada >= salida) {
+            errEl.textContent = 'Selecciona fechas válidas (salida posterior a entrada).';
+            errEl.style.display = 'block';
+            return;
+        }
+
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner"></span> Procesando...';
+
+        try {
+            var res = await HotelBookAPI.post('/api/v1/reservas/', {
+                id_habitacion: habId,
+                fecha_entrada: entrada,
+                fecha_salida: salida
+            });
+            if (res.success) {
+                window.location.href = '/mis-reservas/' + res.data.id;
+            } else {
+                errEl.textContent = res.error?.message || 'Error al crear la reserva.';
+                errEl.style.display = 'block';
+            }
+        } catch(err) {
+            errEl.textContent = err.message;
+            errEl.style.display = 'block';
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Confirmar Reserva';
+        }
+    });
+})();
+</script>
 {% endblock %}

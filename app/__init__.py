@@ -33,6 +33,7 @@ def create_app(config_name="development"):
     from app.controllers.reporte_controller import reporte_bp
     from app.controllers.puntos_fidelidad_controller import puntos_bp
     from app.controllers.views_controller import views_bp
+    from app.controllers.auth_views_controller import auth_views_bp
 
     app.register_blueprint(auth_bp, url_prefix="/api/v1/auth")
     app.register_blueprint(habitacion_bp, url_prefix="/api/v1/habitaciones")
@@ -45,6 +46,7 @@ def create_app(config_name="development"):
     app.register_blueprint(reporte_bp, url_prefix="/api/v1/reportes")
     app.register_blueprint(puntos_bp, url_prefix="/api/v1/huespedes")
     app.register_blueprint(views_bp)
+    app.register_blueprint(auth_views_bp, url_prefix="/auth-web")
 
     # Importar modelos EN ORDEN para respetar dependencias FK
     from app.models import usuario  # noqa: F401
