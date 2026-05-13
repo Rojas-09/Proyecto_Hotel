@@ -1,7 +1,8 @@
 from functools import wraps
 
 from flask import (
-    Blueprint, flash, redirect, request, session, url_for,
+    Blueprint, flash, redirect, render_template, request,
+    session, url_for,
 )
 from sqlalchemy import select
 

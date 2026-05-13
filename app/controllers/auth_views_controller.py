@@ -1,8 +1,9 @@
-from flask import Blueprint, request, render_template, redirect, url_for, flash, session
+from flask import Blueprint, flash, redirect, request, session, url_for
 from app.services.auth_service import AuthService
 from app.models.usuario import RolEnum
 
 auth_views_bp = Blueprint('auth_views', __name__)
+
 
 @auth_views_bp.route('/login', methods=['POST'])
 def login():
@@ -40,12 +41,13 @@ def login():
         flash(error_msg, 'danger')
         return redirect(url_for('views.login'))
 
+
 @auth_views_bp.route('/register', methods=['POST'])
 def register():
     # Lógica simplificada para registro desde la web
     data = {
         'nombre': request.form.get('nombre'),
-        'apellido': request.form.get('apellido', ''), # El form de login solo tiene 'nombre'
+        'apellido': request.form.get('apellido', ''),  # El form de login solo tiene 'nombre'
         'email': request.form.get('email'),
         'password': request.form.get('password'),
         'telefono': request.form.get('telefono', ''),
