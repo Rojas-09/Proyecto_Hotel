@@ -128,6 +128,7 @@ def listar_usuarios(current_user):
 
 @auth_bp.route("/usuarios/<int:usuario_id>", methods=["DELETE"])
 @token_required
+@rol_requerido("admin")
 def eliminar_usuario(current_user, usuario_id):
     usuario = db.session.get(Usuario, usuario_id)
     if not usuario:

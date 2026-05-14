@@ -35,5 +35,5 @@ jobs:
         run: flake8 app/ --max-line-length=100 --select=E,F
 
       - name: Tests con cobertura
-        run: pytest tests/ --cov=app --cov-fail-under=80 -q --no-cov-on-fail
+        run: pytest tests/ --cov=app --cov-fail-under=87 -q --no-cov-on-fail
         timeout-minutes: 5
