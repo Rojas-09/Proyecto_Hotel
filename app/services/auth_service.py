@@ -205,7 +205,6 @@ class AuthService:
         )
         usuario.password = data["password"]
         db.session.add(usuario)
-        db.session.flush()
         db.session.commit()
         return {
             "success": True,

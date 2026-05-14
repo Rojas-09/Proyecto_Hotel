@@ -2,9 +2,9 @@ name: HotelBook Pro — CI
 
 on:
   push:
-    branches: [main, Development]
+    branches: [main, Development, Testing]
   pull_request:
-    branches: [main, Development]
+    branches: [main, Development, Testing]
 
 jobs:
   test:

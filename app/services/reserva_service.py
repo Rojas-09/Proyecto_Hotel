@@ -196,15 +196,10 @@ def cancelar(reserva_id, motivo=None, current_user=None):
             else current_user.rol
         )
         if rol_value == "cliente":
-            try:
-                huesped = db.session.execute(
-                    select(Huesped).filter_by(id_usuario=current_user.id)
-                ).scalar_one_or_none()
-                if not huesped or reserva.id_huesped != huesped.id:
-                    raise PermissionError(
-                        "No tienes permiso para cancelar esta reserva."
-                    )
-            except Exception:
+            huesped = db.session.execute(
+                select(Huesped).filter_by(id_usuario=current_user.id)
+            ).scalar_one_or_none()
+            if not huesped or reserva.id_huesped != huesped.id:
                 raise PermissionError(
                     "No tienes permiso para cancelar esta reserva."
                 )
@@ -314,11 +309,10 @@ def hacer_checkout(reserva_id, realizado_por_id=None):
     if checkin_checkout:
         checkin_checkout.fecha_checkout = ahora_colombia()
 
+    from app.services import puntos_fidelidad_service
+    puntos_fidelidad_service.acreditar(reserva_id)
+
     puntos = reserva.noches * 10
-    huesped = db.session.get(Huesped, reserva.id_huesped)
-    if huesped:
-        usuario = huesped.usuario
-        usuario.puntos_fidelizacion += puntos
 
     servicios_adicionales_total = Decimal("0")
     if reserva.servicios_adicionales:
@@ -341,12 +335,6 @@ def hacer_checkout(reserva_id, realizado_por_id=None):
     )
     db.session.add(factura)
     db.session.commit()
-
-    from app.services import puntos_fidelidad_service
-    try:
-        puntos_fidelidad_service.acreditar(reserva_id)
-    except Exception:
-        pass
 
     resultado = reserva.to_dict()
     resultado["puntos_ganados"] = puntos
