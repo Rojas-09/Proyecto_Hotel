@@ -45,25 +45,25 @@ const router = createRouter({
   routes,
 });
 
-router.beforeEach((to, from, next) => {
+router.beforeEach((to, from) => {
   const authStore = useAuthStore();
 
   // Ruta requiere auth y usuario no autenticado → login
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {
-    return next('/login');
+    return '/login';
   }
 
   // Usuario autenticado intenta ir a login
   if (!to.meta.requiresAuth && authStore.isAuthenticated && to.path === '/login') {
-    return next('/habitaciones');
+    return '/habitaciones';
   }
 
   // Control de rol para rutas restringidas
   if (to.meta.roles && !to.meta.roles.includes(authStore.userRole)) {
-    return next('/habitaciones');
+    return '/habitaciones';
   }
 
-  next();
+  return true;
 });
 
 export default router;
