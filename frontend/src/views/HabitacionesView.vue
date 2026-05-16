@@ -154,7 +154,7 @@ const habitacionesFiltradas = computed(() => {
 
 async function cargarHabitaciones() {
   try {
-    const res = await api.get('/habitaciones');
+    const res = await api.get('/habitaciones/');
     habitaciones.value = res.data.data || res.data;
   } catch {
     toast?.value?.add('Error al cargar habitaciones', 'error');
@@ -180,7 +180,7 @@ async function guardar() {
       await api.put(`/habitaciones/${editingItem.value.id}`, form.value);
       toast?.value?.add('Habitación actualizada correctamente', 'success');
     } else {
-      await api.post('/habitaciones', form.value);
+      await api.post('/habitaciones/', form.value);
       toast?.value?.add('Habitación creada correctamente', 'success');
     }
     showModal.value = false;
