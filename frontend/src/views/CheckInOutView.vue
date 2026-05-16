@@ -23,32 +23,30 @@
         <h3 class="text-base font-semibold text-gray-200 mb-4">Registrar Check-in</h3>
         <form @submit.prevent="hacerCheckin" class="space-y-4">
           <div>
-            <label class="label">ID de Reserva</label>
-            <input v-model.number="checkinForm.reserva_id" type="number" required class="input-field w-full" placeholder="Número de reserva" />
+            <label class="label">Reserva confirmada</label>
+            <select v-model.number="checkinForm.reserva_id" required class="input-field w-full">
+              <option value="" disabled>Seleccionar reserva...</option>
+              <option v-for="r in reservasConfirmadas" :key="r.id" :value="r.id">
+                #{{ r.id }} — Hab. {{ r.habitacion_numero || r.id_habitacion }} — {{ r.huesped_nombre || `Huésped ${r.id_huesped}` }}
+              </option>
+            </select>
           </div>
-          <div>
-            <label class="label">Notas de entrada</label>
-            <textarea v-model="checkinForm.notas" rows="2" class="input-field w-full" placeholder="Observaciones del check-in..."></textarea>
+          <div v-if="checkinForm.reserva_id" class="bg-gray-800 border border-gray-700 rounded-lg p-3 text-sm text-gray-400">
+            <p v-for="r in reservasConfirmadas.filter(r => r.id === checkinForm.reserva_id)" :key="r.id">
+              📅 Entrada: <span class="text-gray-200">{{ r.fecha_entrada }}</span> &nbsp;|&nbsp;
+              Salida: <span class="text-gray-200">{{ r.fecha_salida }}</span> &nbsp;|&nbsp;
+              Total: <span class="text-hotel-gold font-medium">${{ Number(r.total).toLocaleString('es-CO') }}</span>
+            </p>
           </div>
-          <BaseButton type="submit" :disabled="procesando">{{ procesando ? 'Procesando...' : '✓ Confirmar Check-in' }}</BaseButton>
+          <BaseButton type="submit" :disabled="procesando || !checkinForm.reserva_id">
+            {{ procesando ? 'Procesando...' : '✓ Confirmar Check-in' }}
+          </BaseButton>
         </form>
-        <!-- Reservas pendientes de check-in -->
-        <div class="mt-6">
-          <p class="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">Reservas pendientes de check-in</p>
-          <div class="space-y-2 max-h-60 overflow-y-auto">
-            <div v-for="r in reservasConfirmadas" :key="r.id"
-              @click="checkinForm.reserva_id = r.id"
-              class="cursor-pointer bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-lg p-3 transition-colors"
-            >
-              <div class="flex justify-between items-start">
-                <div>
-                  <p class="text-sm font-medium text-gray-200">Reserva #{{ r.id }} — Hab. {{ r.habitacion_id }}</p>
-                  <p class="text-xs text-gray-500">{{ r.fecha_entrada }} → {{ r.fecha_salida }}</p>
-                </div>
-                <span class="text-xs bg-blue-900/50 text-blue-300 px-2 py-0.5 rounded-full">confirmada</span>
-              </div>
-            </div>
-            <p v-if="reservasConfirmadas.length === 0" class="text-sm text-gray-600 text-center py-4">Sin reservas pendientes</p>
+
+        <div class="mt-6" v-if="reservasConfirmadas.length === 0">
+          <div class="text-center text-gray-600 py-6 text-sm border border-dashed border-gray-700 rounded-lg">
+            No hay reservas confirmadas pendientes de check-in.<br/>
+            <span class="text-xs text-gray-700">Primero confirma la reserva desde el módulo de Reservas.</span>
           </div>
         </div>
       </div>
@@ -60,8 +58,13 @@
         <h3 class="text-base font-semibold text-gray-200 mb-4">Registrar Check-out</h3>
         <form @submit.prevent="hacerCheckout" class="space-y-4">
           <div>
-            <label class="label">ID de Reserva</label>
-            <input v-model.number="checkoutForm.reserva_id" type="number" required class="input-field w-full" @change="cargarResumenCheckout" placeholder="Número de reserva" />
+            <label class="label">Huésped actualmente hospedado</label>
+            <select v-model.number="checkoutForm.reserva_id" required class="input-field w-full" @change="cargarResumenCheckout">
+              <option value="" disabled>Seleccionar reserva...</option>
+              <option v-for="r in reservasEnCheckin" :key="r.id" :value="r.id">
+                #{{ r.id }} — Hab. {{ r.habitacion_numero || r.id_habitacion }} — {{ r.huesped_nombre || `Huésped ${r.id_huesped}` }}
+              </option>
+            </select>
           </div>
           <!-- Resumen de cargos -->
           <div v-if="resumenCheckout" class="bg-gray-800 border border-gray-700 rounded-lg p-4 space-y-2">
@@ -74,30 +77,29 @@
               <span class="text-gray-400">Subtotal habitación</span>
               <span class="text-gray-200">${{ Number(resumenCheckout.subtotal).toLocaleString('es-CO') }}</span>
             </div>
+            <div class="flex justify-between text-sm">
+              <span class="text-gray-400">IVA (19%)</span>
+              <span class="text-gray-200">${{ Number(resumenCheckout.impuestos).toLocaleString('es-CO') }}</span>
+            </div>
             <div class="flex justify-between text-sm border-t border-gray-700 pt-2">
-              <span class="text-gray-300 font-medium">Total estimado</span>
+              <span class="text-gray-300 font-medium">Total</span>
               <span class="text-hotel-gold font-bold">${{ Number(resumenCheckout.total).toLocaleString('es-CO') }}</span>
             </div>
           </div>
-          <BaseButton type="submit" :disabled="procesando">{{ procesando ? 'Procesando...' : '✓ Confirmar Check-out' }}</BaseButton>
+
+          <!-- Advertencia de pago -->
+          <div class="bg-yellow-900/20 border border-yellow-800/50 rounded-lg p-3 text-xs text-yellow-400">
+            ⚠️ El check-out requiere registrar el pago de liquidación previamente. Si falla, ve al módulo de <strong>Pagos</strong> primero.
+          </div>
+
+          <BaseButton type="submit" :disabled="procesando || !checkoutForm.reserva_id">
+            {{ procesando ? 'Procesando...' : '✓ Confirmar Check-out' }}
+          </BaseButton>
         </form>
-        <!-- Reservas en checkin -->
-        <div class="mt-6">
-          <p class="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">Huéspedes actualmente hospedados</p>
-          <div class="space-y-2 max-h-60 overflow-y-auto">
-            <div v-for="r in reservasEnCheckin" :key="r.id"
-              @click="checkoutForm.reserva_id = r.id; cargarResumenCheckout()"
-              class="cursor-pointer bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-lg p-3 transition-colors"
-            >
-              <div class="flex justify-between items-start">
-                <div>
-                  <p class="text-sm font-medium text-gray-200">Reserva #{{ r.id }} — Hab. {{ r.habitacion_id }}</p>
-                  <p class="text-xs text-gray-500">Entrada: {{ r.fecha_entrada }}</p>
-                </div>
-                <span class="text-xs bg-green-900/50 text-green-300 px-2 py-0.5 rounded-full">check-in</span>
-              </div>
-            </div>
-            <p v-if="reservasEnCheckin.length === 0" class="text-sm text-gray-600 text-center py-4">Sin huéspedes activos</p>
+
+        <div class="mt-6" v-if="reservasEnCheckin.length === 0">
+          <div class="text-center text-gray-600 py-6 text-sm border border-dashed border-gray-700 rounded-lg">
+            No hay huéspedes actualmente en check-in.
           </div>
         </div>
       </div>
@@ -122,52 +124,56 @@ const tabs = [
   { key: 'checkout', label: '🚪 Check-out' },
 ];
 
-const checkinForm = ref({ reserva_id: '', notas: '' });
+const checkinForm = ref({ reserva_id: '' });
 const checkoutForm = ref({ reserva_id: '' });
 
 async function cargarReservas() {
   try {
-    const res = await api.get('/reservas');
+    const res = await api.get('/reservas/');
     const all = res.data.data || res.data;
-    reservasConfirmadas.value = all.filter(r => r.estado === 'confirmada');
-    reservasEnCheckin.value = all.filter(r => r.estado === 'checkin');
+    // Los estados vienen con mayúscula inicial del backend (ej: "Confirmada", "Ocupada")
+    reservasConfirmadas.value = all.filter(r => r.estado === 'Confirmada');
+    reservasEnCheckin.value = all.filter(r => r.estado === 'Ocupada');
   } catch {}
 }
 
 async function hacerCheckin() {
   procesando.value = true;
   try {
-    await api.post(`/reservas/${checkinForm.value.reserva_id}/checkin`, { notas: checkinForm.value.notas });
+    await api.put(`/reservas/${checkinForm.value.reserva_id}/checkin`);
     toast?.value?.add('Check-in registrado exitosamente', 'success');
-    checkinForm.value = { reserva_id: '', notas: '' };
+    checkinForm.value = { reserva_id: '' };
     await cargarReservas();
   } catch (err) {
-    toast?.value?.add(err.response?.data?.error?.message || 'Error al hacer check-in', 'error');
+    const msg = err.response?.data?.message || err.response?.data?.mensaje || 'Error al hacer check-in';
+    toast?.value?.add(msg, 'error');
   } finally { procesando.value = false; }
 }
 
 async function cargarResumenCheckout() {
   if (!checkoutForm.value.reserva_id) return;
-  try {
-    const res = await api.get(`/reservas/${checkoutForm.value.reserva_id}`);
-    const r = res.data.data || res.data;
-    const entrada = new Date(r.fecha_entrada);
-    const salida = new Date(r.fecha_salida);
-    const noches = Math.max(1, Math.ceil((salida - entrada) / (1000 * 60 * 60 * 24)));
-    resumenCheckout.value = { noches, subtotal: r.total, total: r.total };
-  } catch { resumenCheckout.value = null; }
+  const reserva = reservasEnCheckin.value.find(r => r.id === checkoutForm.value.reserva_id);
+  if (reserva) {
+    resumenCheckout.value = {
+      noches: reserva.noches,
+      subtotal: reserva.subtotal,
+      impuestos: reserva.impuestos,
+      total: reserva.total
+    };
+  }
 }
 
 async function hacerCheckout() {
   procesando.value = true;
   try {
-    await api.post(`/reservas/${checkoutForm.value.reserva_id}/checkout`, {});
-    toast?.value?.add('Check-out registrado exitosamente', 'success');
+    await api.put(`/reservas/${checkoutForm.value.reserva_id}/checkout`);
+    toast?.value?.add('Check-out completado. Se generó la factura automáticamente.', 'success');
     checkoutForm.value = { reserva_id: '' };
     resumenCheckout.value = null;
     await cargarReservas();
   } catch (err) {
-    toast?.value?.add(err.response?.data?.error?.message || 'Error al hacer check-out', 'error');
+    const msg = err.response?.data?.message || err.response?.data?.mensaje || 'Error al hacer check-out';
+    toast?.value?.add(msg, 'error');
   } finally { procesando.value = false; }
 }
 
@@ -175,6 +181,7 @@ onMounted(cargarReservas);
 </script>
 
 <style scoped>
+@reference "../style.css";
 .input-field { @apply bg-gray-800 border border-gray-700 text-gray-200 text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-hotel-gold focus:ring-1 focus:ring-hotel-gold transition; }
 .label { @apply block text-xs font-medium text-gray-400 mb-1; }
 </style>

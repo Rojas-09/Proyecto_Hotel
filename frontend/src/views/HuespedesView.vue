@@ -16,15 +16,17 @@
     <BaseTable :columns="columns" :data="huespedesFiltrados" :pagination="true" :current-page="currentPage" :total-pages="totalPages" @prev="currentPage--" @next="currentPage++">
       <template #nombre="{ item }">
         <div class="flex items-center gap-3">
-          <div class="w-8 h-8 rounded-full bg-hotel-gold/30 flex items-center justify-center text-hotel-gold text-sm font-bold">{{ item.nombre?.charAt(0) }}{{ item.apellido?.charAt(0) }}</div>
+          <div class="w-8 h-8 rounded-full bg-hotel-gold/30 flex items-center justify-center text-hotel-gold text-sm font-bold">
+            {{ item.nombre?.charAt(0) }}{{ item.apellido?.charAt(0) }}
+          </div>
           <div>
             <p class="text-gray-200 font-medium">{{ item.nombre }} {{ item.apellido }}</p>
             <p class="text-gray-500 text-xs">{{ item.email }}</p>
           </div>
         </div>
       </template>
-      <template #puntos_fidelizacion="{ item }">
-        <span class="text-hotel-gold font-medium">⭐ {{ item.puntos_fidelizacion || 0 }}</span>
+      <template #documento="{ item }">
+        <span class="text-gray-400 text-xs">{{ item.tipo_documento }}: {{ item.documento_id }}</span>
       </template>
       <template #acciones="{ item }">
         <div class="flex gap-2">
@@ -57,13 +59,21 @@
             <input v-model="form.telefono" class="input-field w-full" placeholder="+57 300..." />
           </div>
           <div>
-            <label class="label">Documento</label>
-            <input v-model="form.documento" class="input-field w-full" placeholder="CC / Pasaporte" />
+            <label class="label">Tipo documento</label>
+            <select v-model="form.tipo_documento" class="input-field w-full">
+              <option value="CC">CC</option>
+              <option value="Pasaporte">Pasaporte</option>
+              <option value="CE">CE</option>
+            </select>
           </div>
+        </div>
+        <div>
+          <label class="label">Número de documento</label>
+          <input v-model="form.documento_id" required class="input-field w-full" placeholder="123456789" />
         </div>
         <div v-if="!editingItem">
           <label class="label">Contraseña</label>
-          <input v-model="form.password" type="password" required class="input-field w-full" placeholder="Mínimo 8 caracteres" />
+          <input v-model="form.password" type="password" :required="!editingItem" class="input-field w-full" placeholder="Mínimo 8 caracteres" />
         </div>
       </form>
       <template #footer>
@@ -78,10 +88,10 @@
       <div v-else class="space-y-3 max-h-80 overflow-y-auto">
         <div v-for="r in historial" :key="r.id" class="bg-gray-800 rounded-lg p-3 border border-gray-700">
           <div class="flex justify-between text-sm">
-            <span class="text-gray-300">Habitación #{{ r.habitacion_id }}</span>
+            <span class="text-gray-300">Hab. {{ r.habitacion_numero || r.id_habitacion }}</span>
             <span :class="estadoClass(r.estado)" class="px-2 py-0.5 rounded-full text-xs font-medium capitalize">{{ r.estado }}</span>
           </div>
-          <p class="text-xs text-gray-500 mt-1">{{ r.fecha_entrada }} → {{ r.fecha_salida }}</p>
+          <p class="text-xs text-gray-500 mt-1">{{ r.fecha_entrada }} → {{ r.fecha_salida }} ({{ r.noches }} noches)</p>
           <p class="text-hotel-gold text-sm font-medium mt-1">${{ Number(r.total).toLocaleString('es-CO') }}</p>
         </div>
       </div>
@@ -110,19 +120,22 @@ const totalPages = ref(1);
 
 const columns = [
   { key: 'nombre', label: 'Huésped' },
+  { key: 'documento', label: 'Documento' },
   { key: 'telefono', label: 'Teléfono' },
-  { key: 'puntos_fidelizacion', label: 'Puntos' },
   { key: 'acciones', label: 'Acciones' },
 ];
 
-const defaultForm = { nombre: '', apellido: '', email: '', telefono: '', documento: '', password: '' };
+const defaultForm = {
+  nombre: '', apellido: '', email: '', telefono: '',
+  documento_id: '', tipo_documento: 'CC', password: ''
+};
 const form = ref({ ...defaultForm });
 
 const huespedesFiltrados = computed(() => {
   let result = huespedes.value;
   if (busqueda.value) {
     const q = busqueda.value.toLowerCase();
-    result = result.filter(h => `${h.nombre} ${h.apellido} ${h.email}`.toLowerCase().includes(q));
+    result = result.filter(h => `${h.nombre} ${h.apellido} ${h.email} ${h.documento_id}`.toLowerCase().includes(q));
   }
   totalPages.value = Math.ceil(result.length / 10) || 1;
   const start = (currentPage.value - 1) * 10;
@@ -131,18 +144,30 @@ const huespedesFiltrados = computed(() => {
 
 async function cargar() {
   try {
-    const res = await api.get('/huespedes');
-    huespedes.value = (res.data.data || res.data).filter(u => u.rol === 'cliente');
+    const res = await api.get('/huespedes/');
+    huespedes.value = res.data.data || res.data;
   } catch { toast?.value?.add('Error al cargar huéspedes', 'error'); }
 }
 
 function openCreate() { editingItem.value = null; form.value = { ...defaultForm }; showModal.value = true; }
-function openEdit(item) { editingItem.value = item; form.value = { ...item, password: '' }; showModal.value = true; }
+function openEdit(item) {
+  editingItem.value = item;
+  form.value = {
+    nombre: item.nombre,
+    apellido: item.apellido,
+    email: item.email,
+    telefono: item.telefono || '',
+    documento_id: item.documento_id || '',
+    tipo_documento: item.tipo_documento || 'CC',
+    password: ''
+  };
+  showModal.value = true;
+}
 
 async function verHistorial(huesped) {
   huespedSeleccionado.value = huesped;
   try {
-    const res = await api.get('/reservas', { params: { usuario_id: huesped.id } });
+    const res = await api.get('/reservas/', { params: { id_huesped: huesped.id } });
     historial.value = res.data.data || res.data;
   } catch { historial.value = []; }
   showHistorial.value = true;
@@ -151,27 +176,51 @@ async function verHistorial(huesped) {
 async function guardar() {
   saving.value = true;
   try {
-    const payload = { ...form.value, rol: 'cliente' };
-    if (!payload.password) delete payload.password;
     if (editingItem.value) {
-      await api.put(`/auth/usuarios/${editingItem.value.id}`, payload);
+      // Actualizar huésped (datos del usuario asociado)
+      await api.put(`/huespedes/${editingItem.value.id}`, {
+        nombre: form.value.nombre,
+        apellido: form.value.apellido,
+        telefono: form.value.telefono,
+        documento_id: form.value.documento_id,
+        tipo_documento: form.value.tipo_documento,
+      });
       toast?.value?.add('Huésped actualizado', 'success');
     } else {
-      await api.post('/auth/register', payload);
-      toast?.value?.add('Huésped registrado', 'success');
+      // Registrar nuevo usuario cliente + huésped
+      await api.post('/auth/register', {
+        nombre: form.value.nombre,
+        apellido: form.value.apellido,
+        email: form.value.email,
+        telefono: form.value.telefono,
+        password: form.value.password,
+        rol: 'cliente',
+        documento_id: form.value.documento_id,
+        tipo_documento: form.value.tipo_documento,
+      });
+      toast?.value?.add('Huésped registrado exitosamente', 'success');
     }
     showModal.value = false;
     await cargar();
   } catch (err) {
-    toast?.value?.add(err.response?.data?.error?.message || 'Error al guardar', 'error');
+    const msg = err.response?.data?.error?.message || err.response?.data?.mensaje || 'Error al guardar';
+    toast?.value?.add(msg, 'error');
   } finally { saving.value = false; }
 }
 
-const estadoClass = (e) => ({ confirmada: 'bg-blue-900/50 text-blue-300', checkin: 'bg-green-900/50 text-green-300', checkout: 'bg-gray-700 text-gray-300', cancelada: 'bg-red-900/50 text-red-300' }[e] || 'bg-gray-800 text-gray-400');
+const estadoClass = (e) => ({
+  Confirmada: 'bg-blue-900/50 text-blue-300',
+  Pendiente: 'bg-yellow-900/50 text-yellow-300',
+  Ocupada: 'bg-green-900/50 text-green-300',
+  Completada: 'bg-gray-700 text-gray-300',
+  Cancelada: 'bg-red-900/50 text-red-300'
+}[e] || 'bg-gray-800 text-gray-400');
+
 onMounted(cargar);
 </script>
 
 <style scoped>
+@reference "../style.css";
 .input-field { @apply bg-gray-800 border border-gray-700 text-gray-200 text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-hotel-gold focus:ring-1 focus:ring-hotel-gold transition; }
 .label { @apply block text-xs font-medium text-gray-400 mb-1; }
 </style>
