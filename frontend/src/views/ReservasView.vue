@@ -201,11 +201,12 @@ async function guardar() {
 
 async function confirmarReserva(id) {
   try {
-    await api.put(`/reservas/${id}/confirmar`);
-    toast?.value?.add('Reserva confirmada', 'success');
+    // Procesar garantía confirma automáticamente la reserva en el backend
+    await api.post(`/pagos/garantia/${id}`, { metodo: 'Efectivo' });
+    toast?.value?.add('Reserva confirmada (Garantía pagada)', 'success');
     await cargarReservas();
   } catch (err) {
-    const msg = err.response?.data?.mensaje || 'Error al confirmar';
+    const msg = err.response?.data?.error || err.response?.data?.mensaje || 'Error al confirmar';
     toast?.value?.add(msg, 'error');
   }
 }

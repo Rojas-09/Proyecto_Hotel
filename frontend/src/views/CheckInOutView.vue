@@ -166,13 +166,16 @@ async function cargarResumenCheckout() {
 async function hacerCheckout() {
   procesando.value = true;
   try {
+    // Para hacer check-out, se requiere el pago de liquidación aprobado (RF-13)
+    await api.post(`/pagos/liquidacion/${checkoutForm.value.reserva_id}`, { metodo: 'Efectivo' });
+    
     await api.put(`/reservas/${checkoutForm.value.reserva_id}/checkout`);
     toast?.value?.add('Check-out completado. Se generó la factura automáticamente.', 'success');
     checkoutForm.value = { reserva_id: '' };
     resumenCheckout.value = null;
     await cargarReservas();
   } catch (err) {
-    const msg = err.response?.data?.message || err.response?.data?.mensaje || 'Error al hacer check-out';
+    const msg = err.response?.data?.error || err.response?.data?.message || err.response?.data?.mensaje || 'Error al hacer check-out';
     toast?.value?.add(msg, 'error');
   } finally { procesando.value = false; }
 }

@@ -1,194 +1,138 @@
-# HotelBook Pro
+# Proyecto HotelBook Pro
 
-> *Solución integral de gestión hotelera para establecimientos medianos con proyección de crecimiento.*
-
-**HotelBook Pro** es una plataforma centralizada (SPA + API REST) diseñada para resolver la gestión operativa diaria de un hotel de tamaño medio. El proyecto soluciona problemas críticos como el overbooking, la inconsistencia en facturación y los tiempos prolongados de respuesta. Integra de forma cohesiva la gestión de habitaciones, control de reservas, sistema de huéspedes, facturación, reportes estratégicos y servicios adicionales (Spa y Comedor).
+HotelBook Pro es un sistema de gestión hotelera completo que permite administrar reservas, huéspedes, habitaciones, facturación, check-in, check-out y servicios adicionales. Cuenta con una arquitectura en dos capas: un backend robusto construido en Python (Flask) con una base de datos relacional (SQLite), y un frontend moderno y dinámico construido en Vue 3 y Tailwind CSS.
 
 ---
 
-## 🛠️ Stack Tecnológico
+## 🚀 Arquitectura del Proyecto
 
-**Backend:**
-- Python 3.12
-- Flask 3.1.3 (API REST)
-- SQLAlchemy 2.0+ (ORM)
-- PostgreSQL 12+ (Producción) / SQLite (Desarrollo)
+El proyecto está dividido en dos partes principales:
 
-**Frontend:**
-- Vue 3 + Vite
-- Vue Router 4 (Navegación protegida)
-- Pinia (Gestión del estado global)
-- Tailwind CSS v4 (Diseño responsivo y utilidades)
-- Axios (Cliente HTTP)
+- **Backend (API REST):** Ubicado en `app/` y archivos raíz (como `run.py`). Maneja toda la lógica de negocio, autenticación JWT, conexión a base de datos y validaciones de flujo.
+- **Frontend (SPA):** Ubicado en el directorio `frontend/`. Construido con Vue 3, Vite, y Tailwind CSS. Se comunica exclusivamente con el backend a través de endpoints REST.
 
 ---
 
-## 📋 Requisitos Previos
+## 🛠 Tecnologías Utilizadas
 
-Asegúrate de contar con las siguientes herramientas instaladas:
-- **Node.js** (v18 o superior) y npm
-- **Python** (3.11+)
-- **Git**
+### Backend
+- **Python 3.12+**
+- **Flask** (Framework web)
+- **SQLAlchemy** (ORM)
+- **PyJWT** (Autenticación por tokens)
+- **SQLite** (Base de datos por defecto, archivo `hotelbook_dev.db`)
+
+### Frontend
+- **Vue 3** (Composition API, `<script setup>`)
+- **Vite** (Build tool ultra rápida)
+- **Tailwind CSS v4** (Framework de estilos de utilidad utilitaria)
+- **Pinia** (Manejo de estado global para sesión)
+- **Vue Router** (Enrutamiento del lado del cliente)
+- **Axios** (Cliente HTTP para consumir la API)
 
 ---
 
-## 🚀 Instrucciones de Instalación
+## 💻 Instalación y Ejecución Local
 
-Sigue estos pasos para levantar el proyecto de forma local:
+### 1. Levantar el Backend (API Flask)
 
-### 1. Clonar el repositorio
+Abre una terminal en la raíz del proyecto y ejecuta:
+
 ```bash
-git clone https://github.com/paulmopl2025/Proyecto_Hotel.git
-cd Proyecto_Hotel
-```
+# Crear y activar el entorno virtual
+python3 -m venv venv
+source venv/bin/activate
 
-### 2. Configurar el Backend (Flask)
-```bash
-# 1. Crear entorno virtual
-python -m venv venv
-source venv/bin/activate  # En Windows: venv\Scripts\activate
-
-# 2. Instalar dependencias
+# Instalar las dependencias
 pip install -r requirements.txt
 
-# 3. Inicializar y migrar base de datos local
-flask db init
-flask db migrate
-flask db upgrade
+# Iniciar la aplicación en modo desarrollo
+python run.py
 ```
+> El backend se levantará en **http://127.0.0.1:5000**
 
-### 3. Configurar el Frontend (Vue 3)
+### 2. Levantar el Frontend (Vue 3)
+
+Abre **otra pestaña de terminal** y ejecuta:
+
 ```bash
-# 1. Entrar a la carpeta frontend
 cd frontend
 
-# 2. Instalar dependencias de Node
+# Instalar dependencias de Node.js
 npm install
-```
 
-### 4. Variables de Entorno (Local)
-Backend (`/Proyecto_Hotel/.env`):
-```env
-FLASK_ENV=development
-FLASK_APP=run.py
-SECRET_KEY=clave_segura
-JWT_EXPIRATION_HOURS=24
-PORT=5000
-```
-Frontend (`/Proyecto_Hotel/frontend/.env`):
-```env
-VITE_API_URL=http://127.0.0.1:5000/api/v1
-```
-
----
-
-## ▶️ Cómo correr el proyecto en local
-
-Debes mantener dos terminales abiertas:
-
-**Terminal 1: Backend**
-```bash
-cd Proyecto_Hotel
-source venv/bin/activate
-python run.py
-# El servidor correrá en: http://127.0.0.1:5000
-```
-
-**Terminal 2: Frontend**
-```bash
-cd Proyecto_Hotel/frontend
+# Iniciar el servidor de desarrollo
 npm run dev
-# La aplicación correrá en: http://localhost:5173
 ```
-
-Abre tu navegador en `http://localhost:5173` y verás la pantalla de Login.
-
----
-
-## 📁 Estructura de Carpetas
-
-```text
-Proyecto_Hotel/
-├── app/                      # Backend: Lógica de la API REST en Flask
-│   ├── models/               # Modelos de base de datos SQLAlchemy
-│   ├── controllers/          # Endpoints y Rutas (Blueprint)
-│   ├── services/             # Lógica de negocio (Reservas, Facturas)
-│   └── ...
-├── frontend/                 # Frontend: Aplicación Vue 3 SPA
-│   ├── src/
-│   │   ├── components/       # Componentes reutilizables (BaseButton, BaseTable)
-│   │   ├── layouts/          # Layout principal (MainLayout con Sidebar)
-│   │   ├── router/           # Configuración de Vue Router (guards)
-│   │   ├── services/         # Configuración de Axios para peticiones HTTP
-│   │   ├── stores/           # Pinia store para autenticación
-│   │   └── views/            # Vistas principales (Login, Reservas, Habitaciones)
-│   ├── .env                  # Variables de entorno de Vite
-│   ├── package.json          # Dependencias de npm
-│   └── vite.config.js        # Configuración del servidor Vite
-├── tests/                    # Pruebas automatizadas backend
-├── requirements.txt          # Dependencias de Python
-└── README.md                 # Documentación del proyecto
-```
+> El frontend se levantará en **http://localhost:5173**
 
 ---
 
-## 🔌 Endpoints Principales de la API
+## 🔑 Credenciales de Acceso
 
-Todos los endpoints (salvo el Login) requieren el token JWT en las cabeceras: `Authorization: Bearer <token>`
+La base de datos ya incluye usuarios de prueba para que puedas explorar todos los módulos del sistema según los diferentes niveles de acceso:
 
-| Módulo | Endpoint | Método | Descripción | Ejemplo de Body |
-|--------|----------|--------|-------------|-----------------|
-| **Auth** | `/api/v1/auth/login` | POST | Iniciar sesión | `{"email":"admin@hotel.com", "password":"123"}` |
-| **Habitaciones**| `/api/v1/habitaciones` | GET | Listar habitaciones | - |
-| **Reservas**| `/api/v1/reservas` | POST | Crear reserva | `{"habitacion_id":1, "usuario_id":2, "fecha_entrada":"2026-05-15", ...}`|
-| **Facturación**| `/api/v1/facturas` | POST | Generar factura PDF | `{"reserva_id": 5}` |
-| **Servicios**| `/api/v1/comedor/pedidos` | POST | Añadir pedido de comedor | `{"reserva_id": 3, "descripcion": "Cena", "total": 50000}`|
+| Rol | Email | Contraseña | Descripción y Permisos |
+|-----|-------|------------|------------------------|
+| **Administrador** | `admin@hotel.com` | `admin123` | Acceso total al sistema. Puede crear habitaciones, eliminar, emitir facturas, etc. |
+| **Recepcionista** | `recepcionista@hotel.com` | `recep123` | Gestión operativa: reservas, check-in, check-out, servicios, huéspedes. |
+| **Gerente** | `gerente@hotel.com` | `gerente123` | Acceso de solo lectura a los Reportes estratégicos (Ocupación e Ingresos). |
 
 ---
 
-## 👥 Roles y Permisos
+## 📋 Flujo de Operación (Workflow Principal)
 
-El sistema cuenta con un sistema robusto de acceso por roles:
+El sistema tiene reglas de negocio estrictas basadas en los requerimientos del hotel. Para realizar un ciclo completo de estadía, sigue este flujo usando la cuenta de **Administrador** o **Recepcionista**:
 
-- **Administrador (`admin`)**: Acceso total al sistema. Puede configurar parámetros, gestionar a todos los usuarios, crear habitaciones y ver reportes.
-- **Recepcionista (`recepcionista`)**: Perfil transaccional. Encargado de verificar disponibilidad, crear reservas, hacer check-in/check-out y generar facturas. No tiene acceso a reportes financieros.
-- **Gerente (`gerente`)**: Perfil gerencial. Puede acceder a los módulos de reportes estratégicos (Ocupación e Ingresos) y exportar los datos (Excel y PDF).
-- **Cliente (`cliente`)**: Perfil limitado. Historial de reservas y puntos de fidelización (uso mayormente pasivo vía API pública).
-
----
-
-## 🔐 Credenciales de Prueba
-
-Para probar el flujo del sistema de manera local, puedes usar estas cuentas precargadas en el Login:
-
-| Rol | Correo electrónico | Contraseña |
-|-----|--------------------|------------|
-| **Administrador** | `admin@hotel.com` | `admin123` |
-| **Recepcionista** | `recepcionista@hotel.com` | `recep123` |
-| **Gerente** | `gerente@hotel.com` | `gerente123` |
-
----
-
-## 🔄 Flujo de Trabajo Git
-
-Para contribuir al desarrollo, se utiliza un sistema estricto de control de versiones y ramas:
-
-1. **Ramas**: No se trabaja directamente sobre `main` o `develop`. Cada funcionalidad se desarrolla en ramas separadas (ej. `feature/frontend-vue`, `fix/login-bug`).
-2. **Commits Atómicos**: Se usa Conventional Commits para registrar cambios:
-   - `feat: agregar vista de reservas`
-   - `fix: corregir cálculo de IVA en facturas`
-   - `docs: actualizar readme de instalación`
-3. **Pull Requests (PR)**: Se fusionan los cambios mediante PR a `develop` solicitando revisión de código.
+1. **Gestión de Habitaciones:**
+   - Ve a "Habitaciones" y crea una nueva habitación (Tipos válidos: `Simple`, `Doble`, `Suite`, `Deluxe`).
+2. **Gestión de Huéspedes:**
+   - Ve a "Huéspedes" y registra a un nuevo cliente con sus datos personales.
+3. **Creación de Reserva:**
+   - Ve a "Reservas" y crea una nueva reserva seleccionando la habitación y el huésped creados anteriormente. La reserva nace en estado **Pendiente**.
+4. **Confirmación y Pago de Garantía:**
+   - En la tabla de Reservas, presiona "Confirmar". Esto internamente procesa el pago de *garantía (50%)* y cambia el estado a **Confirmada**.
+5. **Check-In:**
+   - Ve al módulo "Recepción" (pestaña Check-in). Selecciona la reserva confirmada para registrar la llegada del huésped. La reserva pasa a estado **Ocupada**.
+6. **Servicios Adicionales (Opcional):**
+   - Ve al módulo "Servicios". Como la reserva está "Ocupada", podrás agregarle cargos por Comedor, Spa, Lavandería, etc.
+7. **Check-Out y Liquidación:**
+   - Vuelve a "Recepción" (pestaña Check-out).
+   - Al seleccionar la reserva, el sistema calculará el total restante (saldo de habitación + servicios adicionales).
+   - Al confirmar, el sistema automáticamente procesa el pago de *liquidación* y cambia el estado a **Completada**.
+8. **Facturación:**
+   - Ve a "Facturación". Selecciona la reserva que acaba de completarse y haz clic en "Emitir". El sistema generará la factura oficial y te permitirá descargarla en formato PDF.
 
 ---
 
-## 🧑‍💻 Autores
+## 📊 Módulos del Sistema
 
-- **Backend**: Rojas-09 ([GitHub Profile](https://github.com/Rojas-09))
-- **Frontend**: paulmopl2025 ([GitHub Profile](https://github.com/paulmopl2025))
+1. **Autenticación y Sesión:**
+   - Control de acceso por roles usando interceptores HTTP y guardias de navegación (`router.beforeEach`). El sidebar de navegación se adapta automáticamente según tu rol.
+2. **Habitaciones:**
+   - CRUD completo de habitaciones con control de estado (Disponible, Ocupada, Mantenimiento).
+3. **Huéspedes:**
+   - Directorio de clientes con historial individualizado de sus reservas.
+4. **Reservas:**
+   - Gestión de disponibilidad por fechas, creación, edición, cancelación y confirmación.
+5. **Recepción (Check-in/out):**
+   - Control de ingreso y salida con resúmenes financieros automáticos.
+6. **Servicios (Spa, Comedor, etc.):**
+   - Cargos a la habitación ("Room Service") que se suman dinámicamente a la cuenta final.
+7. **Facturación:**
+   - Generación, anulación y descarga en formato PDF.
+8. **Reportes Estratégicos:**
+   - Dashboard analítico exclusivo para Administradores y Gerentes con KPIs de ocupación y cálculo de ingresos totales en un rango de fechas. (Incluye exportación a CSV/PDF en el backend).
 
 ---
 
-## 📞 Contacto
+## 🎨 Diseño y UI
 
-**Email Soporte**: [sistemahotelbook@gmail.com](mailto:sistemahotelbook@gmail.com)
+El frontend ha sido diseñado con un estilo moderno, profesional y *premium* (Dark Mode), incluyendo:
+- Tonos sobrios (`gray-900`, `gray-800`) con un acento dorado (`#D4AF37`) que transmite exclusividad.
+- Micro-animaciones en los botones, tablas y transiciones de estado.
+- Interfaz completamente *Responsive*, adaptable a tablets y computadores de escritorio.
+- Componentes modulares (`BaseButton`, `BaseTable`, `BaseModal`) para una UI consistente.
+
+---
+*Desarrollado para HotelBook Pro*
