@@ -119,6 +119,7 @@ onMounted(cargarReportes);
 </script>
 
 <style scoped>
+@reference "../style.css";
 .input-field { @apply bg-gray-800 border border-gray-700 text-gray-200 text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-hotel-gold focus:ring-1 focus:ring-hotel-gold transition; }
 .label { @apply block text-xs font-medium text-gray-400 mb-1; }
 </style>
