@@ -13,15 +13,16 @@
     <div class="bg-gray-900 border border-gray-800 rounded-xl p-4 mb-6 flex flex-wrap gap-3">
       <select v-model="filtroEstado" class="bg-gray-800 border border-gray-700 text-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-hotel-gold">
         <option value="">Todos los estados</option>
-        <option value="disponible">Disponible</option>
-        <option value="ocupada">Ocupada</option>
-        <option value="mantenimiento">Mantenimiento</option>
+        <option value="Disponible">Disponible</option>
+        <option value="Ocupada">Ocupada</option>
+        <option value="Mantenimiento">Mantenimiento</option>
       </select>
       <select v-model="filtroTipo" class="bg-gray-800 border border-gray-700 text-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-hotel-gold">
         <option value="">Todos los tipos</option>
-        <option value="estandar">Estándar</option>
-        <option value="premium">Premium</option>
-        <option value="suite">Suite</option>
+        <option value="Simple">Simple</option>
+        <option value="Doble">Doble</option>
+        <option value="Suite">Suite</option>
+        <option value="Deluxe">Deluxe</option>
       </select>
       <button @click="cargarHabitaciones" class="ml-auto text-xs text-gray-400 hover:text-white transition-colors">↻ Actualizar</button>
     </div>
@@ -53,26 +54,26 @@
       </template>
     </BaseTable>
 
-    <!-- Modal Crear/Editar -->
     <BaseModal v-model="showModal" :title="editingItem ? 'Editar Habitación' : 'Nueva Habitación'">
-      <form @submit.prevent="guardar" class="space-y-4">
+      <form id="habitacion-form" @submit.prevent="guardar" class="space-y-4">
         <div class="grid grid-cols-2 gap-4">
           <div>
             <label class="block text-xs font-medium text-gray-400 mb-1">Número</label>
             <input v-model="form.numero" required class="input-field w-full" placeholder="101" />
           </div>
           <div>
-            <label class="block text-xs font-medium text-gray-400 mb-1">Planta</label>
-            <input v-model.number="form.planta" type="number" required class="input-field w-full" placeholder="1" />
+            <label class="block text-xs font-medium text-gray-400 mb-1">Piso</label>
+            <input v-model.number="form.piso" type="number" required class="input-field w-full" placeholder="1" />
           </div>
         </div>
         <div class="grid grid-cols-2 gap-4">
-          <div>
+        <div>
             <label class="block text-xs font-medium text-gray-400 mb-1">Tipo</label>
             <select v-model="form.tipo" required class="input-field w-full">
-              <option value="estandar">Estándar</option>
-              <option value="premium">Premium</option>
-              <option value="suite">Suite</option>
+              <option value="Simple">Simple</option>
+              <option value="Doble">Doble</option>
+              <option value="Suite">Suite</option>
+              <option value="Deluxe">Deluxe</option>
             </select>
           </div>
           <div>
@@ -88,9 +89,9 @@
           <div>
             <label class="block text-xs font-medium text-gray-400 mb-1">Estado</label>
             <select v-model="form.estado" class="input-field w-full">
-              <option value="disponible">Disponible</option>
-              <option value="ocupada">Ocupada</option>
-              <option value="mantenimiento">Mantenimiento</option>
+              <option value="Disponible">Disponible</option>
+              <option value="Ocupada">Ocupada</option>
+              <option value="Mantenimiento">Mantenimiento</option>
             </select>
           </div>
         </div>
@@ -98,10 +99,6 @@
           <label class="block text-xs font-medium text-gray-400 mb-1">Descripción</label>
           <textarea v-model="form.descripcion" rows="2" class="input-field w-full" placeholder="Descripción de la habitación..."></textarea>
         </div>
-        <template #footer>
-          <BaseButton variant="secondary" @click="showModal = false">Cancelar</BaseButton>
-          <BaseButton type="submit" :disabled="saving">{{ saving ? 'Guardando...' : 'Guardar' }}</BaseButton>
-        </template>
       </form>
       <template #footer>
         <BaseButton variant="secondary" @click="showModal = false">Cancelar</BaseButton>
@@ -133,13 +130,13 @@ const currentPage = ref(1);
 const totalPages = ref(1);
 const ITEMS_PER_PAGE = 10;
 
-const defaultForm = { numero: '', planta: 1, tipo: 'estandar', capacidad: 2, precio_noche: '', estado: 'disponible', descripcion: '' };
+const defaultForm = { numero: '', piso: 1, tipo: 'Simple', capacidad: 2, precio_noche: '', estado: 'Disponible', descripcion: '' };
 const form = ref({ ...defaultForm });
 
 const columns = [
   { key: 'numero', label: 'Número' },
   { key: 'tipo', label: 'Tipo' },
-  { key: 'planta', label: 'Planta' },
+  { key: 'piso', label: 'Piso' },
   { key: 'capacidad', label: 'Capacidad' },
   { key: 'precio_noche', label: 'Precio/Noche' },
   { key: 'estado', label: 'Estado' },
@@ -206,15 +203,28 @@ async function eliminar(id) {
   }
 }
 
-const tipoClass = (tipo) => ({ estandar: 'bg-blue-900/50 text-blue-300', premium: 'bg-purple-900/50 text-purple-300', suite: 'bg-hotel-gold/20 text-hotel-gold' }[tipo] || 'bg-gray-800 text-gray-400');
-const estadoClass = (estado) => ({ disponible: 'bg-green-900/50 text-green-300', ocupada: 'bg-red-900/50 text-red-300', mantenimiento: 'bg-yellow-900/50 text-yellow-300' }[estado] || 'bg-gray-800 text-gray-400');
-const estadoDot = (estado) => ({ disponible: 'bg-green-400', ocupada: 'bg-red-400', mantenimiento: 'bg-yellow-400' }[estado] || 'bg-gray-500');
+const tipoClass = (tipo) => ({
+  Simple: 'bg-blue-900/50 text-blue-300',
+  Doble: 'bg-indigo-900/50 text-indigo-300',
+  Suite: 'bg-hotel-gold/20 text-hotel-gold',
+  Deluxe: 'bg-purple-900/50 text-purple-300'
+}[tipo] || 'bg-gray-800 text-gray-400');
+const estadoClass = (estado) => ({
+  Disponible: 'bg-green-900/50 text-green-300',
+  Ocupada: 'bg-red-900/50 text-red-300',
+  Mantenimiento: 'bg-yellow-900/50 text-yellow-300'
+}[estado] || 'bg-gray-800 text-gray-400');
+const estadoDot = (estado) => ({
+  Disponible: 'bg-green-400',
+  Ocupada: 'bg-red-400',
+  Mantenimiento: 'bg-yellow-400'
+}[estado] || 'bg-gray-500');
 
 onMounted(cargarHabitaciones);
 </script>
 
 <style scoped>
-.input-field {
-  @apply bg-gray-800 border border-gray-700 text-gray-200 text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-hotel-gold focus:ring-1 focus:ring-hotel-gold transition;
-}
+@reference "../style.css";
+.input-field { @apply bg-gray-800 border border-gray-700 text-gray-200 text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-hotel-gold focus:ring-1 focus:ring-hotel-gold transition; }
+.label { @apply block text-xs font-medium text-gray-400 mb-1; }
 </style>

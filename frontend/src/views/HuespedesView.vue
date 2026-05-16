@@ -177,11 +177,14 @@ async function guardar() {
   saving.value = true;
   try {
     if (editingItem.value) {
-      // Actualizar huésped (datos del usuario asociado)
-      await api.put(`/huespedes/${editingItem.value.id}`, {
+      // Actualizar datos del usuario (nombre, apellido, teléfono)
+      await api.put(`/auth/usuarios/${editingItem.value.id_usuario}`, {
         nombre: form.value.nombre,
         apellido: form.value.apellido,
         telefono: form.value.telefono,
+      });
+      // Actualizar datos del huésped (documento)
+      await api.put(`/huespedes/${editingItem.value.id}`, {
         documento_id: form.value.documento_id,
         tipo_documento: form.value.tipo_documento,
       });
