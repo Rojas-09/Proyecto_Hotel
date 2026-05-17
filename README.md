@@ -134,5 +134,26 @@ El frontend ha sido diseñado con un estilo moderno, profesional y *premium* (Da
 - Interfaz completamente *Responsive*, adaptable a tablets y computadores de escritorio.
 - Componentes modulares (`BaseButton`, `BaseTable`, `BaseModal`) para una UI consistente.
 
+### Mockups de Alta Fidelidad
+Aquí se presentan los diseños visuales de referencia de la aplicación:
+
+**1. Pantalla de Inicio de Sesión (Login)**
+![Mockup Login](docs/images/mockup_login.png)
+
+**2. Panel de Control (Dashboard)**
+![Mockup Dashboard](docs/images/mockup_dashboard.png)
+
+**3. Módulo de Reservas**
+![Mockup Reservas](docs/images/mockup_reservas.png)
+
+### Prototipos (Wireframes)
+Estructura y flujo lógico del sistema previo al diseño final:
+
+**1. Flujo de Usuario Principal (User Flow)**
+![Prototipo Flujo](docs/images/prototype_flow.png)
+
+**2. Modal de Creación de Reserva**
+![Prototipo Modal](docs/images/prototype_modal.png)
+
 ---
 *Desarrollado para HotelBook Pro*
