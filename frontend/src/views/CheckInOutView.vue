@@ -77,12 +77,16 @@
               <span class="text-gray-400">Subtotal habitación</span>
               <span class="text-gray-200">${{ Number(resumenCheckout.subtotal).toLocaleString('es-CO') }}</span>
             </div>
+            <div class="flex justify-between text-sm" v-if="resumenCheckout.servicios > 0">
+              <span class="text-gray-400">Servicios Adicionales (Spa, Comedor, etc)</span>
+              <span class="text-gray-200">${{ Number(resumenCheckout.servicios).toLocaleString('es-CO') }}</span>
+            </div>
             <div class="flex justify-between text-sm">
               <span class="text-gray-400">IVA (19%)</span>
               <span class="text-gray-200">${{ Number(resumenCheckout.impuestos).toLocaleString('es-CO') }}</span>
             </div>
             <div class="flex justify-between text-sm border-t border-gray-700 pt-2">
-              <span class="text-gray-300 font-medium">Total</span>
+              <span class="text-gray-300 font-medium">Total Final</span>
               <span class="text-hotel-gold font-bold">${{ Number(resumenCheckout.total).toLocaleString('es-CO') }}</span>
             </div>
           </div>
@@ -154,12 +158,27 @@ async function cargarResumenCheckout() {
   if (!checkoutForm.value.reserva_id) return;
   const reserva = reservasEnCheckin.value.find(r => r.id === checkoutForm.value.reserva_id);
   if (reserva) {
-    resumenCheckout.value = {
-      noches: reserva.noches,
-      subtotal: reserva.subtotal,
-      impuestos: reserva.impuestos,
-      total: reserva.total
-    };
+    try {
+      const resServ = await api.get(`/reservas/${reserva.id}/servicios`);
+      const servicios = resServ.data.servicios || resServ.data.data || [];
+      const totalServicios = servicios.reduce((acc, s) => acc + Number(s.costo), 0);
+      
+      resumenCheckout.value = {
+        noches: reserva.noches,
+        subtotal: reserva.subtotal,
+        impuestos: reserva.impuestos,
+        servicios: totalServicios,
+        total: Number(reserva.total) + totalServicios
+      };
+    } catch {
+      resumenCheckout.value = {
+        noches: reserva.noches,
+        subtotal: reserva.subtotal,
+        impuestos: reserva.impuestos,
+        servicios: 0,
+        total: reserva.total
+      };
+    }
   }
 }
 
