@@ -57,6 +57,8 @@ class Config:
     IVA_RATE = 0.19
     PUNTOS_POR_NOCHE = 10
     GARANTIA_PORCENTAJE = 0.50
+    CORS_ORIGINS = os.environ.get("CORS_ORIGINS", "*")
+    PERMANENT_SESSION_LIFETIME = 86400  # 24 horas en segundos
 
 
 class DevelopmentConfig(Config):
@@ -92,6 +94,11 @@ class ProductionConfig(Config):
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SESSION_COOKIE_SECURE = True
     SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SAMESITE = "Lax"
+    CORS_ORIGINS = (
+        os.environ.get("CORS_ORIGINS", "").split(",")
+        if os.environ.get("CORS_ORIGINS") else []
+    )
     SQLALCHEMY_ENGINE_OPTIONS = {
         "pool_size": 10,
         "max_overflow": 20,

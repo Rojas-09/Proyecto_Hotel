@@ -19,7 +19,8 @@ def create_app(config_name="development"):
 
     # Inicializar extensiones
     db.init_app(app)
-    CORS(app)
+    CORS(app, origins=app.config.get("CORS_ORIGINS", ["*"]),
+         supports_credentials=True)
 
     # Registrar Blueprints (controladores)
     from app.controllers.auth_controller import auth_bp

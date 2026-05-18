@@ -309,8 +309,13 @@ def hacer_checkout(reserva_id, realizado_por_id=None):
     if checkin_checkout:
         checkin_checkout.fecha_checkout = ahora_colombia()
 
-    from app.services import puntos_fidelidad_service
-    puntos_fidelidad_service.acreditar(reserva_id)
+    # Acreditación de puntos de fidelidad (no debe bloquear el checkout)
+    try:
+        from app.services import puntos_fidelidad_service
+        puntos_fidelidad_service.acreditar(reserva_id)
+    except Exception:
+        # Nunca bloquear checkout por puntos
+        pass
 
     puntos = reserva.noches * 10
 

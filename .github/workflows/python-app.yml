@@ -13,10 +13,10 @@ jobs:
 
     env:
       FLASK_ENV: testing
-      SECRET_KEY: ci-secret-key-no-usar-en-prod
-      JWT_SECRET_KEY: ci-jwt-secret-key-no-usar-en-prod
+      SECRET_KEY: ${{ secrets.CI_SECRET_KEY }}
+      JWT_SECRET_KEY: ${{ secrets.CI_JWT_SECRET_KEY }}
       STRIPE_MOCK: "true"
-      STRIPE_SECRET_KEY: sk_test_fake
+      STRIPE_SECRET_KEY: ${{ secrets.CI_STRIPE_SECRET_KEY }}
 
     steps:
       - name: Checkout código
