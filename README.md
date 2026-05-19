@@ -70,13 +70,13 @@ npm run dev
 
 ## 🔑 Credenciales de Acceso
 
-La base de datos ya incluye usuarios de prueba para que puedas explorar todos los módulos del sistema según los diferentes niveles de acceso:
+La base de datos incluye usuarios de prueba para desarrollo local. **No uses estas credenciales en producción** y rota/actualiza las contraseñas antes de cualquier despliegue.
 
 | Rol | Email | Contraseña | Descripción y Permisos |
 |-----|-------|------------|------------------------|
-| **Administrador** | `admin@hotel.com` | `admin123` | Acceso total al sistema. Puede crear habitaciones, eliminar, emitir facturas, etc. |
-| **Recepcionista** | `recepcionista@hotel.com` | `recep123` | Gestión operativa: reservas, check-in, check-out, servicios, huéspedes. |
-| **Gerente** | `gerente@hotel.com` | `gerente123` | Acceso de solo lectura a los Reportes estratégicos (Ocupación e Ingresos). |
+| **Administrador** | `admin@hotel.com` | *(configurable en seed local)* | Acceso total al sistema. Puede crear habitaciones, eliminar, emitir facturas, etc. |
+| **Recepcionista** | `recepcionista@hotel.com` | *(configurable en seed local)* | Gestión operativa: reservas, check-in, check-out, servicios, huéspedes. |
+| **Gerente** | `gerente@hotel.com` | *(configurable en seed local)* | Acceso de solo lectura a los Reportes estratégicos (Ocupación e Ingresos). |
 
 ---
 
