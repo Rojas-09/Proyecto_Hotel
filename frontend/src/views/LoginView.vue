@@ -65,8 +65,8 @@
         </form>
 
         <!-- Credenciales de ejemplo -->
-        <div class="mt-6 pt-5 border-t border-gray-800">
-          <p class="text-xs text-gray-600 font-medium mb-3 uppercase tracking-wider">Credenciales de prueba</p>
+        <div v-if="showDemoCredentials" class="mt-6 pt-5 border-t border-gray-800">
+          <p class="text-xs text-gray-600 font-medium mb-3 uppercase tracking-wider">Correos de prueba</p>
           <div class="space-y-2">
             <button
               v-for="cred in demoCredentials"
@@ -98,16 +98,16 @@ const form = ref({ email: '', password: '' });
 const loading = ref(false);
 const errorMsg = ref('');
 const showPassword = ref(false);
+const showDemoCredentials = import.meta.env.DEV || import.meta.env.VITE_ENABLE_DEMO_CREDS === 'true';
 
 const demoCredentials = [
-  { role: 'Administrador', email: 'admin@hotel.com', password: 'admin123' },
-  { role: 'Recepcionista', email: 'recepcionista@hotel.com', password: 'recep123' },
-  { role: 'Gerente', email: 'gerente@hotel.com', password: 'gerente123' },
+  { role: 'Administrador', email: 'admin@hotel.com' },
+  { role: 'Recepcionista', email: 'recepcionista@hotel.com' },
+  { role: 'Gerente', email: 'gerente@hotel.com' },
 ];
 
 function fillCredentials(cred) {
   form.value.email = cred.email;
-  form.value.password = cred.password;
 }
 
 async function handleLogin() {

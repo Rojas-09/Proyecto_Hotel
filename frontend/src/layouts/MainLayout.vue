@@ -10,9 +10,8 @@
 
       <!-- Navigation -->
       <nav class="flex-1 px-2 py-4 space-y-1 overflow-y-auto">
-        <template v-for="item in navItems" :key="item.path">
+        <template v-for="item in visibleNavItems" :key="item.path">
           <router-link
-            v-if="!item.role || authStore.userRole === item.role || authStore.userRole === 'admin'"
             :to="item.path"
             :class="[
               'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors duration-150',
@@ -80,14 +79,18 @@ const sidebarOpen = ref(true);
 const toastRef = ref(null);
 
 const navItems = [
-  { path: '/habitaciones', label: 'Habitaciones', icon: '🛏️' },
-  { path: '/reservas', label: 'Reservas', icon: '📋' },
-  { path: '/huespedes', label: 'Huéspedes', icon: '👥' },
-  { path: '/recepcion', label: 'Recepción', icon: '🔑' },
-  { path: '/facturacion', label: 'Facturación', icon: '🧾' },
-  { path: '/servicios', label: 'Servicios', icon: '🍽️' },
-  { path: '/reportes', label: 'Reportes', icon: '📊', role: 'gerente' },
+  { path: '/habitaciones', label: 'Habitaciones', icon: '🛏️', roles: ['admin', 'recepcionista', 'gerente'] },
+  { path: '/reservas', label: 'Reservas', icon: '📋', roles: ['admin', 'recepcionista', 'gerente'] },
+  { path: '/huespedes', label: 'Huéspedes', icon: '👥', roles: ['admin', 'recepcionista'] },
+  { path: '/recepcion', label: 'Recepción', icon: '🔑', roles: ['admin', 'recepcionista'] },
+  { path: '/facturacion', label: 'Facturación', icon: '🧾', roles: ['admin', 'recepcionista'] },
+  { path: '/servicios', label: 'Servicios', icon: '🍽️', roles: ['admin', 'recepcionista', 'gerente'] },
+  { path: '/reportes', label: 'Reportes', icon: '📊', roles: ['gerente', 'admin'] },
 ];
+
+const visibleNavItems = computed(() =>
+  navItems.filter(item => !item.roles || item.roles.includes(authStore.userRole))
+);
 
 const pageTitles = {
   '/habitaciones': 'Habitaciones',

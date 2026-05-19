@@ -82,7 +82,7 @@
               </div>
               <div class="flex items-center gap-3">
                 <span class="text-hotel-gold font-bold text-sm">${{ Number(s.costo).toLocaleString('es-CO') }}</span>
-                <button @click="eliminarServicio(s.id)" class="text-xs text-red-400 hover:text-red-300 transition-colors">✕</button>
+                <button v-if="canDeleteServicio" @click="eliminarServicio(s.id)" class="text-xs text-red-400 hover:text-red-300 transition-colors">✕</button>
               </div>
             </div>
           </div>
@@ -108,7 +108,9 @@
 import { ref, computed, onMounted, inject } from 'vue';
 import api from '../services/api';
 import BaseButton from '../components/BaseButton.vue';
+import { useAuthStore } from '../stores/auth';
 
+const authStore = useAuthStore();
 const toast = inject('toast');
 const reservasOcupadas = ref([]);
 const reservaId = ref('');
@@ -132,6 +134,7 @@ const tipoMap = {
 };
 
 const form = ref({ descripcion: '', costo: '' });
+const canDeleteServicio = computed(() => authStore.userRole === 'admin');
 
 // Filtra los servicios según el tab activo
 const serviciosFiltrados = computed(() =>

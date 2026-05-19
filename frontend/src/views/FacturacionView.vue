@@ -24,7 +24,7 @@
     </div>
 
     <!-- Tabla de facturas -->
-    <BaseTable :columns="columns" :data="facturas" :pagination="true" :current-page="currentPage" :total-pages="totalPages" @prev="currentPage--" @next="currentPage++">
+    <BaseTable :columns="columns" :data="facturasPaginadas" :pagination="true" :current-page="currentPage" :total-pages="totalPages" @prev="paginaAnterior" @next="paginaSiguiente">
       <template #estado="{ item }">
         <span :class="estadoClass(item.estado)" class="px-2.5 py-0.5 rounded-full text-xs font-medium capitalize">{{ item.estado }}</span>
       </template>
@@ -38,7 +38,7 @@
         <div class="flex gap-2">
           <button @click="descargarPDF(item.id_reserva)" class="text-xs text-blue-400 hover:text-blue-300 transition-colors">📄 PDF</button>
           <button
-            v-if="item.estado === 'emitida'"
+            v-if="item.estado === 'emitida' && canAnular"
             @click="anularFactura(item.id)"
             class="text-xs text-red-400 hover:text-red-300 transition-colors"
           >Anular</button>
@@ -49,18 +49,20 @@
 </template>
 
 <script setup>
-import { ref, onMounted, inject } from 'vue';
+import { ref, computed, onMounted, inject } from 'vue';
 import api from '../services/api';
+import { useAuthStore } from '../stores/auth';
 import BaseButton from '../components/BaseButton.vue';
 import BaseTable from '../components/BaseTable.vue';
 
+const authStore = useAuthStore();
 const toast = inject('toast');
 const facturas = ref([]);
 const reservasCompletadas = ref([]);
 const reservaSeleccionada = ref('');
 const emitiendo = ref(false);
 const currentPage = ref(1);
-const totalPages = ref(1);
+const ITEMS_PER_PAGE = 10;
 
 const columns = [
   { key: 'id', label: '#' },
@@ -72,26 +74,41 @@ const columns = [
   { key: 'acciones', label: 'Acciones' },
 ];
 
+const canAnular = computed(() => authStore.userRole === 'admin');
+
+const totalPages = computed(() => Math.max(1, Math.ceil(facturas.value.length / ITEMS_PER_PAGE)));
+
+const facturasPaginadas = computed(() => {
+  const start = (currentPage.value - 1) * ITEMS_PER_PAGE;
+  return facturas.value.slice(start, start + ITEMS_PER_PAGE);
+});
+
+function paginaAnterior() {
+  currentPage.value = Math.max(1, currentPage.value - 1);
+}
+
+function paginaSiguiente() {
+  currentPage.value = Math.min(totalPages.value, currentPage.value + 1);
+}
+
 async function cargar() {
   try {
-    const [resR] = await Promise.all([
-      api.get('/reservas/'),
-    ]);
+    const [resR] = await Promise.all([api.get('/reservas/')]);
     const reservas = resR.data.data || resR.data;
     reservasCompletadas.value = reservas.filter(r => r.estado === 'Completada');
 
-    // Cargar facturas de cada reserva completada
-    const facturasList = [];
-    for (const r of reservasCompletadas.value) {
-      try {
-        const resF = await api.get(`/facturas/reserva/${r.id}`);
-        if (resF.data.success && resF.data.data) {
-          facturasList.push(resF.data.data);
-        }
-      } catch {}
-    }
-    facturas.value = facturasList;
-    totalPages.value = Math.ceil(facturas.value.length / 10) || 1;
+    const facturasList = await Promise.all(
+      reservasCompletadas.value.map(async (r) => {
+        try {
+          const resF = await api.get(`/facturas/reserva/${r.id}`);
+          if (resF.data.success && resF.data.data) return resF.data.data;
+        } catch {}
+        return null;
+      })
+    );
+
+    facturas.value = facturasList.filter(Boolean);
+    currentPage.value = Math.min(currentPage.value, totalPages.value);
   } catch { toast?.value?.add('Error al cargar datos', 'error'); }
 }
 
@@ -109,9 +126,25 @@ async function emitirFactura() {
   } finally { emitiendo.value = false; }
 }
 
-function descargarPDF(reservaId) {
-  const token = localStorage.getItem('token');
-  window.open(`${import.meta.env.VITE_API_URL}/facturas/reserva/${reservaId}/descargar?token=${token}`, '_blank');
+async function descargarPDF(reservaId) {
+  try {
+    const response = await api.get(`/facturas/reserva/${reservaId}/descargar`, {
+      responseType: 'blob'
+    });
+
+    const header = response.headers?.['content-disposition'] || '';
+    const filename = header.match(/filename="?([^"]+)"?/)?.[1] || `factura-${reservaId}.pdf`;
+    const blobUrl = URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
+    const link = document.createElement('a');
+    link.href = blobUrl;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(blobUrl);
+  } catch {
+    toast?.value?.add('Error al descargar factura', 'error');
+  }
 }
 
 async function anularFactura(facturaId) {

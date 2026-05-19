@@ -34,7 +34,7 @@
     </div>
 
     <!-- Tabla de Reservas -->
-    <BaseTable :columns="columns" :data="reservas" :pagination="true" :current-page="currentPage" :total-pages="totalPages" @prev="currentPage--" @next="currentPage++">
+    <BaseTable :columns="columns" :data="reservasPaginadas" :pagination="true" :current-page="currentPage" :total-pages="totalPages" @prev="paginaAnterior" @next="paginaSiguiente">
       <template #estado="{ item }">
         <span :class="estadoClass(item.estado)" class="px-2.5 py-0.5 rounded-full text-xs font-medium capitalize">{{ item.estado }}</span>
       </template>
@@ -99,7 +99,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, inject } from 'vue';
+import { ref, computed, onMounted, inject } from 'vue';
 import api from '../services/api';
 import BaseButton from '../components/BaseButton.vue';
 import BaseTable from '../components/BaseTable.vue';
@@ -114,7 +114,7 @@ const showModal = ref(false);
 const editingItem = ref(null);
 const saving = ref(false);
 const currentPage = ref(1);
-const totalPages = ref(1);
+const ITEMS_PER_PAGE = 10;
 
 const disponibilidad = ref({ entrada: '', salida: '' });
 const defaultForm = { id_habitacion: '', id_huesped: '', fecha_entrada: '', fecha_salida: '', notas: '' };
@@ -132,11 +132,26 @@ const columns = [
   { key: 'acciones', label: 'Acciones' },
 ];
 
+const totalPages = computed(() => Math.max(1, Math.ceil(reservas.value.length / ITEMS_PER_PAGE)));
+
+const reservasPaginadas = computed(() => {
+  const start = (currentPage.value - 1) * ITEMS_PER_PAGE;
+  return reservas.value.slice(start, start + ITEMS_PER_PAGE);
+});
+
+function paginaAnterior() {
+  currentPage.value = Math.max(1, currentPage.value - 1);
+}
+
+function paginaSiguiente() {
+  currentPage.value = Math.min(totalPages.value, currentPage.value + 1);
+}
+
 async function cargarReservas() {
   try {
     const res = await api.get('/reservas/');
     reservas.value = res.data.data || res.data;
-    totalPages.value = Math.ceil(reservas.value.length / 10) || 1;
+    currentPage.value = Math.min(currentPage.value, totalPages.value);
   } catch { toast?.value?.add('Error al cargar reservas', 'error'); }
 }
 

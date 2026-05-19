@@ -28,7 +28,7 @@
     </div>
 
     <!-- Tabla -->
-    <BaseTable :columns="columns" :data="habitacionesFiltradas" :pagination="true" :current-page="currentPage" :total-pages="totalPages" @prev="currentPage--" @next="currentPage++">
+    <BaseTable :columns="columns" :data="habitacionesFiltradas" :pagination="true" :current-page="currentPage" :total-pages="totalPages" @prev="paginaAnterior" @next="paginaSiguiente">
       <template #numero="{ item }">
         <span class="font-mono font-bold text-hotel-gold">{{ item.numero }}</span>
       </template>
@@ -48,7 +48,7 @@
       </template>
       <template #acciones="{ item }">
         <div class="flex gap-2">
-          <button @click="openEdit(item)" class="text-xs text-hotel-gold hover:text-yellow-400 transition-colors">Editar</button>
+          <button v-if="canEdit" @click="openEdit(item)" class="text-xs text-hotel-gold hover:text-yellow-400 transition-colors">Editar</button>
           <button v-if="authStore.userRole === 'admin'" @click="eliminar(item.id)" class="text-xs text-red-400 hover:text-red-300 transition-colors">Eliminar</button>
         </div>
       </template>
@@ -118,7 +118,7 @@ import BaseModal from '../components/BaseModal.vue';
 
 const authStore = useAuthStore();
 const toast = inject('toast');
-const canEdit = computed(() => ['admin', 'recepcionista'].includes(authStore.userRole));
+const canEdit = computed(() => authStore.userRole === 'admin');
 
 const habitaciones = ref([]);
 const filtroEstado = ref('');
@@ -151,6 +151,14 @@ const habitacionesFiltradas = computed(() => {
   const start = (currentPage.value - 1) * ITEMS_PER_PAGE;
   return result.slice(start, start + ITEMS_PER_PAGE);
 });
+
+function paginaAnterior() {
+  currentPage.value = Math.max(1, currentPage.value - 1);
+}
+
+function paginaSiguiente() {
+  currentPage.value = Math.min(totalPages.value, currentPage.value + 1);
+}
 
 async function cargarHabitaciones() {
   try {

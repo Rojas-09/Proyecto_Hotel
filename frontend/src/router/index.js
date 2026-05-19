@@ -21,20 +21,20 @@ const routes = [
   {
     path: '/',
     component: MainLayout,
-    meta: { requiresAuth: true },
+    meta: { requiresAuth: true, roles: ['admin', 'recepcionista', 'gerente'] },
     children: [
       { path: '', redirect: '/habitaciones' },
-      { path: 'habitaciones', name: 'Habitaciones', component: HabitacionesView },
-      { path: 'reservas', name: 'Reservas', component: ReservasView },
-      { path: 'huespedes', name: 'Huespedes', component: HuespedesView },
-      { path: 'recepcion', name: 'Recepcion', component: CheckInOutView },
-      { path: 'facturacion', name: 'Facturacion', component: FacturacionView },
-      { path: 'servicios', name: 'Servicios', component: ServiciosView },
+      { path: 'habitaciones', name: 'Habitaciones', component: HabitacionesView, meta: { roles: ['admin', 'recepcionista', 'gerente'] } },
+      { path: 'reservas', name: 'Reservas', component: ReservasView, meta: { roles: ['admin', 'recepcionista', 'gerente'] } },
+      { path: 'huespedes', name: 'Huespedes', component: HuespedesView, meta: { roles: ['admin', 'recepcionista'] } },
+      { path: 'recepcion', name: 'Recepcion', component: CheckInOutView, meta: { roles: ['admin', 'recepcionista'] } },
+      { path: 'facturacion', name: 'Facturacion', component: FacturacionView, meta: { roles: ['admin', 'recepcionista'] } },
+      { path: 'servicios', name: 'Servicios', component: ServiciosView, meta: { roles: ['admin', 'recepcionista', 'gerente'] } },
       {
         path: 'reportes',
         name: 'Reportes',
         component: ReportesView,
-        meta: { requiresAuth: true, roles: ['gerente', 'admin'] }
+        meta: { roles: ['gerente', 'admin'] }
       },
     ]
   }
@@ -47,6 +47,7 @@ const router = createRouter({
 
 router.beforeEach((to, from) => {
   const authStore = useAuthStore();
+  const dashboardRoles = ['admin', 'recepcionista', 'gerente'];
 
   // Ruta requiere auth y usuario no autenticado → login
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {
@@ -54,13 +55,15 @@ router.beforeEach((to, from) => {
   }
 
   // Usuario autenticado intenta ir a login
-  if (!to.meta.requiresAuth && authStore.isAuthenticated && to.path === '/login') {
+  if (!to.meta.requiresAuth && authStore.isAuthenticated && to.path === '/login' && dashboardRoles.includes(authStore.userRole)) {
     return '/habitaciones';
   }
 
-  // Control de rol para rutas restringidas
-  if (to.meta.roles && !to.meta.roles.includes(authStore.userRole)) {
-    return '/habitaciones';
+  const hasUnauthorizedRole = to.matched.some(
+    route => route.meta?.roles && !route.meta.roles.includes(authStore.userRole)
+  );
+  if (hasUnauthorizedRole) {
+    return '/login';
   }
 
   return true;
