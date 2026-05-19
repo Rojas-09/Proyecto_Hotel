@@ -42,6 +42,11 @@ def rol_requerido(*roles):
     return decorator
 
 
+@views_bp.route("/api-test")
+def api_test():
+    return render_template("public/api_test.html")
+
+
 @views_bp.route("/login")
 def login_page():
     if "user_id" in session:
@@ -56,36 +61,37 @@ def login_submit():
 
     if not email or not password:
         flash("Email y contraseña son obligatorios.", "danger")
-        return redirect(url_for("views.login_page"))
+        return render_template("public/login.html", email=email)
 
     result, status = AuthService.login({"email": email, "password": password})
 
     if status != 200:
         msg = result.get("error", {}).get("message", "Credenciales inválidas.")
         flash(msg, "danger")
-        return redirect(url_for("views.login_page"))
+        return render_template("public/login.html", email=email)
 
     token = result.get("data", {}).get("token")
     if not token:
         flash("Error interno. Intenta nuevamente.", "danger")
-        return redirect(url_for("views.login_page"))
+        return render_template("public/login.html", email=email)
 
     from app.utils.jwt_helper import decodificar_token
     try:
         payload = decodificar_token(token)
     except Exception:
         flash("Token inválido. Intenta nuevamente.", "danger")
-        return redirect(url_for("views.login_page"))
+        return render_template("public/login.html", email=email)
 
     user = db.session.get(Usuario, payload["user_id"])
     if not user or not user.activo:
         flash("Usuario no encontrado o inactivo.", "danger")
-        return redirect(url_for("views.login_page"))
+        return render_template("public/login.html", email=email)
 
     session["user_id"] = user.id
     session["user_email"] = user.email
     session["user_rol"] = user.rol.value
     session["user_nombre"] = user.nombre
+    session["jwt_token"] = token
     session.permanent = True
 
     flash(f"Bienvenido, {user.nombre}.", "success")
@@ -113,11 +119,11 @@ def register_submit():
     for field in required:
         if not data.get(field, "").strip():
             flash(f"El campo {field} es obligatorio.", "danger")
-            return redirect(url_for("views.register_page"))
+            return render_template("public/register.html", form_data=data)
 
     if data.get("password") != data.get("password_confirm"):
         flash("Las contraseñas no coinciden.", "danger")
-        return redirect(url_for("views.register_page"))
+        return render_template("public/register.html", form_data=data)
 
     payload = {
         "nombre": data["nombre"].strip(),
@@ -134,7 +140,7 @@ def register_submit():
     if status != 201:
         msg = result.get("error", {}).get("message", "Error en el registro.")
         flash(msg, "danger")
-        return redirect(url_for("views.register_page"))
+        return render_template("public/register.html", form_data=data)
 
     flash("Registro exitoso. Ahora puedes iniciar sesión.", "success")
     return redirect(url_for("views.login_page"))
@@ -177,15 +183,21 @@ def habitaciones():
     estado_q = request.args.get("estado", "").strip().lower()
 
     query = select(Habitacion).filter_by(activo=True)
+    user_rol = session.get("user_rol")
+    es_privilegiado = user_rol in ("admin", "gerente", "recepcionista")
+
+    if not es_privilegiado:
+        query = query.filter(Habitacion.estado == EstadoHabitacion.disponible)
+    elif estado_q:
+        for e in EstadoHabitacion:
+            if e.value == estado_q:
+                query = query.filter(Habitacion.estado == e)
+                break
+
     if tipo_q:
         for t in TipoHabitacion:
             if t.value == tipo_q:
                 query = query.filter(Habitacion.tipo == t)
-                break
-    if estado_q:
-        for e in EstadoHabitacion:
-            if e.value == estado_q:
-                query = query.filter(Habitacion.estado == e)
                 break
 
     result = db.session.execute(query.order_by(Habitacion.numero))
@@ -195,6 +207,7 @@ def habitaciones():
         habitaciones=habitaciones_list,
         filtro_tipo=tipo_q,
         filtro_estado=estado_q,
+        es_privilegiado=es_privilegiado,
     )
 
 

@@ -144,7 +144,10 @@ def obtener_mis_reservas(current_user):
         select(Huesped).filter_by(id_usuario=current_user.id)
     ).scalar_one_or_none()
     if not huesped:
-        return []
+        raise ValueError(
+            "No se encontró un perfil de huésped asociado a tu cuenta. "
+            "Contacta al administrador."
+        )
 
     reservas = db.session.execute(
         select(Reserva).filter_by(id_huesped=huesped.id)
@@ -166,6 +169,7 @@ def confirmar(reserva_id):
         )
 
     reserva.estado = EstadoReserva.confirmada
+    reserva.habitacion.estado = EstadoHabitacion.ocupada
     reserva.updated_at = ahora_colombia()
     db.session.commit()
 

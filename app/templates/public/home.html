@@ -17,6 +17,7 @@
         <div class="stat-label">Disponibles</div>
         <div class="stat-value" id="s-disponibles">—</div>
     </div>
+    {% if session.get('user_rol') in ('admin','gerente','recepcionista') %}
     <div class="stat-card">
         <div class="stat-label">Ocupadas</div>
         <div class="stat-value" id="s-ocupadas">—</div>
@@ -25,6 +26,7 @@
         <div class="stat-label">En Mantenimiento</div>
         <div class="stat-value" id="s-mantenimiento">—</div>
     </div>
+    {% endif %}
 </div>
 
 <div class="card mb-4">
