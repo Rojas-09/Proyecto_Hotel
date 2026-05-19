@@ -17,8 +17,20 @@
       </div>
       <BaseButton @click="cargarReportes">Generar</BaseButton>
       <div class="ml-auto flex gap-2">
-        <a :href="exportUrl('excel')" class="inline-flex items-center gap-1 px-3 py-2 text-xs font-medium bg-green-900/40 text-green-300 border border-green-800 rounded-lg hover:bg-green-900/60 transition-colors">📊 Excel</a>
-        <a :href="exportUrl('pdf')" class="inline-flex items-center gap-1 px-3 py-2 text-xs font-medium bg-red-900/40 text-red-300 border border-red-800 rounded-lg hover:bg-red-900/60 transition-colors">📄 PDF</a>
+        <button
+          type="button"
+          @click="descargarReporte('xlsx')"
+          class="inline-flex items-center gap-1 px-3 py-2 text-xs font-medium bg-green-900/40 text-green-300 border border-green-800 rounded-lg hover:bg-green-900/60 transition-colors"
+        >
+          📊 Excel
+        </button>
+        <button
+          type="button"
+          @click="descargarReporte('pdf')"
+          class="inline-flex items-center gap-1 px-3 py-2 text-xs font-medium bg-red-900/40 text-red-300 border border-red-800 rounded-lg hover:bg-red-900/60 transition-colors"
+        >
+          📄 PDF
+        </button>
       </div>
     </div>
 
@@ -48,7 +60,6 @@ import BaseButton from '../components/BaseButton.vue';
 import BaseTable from '../components/BaseTable.vue';
 
 const toast = inject('toast');
-const apiBase = import.meta.env.VITE_API_URL;
 const reporteOcupacion = ref(null);
 const reporteIngresos = ref(null);
 const datosOcupacion = ref([]);
@@ -94,10 +105,29 @@ const kpis = computed(() => [
   },
 ]);
 
-function exportUrl(formato) {
-  const params = new URLSearchParams({ fecha_inicio: filtros.value.fecha_inicio, fecha_fin: filtros.value.fecha_fin });
-  const token = localStorage.getItem('token');
-  return `${apiBase}/reportes/ocupacion/${formato}?${params}&token=${token}`;
+async function descargarReporte(formato) {
+  try {
+    const response = await api.get('/reportes/ocupacion', {
+      params: { ...filtros.value, formato },
+      responseType: 'blob'
+    });
+
+    const header = response.headers?.['content-disposition'] || '';
+    const filenameFromHeader = header.match(/filename="?([^"]+)"?/)?.[1];
+    const extension = formato === 'pdf' ? 'pdf' : 'xlsx';
+    const filename = filenameFromHeader || `reporte-ocupacion-${filtros.value.fecha_inicio}-${filtros.value.fecha_fin}.${extension}`;
+
+    const blobUrl = URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = blobUrl;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(blobUrl);
+  } catch (error) {
+    toast?.value?.add('Error al descargar reporte', 'error');
+  }
 }
 
 async function cargarReportes() {
