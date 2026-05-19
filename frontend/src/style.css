@@ -1,0 +1,18 @@
+@import "tailwindcss";
+
+@theme {
+  --color-hotel-gold: #B8860B;
+  --color-hotel-gold-light: #DAA520;
+}
+
+/* Clases de utilidad para el color gold */
+@layer utilities {
+  .bg-hotel-gold { background-color: #B8860B; }
+  .text-hotel-gold { color: #B8860B; }
+  .border-hotel-gold { border-color: #B8860B; }
+  .ring-hotel-gold { --tw-ring-color: #B8860B; }
+  .hover\:bg-hotel-gold:hover { background-color: #B8860B; }
+  .focus\:border-hotel-gold:focus { border-color: #B8860B; }
+  .focus\:ring-hotel-gold:focus { --tw-ring-color: #B8860B; }
+  .from-hotel-gold { --tw-gradient-from: #B8860B; }
+}
