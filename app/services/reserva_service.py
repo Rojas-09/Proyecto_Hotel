@@ -58,7 +58,7 @@ def crear(datos, current_user):
     noches = (fecha_salida - fecha_entrada).days
     precio_noche = Decimal(str(habitacion.precio_noche))
     subtotal = precio_noche * noches
-    impuestos = subtotal * Decimal("0.19")
+    impuestos = subtotal * Decimal(str(current_app.config["IVA_RATE"]))
     total = subtotal + impuestos
 
     reserva = Reserva(
@@ -127,15 +127,10 @@ def obtener_por_id(reserva_id, current_user):
         else current_user.rol
     )
     if rol_value == "cliente":
-        try:
-            huesped = db.session.execute(
-                select(Huesped).filter_by(id_usuario=current_user.id)
-            ).scalar_one_or_none()
-            if not huesped or reserva.id_huesped != huesped.id:
-                raise PermissionError(
-                    "No tienes permiso para ver esta reserva."
-                )
-        except Exception:
+        huesped = db.session.execute(
+            select(Huesped).filter_by(id_usuario=current_user.id)
+        ).scalar_one_or_none()
+        if not huesped or reserva.id_huesped != huesped.id:
             raise PermissionError(
                 "No tienes permiso para ver esta reserva."
             )
@@ -145,20 +140,20 @@ def obtener_por_id(reserva_id, current_user):
 
 def obtener_mis_reservas(current_user):
     """Obtiene las reservas del usuario actual (solo para clientes)."""
-    try:
-        huesped = db.session.execute(
-            select(Huesped).filter_by(id_usuario=current_user.id)
-        ).scalar_one_or_none()
-        if not huesped:
-            return []
+    huesped = db.session.execute(
+        select(Huesped).filter_by(id_usuario=current_user.id)
+    ).scalar_one_or_none()
+    if not huesped:
+        raise ValueError(
+            "No se encontró un perfil de huésped asociado a tu cuenta. "
+            "Contacta al administrador."
+        )
 
-        reservas = db.session.execute(
-            select(Reserva).filter_by(id_huesped=huesped.id)
-            .order_by(Reserva.fecha_entrada.desc())
-        ).scalars().all()
-        return [r.to_dict() for r in reservas]
-    except Exception:
-        return []
+    reservas = db.session.execute(
+        select(Reserva).filter_by(id_huesped=huesped.id)
+        .order_by(Reserva.fecha_entrada.desc())
+    ).scalars().all()
+    return [r.to_dict() for r in reservas]
 
 
 def confirmar(reserva_id):
@@ -174,22 +169,20 @@ def confirmar(reserva_id):
         )
 
     reserva.estado = EstadoReserva.confirmada
+    reserva.habitacion.estado = EstadoHabitacion.ocupada
     reserva.updated_at = ahora_colombia()
     db.session.commit()
 
-    try:
-        _enviar_email_confirmacion(reserva)
-        notificacion = db.session.execute(
-            select(Notificacion).filter_by(
-                id_reserva=reserva.id, tipo="confirmacion_reserva"
-            )
-        ).scalar_one_or_none()
-        if notificacion:
-            notificacion.enviado = True
-            notificacion.fecha_envio = ahora_colombia()
-            db.session.commit()
-    except Exception:
-        pass
+    _enviar_email_confirmacion(reserva)
+    notificacion = db.session.execute(
+        select(Notificacion).filter_by(
+            id_reserva=reserva.id, tipo="confirmacion_reserva"
+        )
+    ).scalar_one_or_none()
+    if notificacion:
+        notificacion.enviado = True
+        notificacion.fecha_envio = ahora_colombia()
+        db.session.commit()
 
     return reserva.to_dict()
 
@@ -207,15 +200,10 @@ def cancelar(reserva_id, motivo=None, current_user=None):
             else current_user.rol
         )
         if rol_value == "cliente":
-            try:
-                huesped = db.session.execute(
-                    select(Huesped).filter_by(id_usuario=current_user.id)
-                ).scalar_one_or_none()
-                if not huesped or reserva.id_huesped != huesped.id:
-                    raise PermissionError(
-                        "No tienes permiso para cancelar esta reserva."
-                    )
-            except Exception:
+            huesped = db.session.execute(
+                select(Huesped).filter_by(id_usuario=current_user.id)
+            ).scalar_one_or_none()
+            if not huesped or reserva.id_huesped != huesped.id:
                 raise PermissionError(
                     "No tienes permiso para cancelar esta reserva."
                 )
@@ -325,11 +313,15 @@ def hacer_checkout(reserva_id, realizado_por_id=None):
     if checkin_checkout:
         checkin_checkout.fecha_checkout = ahora_colombia()
 
+    # Acreditación de puntos de fidelidad (no debe bloquear el checkout)
+    try:
+        from app.services import puntos_fidelidad_service
+        puntos_fidelidad_service.acreditar(reserva_id)
+    except Exception:
+        # Nunca bloquear checkout por puntos
+        pass
+
     puntos = reserva.noches * 10
-    huesped = db.session.get(Huesped, reserva.id_huesped)
-    if huesped:
-        usuario = huesped.usuario
-        usuario.puntos_fidelizacion += puntos
 
     servicios_adicionales_total = Decimal("0")
     if reserva.servicios_adicionales:
@@ -353,19 +345,13 @@ def hacer_checkout(reserva_id, realizado_por_id=None):
     db.session.add(factura)
     db.session.commit()
 
-    from app.services import puntos_fidelidad_service
-    try:
-        puntos_fidelidad_service.acreditar(reserva_id)
-    except Exception:
-        pass
-
     resultado = reserva.to_dict()
     resultado["puntos_ganados"] = puntos
     return resultado
 
 
 def _obtener_id_huesped(current_user, datos=None):
-    """Obtiene el id_huesped del usuario actual o de los datos si es admin."""
+    """Obtiene el id_huesped del usuario actual."""
     rol_value = (
         current_user.rol.value
         if hasattr(current_user.rol, 'value')
@@ -382,14 +368,23 @@ def _obtener_id_huesped(current_user, datos=None):
             )
         return huesped.id
 
-    if datos and "id_huesped" in datos:
-        id_huesped = int(datos["id_huesped"])
-        huesped = db.session.get(Huesped, id_huesped)
-        if not huesped:
-            raise ValueError(f"No existe el huésped con id {id_huesped}.")
-        return id_huesped
+    if not datos or "id_huesped" not in datos:
+        raise ValueError(
+            "Debes proporcionar 'id_huesped' en los datos para este rol."
+        )
 
-    raise ValueError("Debes proporcionar el id_huesped en los datos.")
+    try:
+        id_huesped = int(datos["id_huesped"])
+    except (TypeError, ValueError) as exc:
+        raise ValueError("'id_huesped' debe ser un entero válido.") from exc
+
+    huesped = db.session.get(Huesped, id_huesped)
+    if not huesped:
+        raise LookupError(
+            f"No existe un huésped con id {id_huesped}."
+        )
+
+    return id_huesped
 
 
 def _validar_campos_obligatorios(datos):

@@ -30,13 +30,24 @@
 <script src="{{ url_for('static', filename='js/api.js') }}"></script>
 <script>
 (function () {
+    {% if session.get('jwt_token') %}
+    // Pasar el JWT de la sesión del servidor al sessionStorage si no existe
+    if (!sessionStorage.getItem("hbp_token")) {
+        sessionStorage.setItem("hbp_token", "{{ session['jwt_token'] }}");
+    }
+    {% endif %}
+
     var token = sessionStorage.getItem("hbp_token");
     if (!token) {
+        {% if session.get('user_id') %}
+        // Sesión de servidor activa pero sin JWT, redirigir a login
+        window.location.href = "/logout";
+        {% else %}
         window.location.href = "/login";
+        {% endif %}
         return;
     }
 
-    // Mostrar info del usuario
     var userInfo = document.getElementById("user-info");
     var logoutBtn = document.getElementById("logout-btn");
     if (logoutBtn) {
@@ -46,7 +57,6 @@
         });
     }
 
-    // Decodificar token para mostrar nombre
     try {
         var payload = JSON.parse(atob(token.split(".")[1]));
         if (userInfo) {
@@ -55,8 +65,6 @@
     } catch (e) {
         HotelBookAPI.logout();
     }
-
-    // Global 401/403 handler en fetch (interceptado en api.js)
 })();
 </script>
 {% block extra_js %}{% endblock %}

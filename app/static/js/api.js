@@ -32,7 +32,7 @@
         logout() {
             removeToken();
             sessionStorage.clear();
-            window.location.href = "/login";
+            window.location.href = "/logout";
         },
 
         // ─── Core fetch ────────────────────────────────────────────────────────

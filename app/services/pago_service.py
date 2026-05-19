@@ -35,9 +35,10 @@ def procesar_garantia(reserva_id, metodo_str, payment_method_id=None):
         )
 
     metodo = _validar_metodo(metodo_str)
-    monto = (Decimal(str(reserva.total)) * Decimal("0.50")).quantize(
-        Decimal("0.01")
-    )
+    monto = (
+        Decimal(str(reserva.total)) *
+        Decimal(str(current_app.config["GARANTIA_PORCENTAJE"]))
+    ).quantize(Decimal("0.01"))
 
     referencia_externa = None
     if metodo == MetodoPago.tarjeta:

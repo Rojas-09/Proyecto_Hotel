@@ -25,6 +25,7 @@
                         <option value="deluxe" {% if filtro_tipo=='deluxe' %}selected{% endif %}>Deluxe</option>
                     </select>
                 </div>
+                {% if es_privilegiado %}
                 <div class="form-group" style="margin-bottom:0;">
                     <label class="text-sm">Estado</label>
                     <select name="estado" class="form-control" onchange="this.form.submit()">
@@ -34,6 +35,7 @@
                         <option value="mantenimiento" {% if filtro_estado=='mantenimiento' %}selected{% endif %}>Mantenimiento</option>
                     </select>
                 </div>
+                {% endif %}
                 {% if filtro_tipo or filtro_estado %}
                     <a href="{{ url_for('views.habitaciones') }}" class="btn btn-secondary btn-sm" style="align-self:flex-end;">Limpiar</a>
                 {% endif %}

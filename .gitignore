@@ -70,10 +70,12 @@ tests/data/
 Datos.md
 
 # Agent instructions (privado)
-<<<<<<< HEAD
 .agents/
 # Postman collection (sensitive)
 postman.json
-=======
-.agents/
->>>>>>> origin/Feature-front
+
+# Configuración de cobertura (sensitive)
+.converagerc
+
+# Configuración de pytest (sensitive)
+pytest.ini

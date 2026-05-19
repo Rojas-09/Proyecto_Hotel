@@ -1,0 +1,489 @@
+{% extends "layouts/base_public.html" %}
+{% block title %}API Test — HotelBook Pro{% endblock %}
+{% block extra_css %}
+<style>
+.api-section { margin-bottom: 2rem; }
+.api-section h2 { cursor: pointer; padding: 0.75rem 1rem; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: var(--radius); font-size: 1rem; display: flex; align-items: center; gap: 0.5rem; }
+.api-section h2:hover { background: var(--border); }
+.api-section h2 .arrow { transition: transform 0.2s; }
+.api-section h2 .arrow.open { transform: rotate(90deg); }
+.api-section .section-body { border: 1px solid var(--border); border-top: none; border-radius: 0 0 var(--radius) var(--radius); padding: 1rem; display: none; }
+.api-section .section-body.open { display: block; }
+.endpoint { margin-bottom: 1rem; padding: 0.75rem; border: 1px solid var(--border); border-radius: var(--radius); }
+.endpoint .endpoint-url { font-family: monospace; font-size: 0.85rem; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+.endpoint .endpoint-url .method { font-weight: 700; padding: 0.15rem 0.4rem; border-radius: 3px; font-size: 0.75rem; color: #fff; }
+.method.get { background: var(--primary); }
+.method.post { background: var(--success); }
+.method.put { background: var(--warning); color: #000; }
+.method.delete { background: var(--danger); }
+.input-row { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; }
+.input-row input, .input-row select { padding: 0.4rem 0.6rem; border: 1px solid var(--border); border-radius: var(--radius); font-size: 0.85rem; }
+.input-row input[type="text"], .input-row input[type="email"], .input-row input[type="number"] { min-width: 150px; }
+.status-badge { font-size: 0.75rem; padding: 0.15rem 0.4rem; border-radius: 3px; font-weight: 600; }
+.status-2xx { background: #d1e7dd; color: #0a3622; }
+.status-4xx { background: #fff3cd; color: #664d03; }
+.status-5xx { background: #f8d7da; color: #58151c; }
+.response-area { margin-top: 0.5rem; background: #1e1e1e; color: #d4d4d4; border-radius: var(--radius); padding: 0.75rem; font-family: monospace; font-size: 0.8rem; max-height: 300px; overflow: auto; white-space: pre-wrap; word-break: break-all; display: none; }
+.response-area.show { display: block; }
+.token-bar { background: #fff3cd; border: 1px solid #ffe69c; border-radius: var(--radius); padding: 0.5rem 1rem; margin-bottom: 1rem; display: none; font-size: 0.8rem; word-break: break-all; }
+.token-bar.show { display: block; }
+.token-bar .token-value { font-family: monospace; font-size: 0.75rem; }
+.token-actions { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
+</style>
+{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>🧪 API Test Console</h1>
+    <p class="text-muted">Prueba los endpoints de HotelBook Pro</p>
+</div>
+
+<div class="token-bar" id="tokenBar">
+    <strong>✅ Token JWT almacenado</strong>
+    <div class="token-value" id="tokenDisplay"></div>
+    <div class="token-actions mt-1">
+        <button class="btn btn-sm btn-secondary" onclick="navigator.clipboard.writeText(sessionStorage.getItem('hbp_token'))">Copiar</button>
+        <button class="btn btn-sm btn-danger" onclick="logout()">Eliminar Token</button>
+    </div>
+</div>
+
+<div id="sections">
+  {# Auth #}
+  <div class="api-section">
+    <h2 onclick="toggleSection(this)"><span class="arrow">▶</span> 1. Autenticación</h2>
+    <div class="section-body">
+      <div class="endpoint">
+        <div class="endpoint-url"><span class="method post">POST</span> <code>/api/v1/auth/login</code> — Iniciar sesión</div>
+        <div class="input-row">
+          <input type="email" id="login_email" placeholder="Email" value="admin@hotel.com">
+          <input type="password" id="login_pass" placeholder="Contraseña" value="Admin123!">
+          <button class="btn btn-sm btn-primary" onclick="callLogin()">Login</button>
+        </div>
+        <div class="response-area" id="res_login"></div>
+      </div>
+      <div class="endpoint">
+        <div class="endpoint-url"><span class="method post">POST</span> <code>/api/v1/auth/register</code> — Registrar cliente</div>
+        <div class="input-row">
+          <input type="text" id="reg_nombre" placeholder="Nombre" value="Test">
+          <input type="text" id="reg_apellido" placeholder="Apellido" value="User">
+          <input type="email" id="reg_email" placeholder="Email" value="test@test.com">
+          <input type="text" id="reg_telefono" placeholder="Teléfono" value="3001234567">
+          <input type="text" id="reg_doc" placeholder="Documento" value="123456789">
+          <input type="password" id="reg_pass" placeholder="Contraseña" value="Test123!">
+          <button class="btn btn-sm btn-success" onclick="callRegister()">Registrar</button>
+        </div>
+        <div class="response-area" id="res_register"></div>
+      </div>
+      <div class="endpoint">
+        <div class="endpoint-url"><span class="method get">GET</span> <code>/api/v1/auth/me</code> — Mi perfil</div>
+        <button class="btn btn-sm btn-primary" onclick="callApi('/api/v1/auth/me','res_me')">Obtener</button>
+        <div class="response-area" id="res_me"></div>
+      </div>
+      <div class="endpoint">
+        <div class="endpoint-url"><span class="method get">GET</span> <code>/api/v1/auth/usuarios</code> — Listar usuarios (admin)</div>
+        <button class="btn btn-sm btn-primary" onclick="callApi('/api/v1/auth/usuarios','res_usuarios')">Listar</button>
+        <div class="response-area" id="res_usuarios"></div>
+      </div>
+    </div>
+  </div>
+
+  {# Habitaciones #}
+  <div class="api-section">
+    <h2 onclick="toggleSection(this)"><span class="arrow">▶</span> 2. Habitaciones</h2>
+    <div class="section-body">
+      <div class="endpoint">
+        <div class="endpoint-url"><span class="method get">GET</span> <code>/api/v1/habitaciones/</code> — Listar (público)</div>
+        <div class="input-row">
+          <input type="text" id="hab_filtro_tipo" placeholder="tipo (simple/doble/suite/deluxe)">
+          <input type="text" id="hab_filtro_estado" placeholder="estado (disponible/ocupada)">
+          <button class="btn btn-sm btn-primary" onclick="callListarHabitaciones()">Listar</button>
+        </div>
+        <div class="response-area" id="res_habitaciones"></div>
+      </div>
+      <div class="endpoint">
+        <div class="endpoint-url"><span class="method get">GET</span> <code>/api/v1/habitaciones/disponibles</code> — Disponibilidad</div>
+        <div class="input-row">
+          <input type="date" id="hab_fec_ent">
+          <input type="date" id="hab_fec_sal">
+          <input type="text" id="hab_fec_tipo" placeholder="tipo (opcional)">
+          <button class="btn btn-sm btn-primary" onclick="callDisponibles()">Consultar</button>
+        </div>
+        <div class="response-area" id="res_disponibles"></div>
+      </div>
+      <div class="endpoint">
+        <div class="endpoint-url"><span class="method get">GET</span> <code>/api/v1/habitaciones/&lt;id&gt;</code> — Detalle</div>
+        <div class="input-row">
+          <input type="number" id="hab_id_det" placeholder="ID habitación" min="1">
+          <button class="btn btn-sm btn-primary" onclick="callApi('/api/v1/habitaciones/'+document.getElementById('hab_id_det').value,'res_hab_detalle')">Obtener</button>
+        </div>
+        <div class="response-area" id="res_hab_detalle"></div>
+      </div>
+      <div class="endpoint">
+        <div class="endpoint-url"><span class="method post">POST</span> <code>/api/v1/habitaciones/</code> — Crear (admin)</div>
+        <div class="input-row">
+          <input type="number" id="hab_crear_num" placeholder="Número" value="999">
+          <select id="hab_crear_tipo"><option value="simple">Simple</option><option value="doble">Doble</option><option value="suite">Suite</option><option value="deluxe">Deluxe</option></select>
+          <input type="number" id="hab_crear_precio" placeholder="Precio/noche" value="150000" step="1000">
+          <input type="number" id="hab_crear_cap" placeholder="Capacidad" value="2">
+          <input type="number" id="hab_crear_piso" placeholder="Piso" value="1">
+          <button class="btn btn-sm btn-success" onclick="callCrearHabitacion()">Crear</button>
+        </div>
+        <div class="response-area" id="res_hab_crear"></div>
+      </div>
+    </div>
+  </div>
+
+  {# Huespedes #}
+  <div class="api-section">
+    <h2 onclick="toggleSection(this)"><span class="arrow">▶</span> 3. Huéspedes</h2>
+    <div class="section-body">
+      <div class="endpoint">
+        <div class="endpoint-url"><span class="method get">GET</span> <code>/api/v1/huespedes/</code> — Listar</div>
+        <button class="btn btn-sm btn-primary" onclick="callApi('/api/v1/huespedes/','res_huespedes')">Listar</button>
+        <div class="response-area" id="res_huespedes"></div>
+      </div>
+      <div class="endpoint">
+        <div class="endpoint-url"><span class="method get">GET</span> <code>/api/v1/huespedes/buscar?q=...</code> — Buscar</div>
+        <div class="input-row">
+          <input type="text" id="hues_busq" placeholder="Término de búsqueda">
+          <button class="btn btn-sm btn-primary" onclick="callApi('/api/v1/huespedes/buscar?q='+encodeURIComponent(document.getElementById('hues_busq').value),'res_hues_buscar')">Buscar</button>
+        </div>
+        <div class="response-area" id="res_hues_buscar"></div>
+      </div>
+      <div class="endpoint">
+        <div class="endpoint-url"><span class="method get">GET</span> <code>/api/v1/huespedes/&lt;id&gt;</code> — Detalle</div>
+        <div class="input-row">
+          <input type="number" id="hues_id" placeholder="ID huésped" min="1">
+          <button class="btn btn-sm btn-primary" onclick="callApi('/api/v1/huespedes/'+document.getElementById('hues_id').value,'res_hues_det')">Obtener</button>
+        </div>
+        <div class="response-area" id="res_hues_det"></div>
+      </div>
+    </div>
+  </div>
+
+  {# Reservas #}
+  <div class="api-section">
+    <h2 onclick="toggleSection(this)"><span class="arrow">▶</span> 4. Reservas</h2>
+    <div class="section-body">
+      <div class="endpoint">
+        <div class="endpoint-url"><span class="method get">GET</span> <code>/api/v1/reservas/</code> — Listar todas (admin/recep)</div>
+        <button class="btn btn-sm btn-primary" onclick="callApi('/api/v1/reservas/','res_reservas_list')">Listar</button>
+        <div class="response-area" id="res_reservas_list"></div>
+      </div>
+      <div class="endpoint">
+        <div class="endpoint-url"><span class="method get">GET</span> <code>/api/v1/reservas/mis-reservas</code> — Mis reservas (cliente)</div>
+        <button class="btn btn-sm btn-primary" onclick="callApi('/api/v1/reservas/mis-reservas','res_mis_reservas')">Listar</button>
+        <div class="response-area" id="res_mis_reservas"></div>
+      </div>
+      <div class="endpoint">
+        <div class="endpoint-url"><span class="method post">POST</span> <code>/api/v1/reservas/</code> — Crear reserva</div>
+        <div class="input-row" style="flex-wrap:wrap;gap:0.5rem;">
+          <input type="number" id="res_crear_hab" placeholder="ID habitación" style="width:130px">
+          <input type="date" id="res_crear_ent" style="width:140px">
+          <input type="date" id="res_crear_sal" style="width:140px">
+          <input type="text" id="res_crear_hues_doc" placeholder="Doc. huésped" style="width:130px">
+          <button class="btn btn-sm btn-success" onclick="callCrearReserva()">Crear</button>
+        </div>
+        <div class="response-area" id="res_reservas_crear"></div>
+      </div>
+      <div class="endpoint">
+        <div class="endpoint-url"><span class="method get">GET</span> <code>/api/v1/reservas/&lt;id&gt;</code> — Detalle reserva</div>
+        <div class="input-row">
+          <input type="number" id="res_id_det" placeholder="ID reserva" min="1">
+          <button class="btn btn-sm btn-primary" onclick="callApi('/api/v1/reservas/'+document.getElementById('res_id_det').value,'res_reserva_det')">Obtener</button>
+        </div>
+        <div class="response-area" id="res_reserva_det"></div>
+      </div>
+      <div class="endpoint">
+        <div class="endpoint-url"><span class="method put">PUT</span> <code>/api/v1/reservas/&lt;id&gt;/confirmar</code> — Confirmar</div>
+        <div class="input-row">
+          <input type="number" id="res_conf_id" placeholder="ID reserva" min="1">
+          <button class="btn btn-sm btn-warning" onclick="callApiPut('/api/v1/reservas/'+document.getElementById('res_conf_id').value+'/confirmar',{},'res_reserva_conf')">Confirmar</button>
+        </div>
+        <div class="response-area" id="res_reserva_conf"></div>
+      </div>
+      <div class="endpoint">
+        <div class="endpoint-url"><span class="method put">PUT</span> <code>/api/v1/reservas/&lt;id&gt;/cancelar</code> — Cancelar</div>
+        <div class="input-row">
+          <input type="number" id="res_can_id" placeholder="ID reserva" min="1">
+          <input type="text" id="res_can_motivo" placeholder="Motivo" value="Prueba">
+          <button class="btn btn-sm btn-danger" onclick="callApiPut('/api/v1/reservas/'+document.getElementById('res_can_id').value+'/cancelar',{motivo:document.getElementById('res_can_motivo').value},'res_reserva_can')">Cancelar</button>
+        </div>
+        <div class="response-area" id="res_reserva_can"></div>
+      </div>
+      <div class="endpoint">
+        <div class="endpoint-url"><span class="method put">PUT</span> <code>/api/v1/reservas/&lt;id&gt;/checkin</code> — Check-in</div>
+        <div class="input-row">
+          <input type="number" id="res_ci_id" placeholder="ID reserva" min="1">
+          <button class="btn btn-sm btn-primary" onclick="callApiPut('/api/v1/reservas/'+document.getElementById('res_ci_id').value+'/checkin',{},'res_checkin')">Check-in</button>
+        </div>
+        <div class="response-area" id="res_checkin"></div>
+      </div>
+      <div class="endpoint">
+        <div class="endpoint-url"><span class="method put">PUT</span> <code>/api/v1/reservas/&lt;id&gt;/checkout</code> — Check-out</div>
+        <div class="input-row">
+          <input type="number" id="res_co_id" placeholder="ID reserva" min="1">
+          <button class="btn btn-sm btn-secondary" onclick="callApiPut('/api/v1/reservas/'+document.getElementById('res_co_id').value+'/checkout',{},'res_checkout')">Check-out</button>
+        </div>
+        <div class="response-area" id="res_checkout"></div>
+      </div>
+    </div>
+  </div>
+
+  {# Pagos #}
+  <div class="api-section">
+    <h2 onclick="toggleSection(this)"><span class="arrow">▶</span> 5. Pagos</h2>
+    <div class="section-body">
+      <div class="endpoint">
+        <div class="endpoint-url"><span class="method post">POST</span> <code>/api/v1/pagos/garantia/&lt;reserva_id&gt;</code> — Pagar garantía</div>
+        <div class="input-row">
+          <input type="number" id="pag_gar_res" placeholder="ID reserva" min="1">
+          <select id="pag_gar_met"><option value="Tarjeta">Tarjeta</option><option value="Efectivo">Efectivo</option><option value="Transferencia">Transferencia</option></select>
+          <button class="btn btn-sm btn-success" onclick="callApiPost('/api/v1/pagos/garantia/'+document.getElementById('pag_gar_res').value,{metodo:document.getElementById('pag_gar_met').value},'res_pago_gar')">Pagar</button>
+        </div>
+        <div class="response-area" id="res_pago_gar"></div>
+      </div>
+      <div class="endpoint">
+        <div class="endpoint-url"><span class="method post">POST</span> <code>/api/v1/pagos/liquidacion/&lt;reserva_id&gt;</code> — Liquidar</div>
+        <div class="input-row">
+          <input type="number" id="pag_liq_res" placeholder="ID reserva" min="1">
+          <select id="pag_liq_met"><option value="Tarjeta">Tarjeta</option><option value="Efectivo">Efectivo</option><option value="Transferencia">Transferencia</option></select>
+          <button class="btn btn-sm btn-success" onclick="callApiPost('/api/v1/pagos/liquidacion/'+document.getElementById('pag_liq_res').value,{metodo:document.getElementById('pag_liq_met').value},'res_pago_liq')">Pagar</button>
+        </div>
+        <div class="response-area" id="res_pago_liq"></div>
+      </div>
+      <div class="endpoint">
+        <div class="endpoint-url"><span class="method get">GET</span> <code>/api/v1/pagos/reserva/&lt;reserva_id&gt;</code> — Ver pagos</div>
+        <div class="input-row">
+          <input type="number" id="pag_ver_res" placeholder="ID reserva" min="1">
+          <button class="btn btn-sm btn-primary" onclick="callApi('/api/v1/pagos/reserva/'+document.getElementById('pag_ver_res').value,'res_pagos_ver')">Ver</button>
+        </div>
+        <div class="response-area" id="res_pagos_ver"></div>
+      </div>
+    </div>
+  </div>
+
+  {# Facturas #}
+  <div class="api-section">
+    <h2 onclick="toggleSection(this)"><span class="arrow">▶</span> 6. Facturas</h2>
+    <div class="section-body">
+      <div class="endpoint">
+        <div class="endpoint-url"><span class="method get">GET</span> <code>/api/v1/facturas/reserva/&lt;reserva_id&gt;</code> — Ver factura</div>
+        <div class="input-row">
+          <input type="number" id="fac_ver_res" placeholder="ID reserva" min="1">
+          <button class="btn btn-sm btn-primary" onclick="callApi('/api/v1/facturas/reserva/'+document.getElementById('fac_ver_res').value,'res_fac_ver')">Ver</button>
+        </div>
+        <div class="response-area" id="res_fac_ver"></div>
+      </div>
+      <div class="endpoint">
+        <div class="endpoint-url"><span class="method post">POST</span> <code>/api/v1/facturas/reserva/&lt;reserva_id&gt;/emitir</code> — Emitir factura</div>
+        <div class="input-row">
+          <input type="number" id="fac_emi_res" placeholder="ID reserva" min="1">
+          <button class="btn btn-sm btn-success" onclick="callApiPost('/api/v1/facturas/reserva/'+document.getElementById('fac_emi_res').value+'/emitir',{},'res_fac_emi')">Emitir</button>
+        </div>
+        <div class="response-area" id="res_fac_emi"></div>
+      </div>
+    </div>
+  </div>
+
+  {# Servicios Adicionales #}
+  <div class="api-section">
+    <h2 onclick="toggleSection(this)"><span class="arrow">▶</span> 7. Servicios Adicionales</h2>
+    <div class="section-body">
+      <div class="endpoint">
+        <div class="endpoint-url"><span class="method post">POST</span> <code>/api/v1/reservas/&lt;reserva_id&gt;/servicios</code> — Agregar servicio</div>
+        <div class="input-row">
+          <input type="number" id="sv_agr_res" placeholder="ID reserva" min="1">
+          <select id="sv_agr_tipo"><option value="Comedor">Comedor</option><option value="Spa">Spa</option><option value="Lavanderia">Lavandería</option><option value="Otro">Otro</option></select>
+          <input type="text" id="sv_agr_desc" placeholder="Descripción" value="Servicio de prueba">
+          <input type="number" id="sv_agr_costo" placeholder="Costo" value="50000">
+          <button class="btn btn-sm btn-success" onclick="callAgregarServicio()">Agregar</button>
+        </div>
+        <div class="response-area" id="res_sv_agr"></div>
+      </div>
+      <div class="endpoint">
+        <div class="endpoint-url"><span class="method get">GET</span> <code>/api/v1/reservas/&lt;reserva_id&gt;/servicios</code> — Listar servicios</div>
+        <div class="input-row">
+          <input type="number" id="sv_list_res" placeholder="ID reserva" min="1">
+          <button class="btn btn-sm btn-primary" onclick="callApi('/api/v1/reservas/'+document.getElementById('sv_list_res').value+'/servicios','res_sv_list')">Listar</button>
+        </div>
+        <div class="response-area" id="res_sv_list"></div>
+      </div>
+    </div>
+  </div>
+
+  {# Reportes #}
+  <div class="api-section">
+    <h2 onclick="toggleSection(this)"><span class="arrow">▶</span> 8. Reportes</h2>
+    <div class="section-body">
+      <div class="endpoint">
+        <div class="endpoint-url"><span class="method get">GET</span> <code>/api/v1/reportes/ocupacion</code> — Reporte de ocupación</div>
+        <div class="input-row">
+          <input type="date" id="rep_oc_ini">
+          <input type="date" id="rep_oc_fin">
+          <button class="btn btn-sm btn-primary" onclick="callApi('/api/v1/reportes/ocupacion?fecha_inicio='+document.getElementById('rep_oc_ini').value+'&fecha_fin='+document.getElementById('rep_oc_fin').value,'res_rep_oc')">Consultar</button>
+        </div>
+        <div class="response-area" id="res_rep_oc"></div>
+      </div>
+      <div class="endpoint">
+        <div class="endpoint-url"><span class="method get">GET</span> <code>/api/v1/reportes/ingresos</code> — Reporte de ingresos</div>
+        <div class="input-row">
+          <input type="date" id="rep_in_ini">
+          <input type="date" id="rep_in_fin">
+          <button class="btn btn-sm btn-primary" onclick="callApi('/api/v1/reportes/ingresos?fecha_inicio='+document.getElementById('rep_in_ini').value+'&fecha_fin='+document.getElementById('rep_in_fin').value,'res_rep_in')">Consultar</button>
+        </div>
+        <div class="response-area" id="res_rep_in"></div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+// ─── Token UI ──────────────────────────────────────────────
+function updateTokenUI() {
+  const tk = sessionStorage.getItem('hbp_token');
+  const bar = document.getElementById('tokenBar');
+  if (tk) {
+    bar.classList.add('show');
+    document.getElementById('tokenDisplay').textContent = tk.substring(0,60)+'…';
+  } else {
+    bar.classList.remove('show');
+  }
+}
+
+function logout() {
+  sessionStorage.removeItem('hbp_token');
+  updateTokenUI();
+  window.showToast('Token eliminado','info');
+}
+
+// ─── Section toggle ────────────────────────────────────────
+function toggleSection(header) {
+  const body = header.nextElementSibling;
+  const arrow = header.querySelector('.arrow');
+  body.classList.toggle('open');
+  arrow.classList.toggle('open');
+}
+
+// ─── API calls ─────────────────────────────────────────────
+function getToken() { return sessionStorage.getItem('hbp_token'); }
+
+async function apiCall(method, url, body, resId) {
+  const el = document.getElementById(resId);
+  el.classList.add('show');
+  el.textContent = 'Cargando…';
+  const headers = {'Content-Type':'application/json'};
+  const token = getToken();
+  if (token) headers['Authorization'] = 'Bearer ' + token;
+  try {
+    const opts = {method, headers};
+    if (body) opts.body = JSON.stringify(body);
+    const resp = await fetch(url, opts);
+    const text = await resp.text();
+    let pretty;
+    try { pretty = JSON.stringify(JSON.parse(text),null,2); } catch(e) { pretty = text; }
+    el.textContent = 'Status: ' + resp.status + ' ' + resp.statusText + '\n\n' + pretty;
+  } catch(e) {
+    el.textContent = '❌ Error: ' + e.message;
+  }
+}
+
+function callApi(url, resId) { apiCall('GET', url, null, resId); }
+function callApiPost(url, body, resId) { apiCall('POST', url, body, resId); }
+function callApiPut(url, body, resId) { apiCall('PUT', url, body, resId); }
+
+// ─── Login ─────────────────────────────────────────────────
+async function callLogin() {
+  const email = document.getElementById('login_email').value;
+  const pass = document.getElementById('login_pass').value;
+  const el = document.getElementById('res_login');
+  el.classList.add('show');
+  el.textContent = 'Cargando…';
+  try {
+    const resp = await fetch('/api/v1/auth/login', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({email, password:pass})
+    });
+    const data = await resp.json();
+    if (data.success && data.data?.token) {
+      sessionStorage.setItem('hbp_token', data.data.token);
+      updateTokenUI();
+    }
+    el.textContent = 'Status: ' + resp.status + '\n\n' + JSON.stringify(data,null,2);
+  } catch(e) {
+    el.textContent = '❌ Error: ' + e.message;
+  }
+}
+
+// ─── Register ──────────────────────────────────────────────
+async function callRegister() {
+  apiCall('POST','/api/v1/auth/register',{
+    nombre: document.getElementById('reg_nombre').value,
+    apellido: document.getElementById('reg_apellido').value,
+    email: document.getElementById('reg_email').value,
+    password: document.getElementById('reg_pass').value,
+    telefono: document.getElementById('reg_telefono').value,
+    documento_id: document.getElementById('reg_doc').value,
+    tipo_documento: 'CC'
+  },'res_register');
+}
+
+// ─── Habitaciones ──────────────────────────────────────────
+function callListarHabitaciones() {
+  const params = new URLSearchParams();
+  const t = document.getElementById('hab_filtro_tipo').value;
+  const e = document.getElementById('hab_filtro_estado').value;
+  if (t) params.set('tipo',t);
+  if (e) params.set('estado',e);
+  const qs = params.toString();
+  callApi('/api/v1/habitaciones/' + (qs ? '?'+qs : ''), 'res_habitaciones');
+}
+
+function callDisponibles() {
+  const fe = document.getElementById('hab_fec_ent').value;
+  const fs = document.getElementById('hab_fec_sal').value;
+  const t = document.getElementById('hab_fec_tipo').value;
+  const params = new URLSearchParams();
+  if (fe) params.set('fecha_entrada',fe);
+  if (fs) params.set('fecha_salida',fs);
+  if (t) params.set('tipo',t);
+  callApi('/api/v1/habitaciones/disponibles?'+params.toString(),'res_disponibles');
+}
+
+function callCrearHabitacion() {
+  const tipo = document.getElementById('hab_crear_tipo').value;
+  apiCall('POST','/api/v1/habitaciones/',{
+    numero: parseInt(document.getElementById('hab_crear_num').value),
+    tipo: tipo,
+    precio_noche: parseFloat(document.getElementById('hab_crear_precio').value),
+    capacidad: parseInt(document.getElementById('hab_crear_cap').value),
+    piso: parseInt(document.getElementById('hab_crear_piso').value),
+    descripcion: 'Habitación ' + tipo + ' de prueba'
+  },'res_hab_crear');
+}
+
+// ─── Reservas ──────────────────────────────────────────────
+function callCrearReserva() {
+  apiCall('POST','/api/v1/reservas/',{
+    id_habitacion: parseInt(document.getElementById('res_crear_hab').value),
+    fecha_entrada: document.getElementById('res_crear_ent').value,
+    fecha_salida: document.getElementById('res_crear_sal').value,
+    documento_id: document.getElementById('res_crear_hues_doc').value
+  },'res_reservas_crear');
+}
+
+// ─── Servicios ─────────────────────────────────────────────
+function callAgregarServicio() {
+  const rid = document.getElementById('sv_agr_res').value;
+  apiCall('POST','/api/v1/reservas/'+rid+'/servicios',{
+    tipo: document.getElementById('sv_agr_tipo').value,
+    descripcion: document.getElementById('sv_agr_desc').value,
+    costo: parseFloat(document.getElementById('sv_agr_costo').value)
+  },'res_sv_agr');
+}
+
+// ─── Init ──────────────────────────────────────────────────
+updateTokenUI();
+</script>
+{% endblock %}
