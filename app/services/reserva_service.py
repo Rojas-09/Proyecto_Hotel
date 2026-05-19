@@ -53,7 +53,7 @@ def crear(datos, current_user):
 
     _validar_reserva_no_solapada(id_habitacion, fecha_entrada, fecha_salida)
 
-    id_huesped = _obtener_id_huesped(current_user)
+    id_huesped = _obtener_id_huesped(current_user, datos)
 
     noches = (fecha_salida - fecha_entrada).days
     precio_noche = Decimal(str(habitacion.precio_noche))
@@ -364,8 +364,8 @@ def hacer_checkout(reserva_id, realizado_por_id=None):
     return resultado
 
 
-def _obtener_id_huesped(current_user):
-    """Obtiene el id_huesped del usuario actual."""
+def _obtener_id_huesped(current_user, datos=None):
+    """Obtiene el id_huesped del usuario actual o de los datos si es admin."""
     rol_value = (
         current_user.rol.value
         if hasattr(current_user.rol, 'value')
@@ -382,12 +382,14 @@ def _obtener_id_huesped(current_user):
             )
         return huesped.id
 
-    id_huesped = int(current_user.id)
-    huesped = db.session.get(Huesped, id_huesped)
-    if not huesped:
-        raise ValueError("Debes proporcionar el id_huesped en los datos.")
+    if datos and "id_huesped" in datos:
+        id_huesped = int(datos["id_huesped"])
+        huesped = db.session.get(Huesped, id_huesped)
+        if not huesped:
+            raise ValueError(f"No existe el huésped con id {id_huesped}.")
+        return id_huesped
 
-    return id_huesped
+    raise ValueError("Debes proporcionar el id_huesped en los datos.")
 
 
 def _validar_campos_obligatorios(datos):
