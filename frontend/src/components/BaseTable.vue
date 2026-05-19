@@ -35,10 +35,10 @@
     <!-- Paginación Básica (opcional/expandible) -->
     <div v-if="pagination" class="bg-gray-800 px-4 py-3 flex items-center justify-between border-t border-gray-700 sm:px-6">
       <div class="flex-1 flex justify-between sm:hidden">
-        <button @click="$emit('prev')" class="relative inline-flex items-center px-4 py-2 border border-gray-600 text-sm font-medium rounded-md text-gray-300 bg-gray-700 hover:bg-gray-600">
+        <button @click="$emit('prev')" :disabled="currentPage <= 1" class="relative inline-flex items-center px-4 py-2 border border-gray-600 text-sm font-medium rounded-md text-gray-300 bg-gray-700 hover:bg-gray-600">
           Anterior
         </button>
-        <button @click="$emit('next')" class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-600 text-sm font-medium rounded-md text-gray-300 bg-gray-700 hover:bg-gray-600">
+        <button @click="$emit('next')" :disabled="currentPage >= totalPages" class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-600 text-sm font-medium rounded-md text-gray-300 bg-gray-700 hover:bg-gray-600">
           Siguiente
         </button>
       </div>
