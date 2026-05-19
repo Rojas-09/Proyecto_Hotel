@@ -1,0 +1,73 @@
+/*
+   Detalle Habitación Styles - Editorial Luxury
+*/
+
+.breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    font-size: 0.75rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--color-muted);
+    padding: 2rem 0;
+}
+.breadcrumb a:hover { color: var(--color-accent); }
+.breadcrumb i { font-size: 0.8rem; }
+
+.detail-hero {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    min-height: 100vh;
+    align-items: center;
+    padding-top: 80px;
+}
+.detail-img-wrapper {
+    height: 100vh;
+    width: 100%;
+    overflow: hidden;
+}
+.detail-img {
+    height: 100%;
+    width: 100%;
+    object-fit: cover;
+}
+.detail-content {
+    padding: var(--spacing-lg);
+}
+.detail-content h1 { font-size: clamp(3.5rem, 8vw, 6rem); margin-bottom: 2rem; line-height: 1; }
+.detail-content .description { font-size: 1.1rem; line-height: 1.8; opacity: 0.8; margin-bottom: 3rem; max-width: 500px; }
+
+.amenities-section {
+    padding: var(--spacing-xl) 0;
+    background: var(--color-surface);
+}
+.amenities-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 3rem;
+}
+.amenity-item i { font-size: 2rem; color: var(--color-accent); margin-bottom: 1rem; display: block; }
+.amenity-item h4 { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; }
+
+.booking-fixed {
+    padding: var(--spacing-lg) 0;
+    border-top: 1px solid var(--color-border);
+    background: var(--color-bg);
+}
+.booking-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 2rem;
+}
+.price-tag { font-size: 2.5rem; font-family: var(--font-display); font-weight: 700; }
+
+@media (max-width: 1024px) {
+    .detail-hero { grid-template-columns: 1fr; padding-top: 100px; }
+    .detail-img-wrapper { height: 400px; order: -1; }
+    .detail-content { padding: var(--spacing-md); }
+    .booking-bar { justify-content: center; text-align: center; }
+}

@@ -7,7 +7,9 @@ from decimal import Decimal
 from app import db
 from app.models.habitacion import EstadoHabitacion, Habitacion, TipoHabitacion
 from app.models.huesped import Huesped
-from app.models.pago import EstadoPago, MetodoPago, Pago, TipoPago
+from app.models.pago import (  # noqa: F401
+    EstadoPago, MetodoPago, Pago, TipoPago,
+)
 from app.models.puntos_fidelidad import PuntosFidelidad
 from app.models.reserva import EstadoReserva, Reserva
 from app.models.usuario import RolEnum, Usuario

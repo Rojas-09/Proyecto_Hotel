@@ -1,0 +1,118 @@
+{% extends "layouts/base_admin.html" %}
+
+{% block title %}Editar Habitación {{ habitacion.numero }} — HotelBook Pro{% endblock %}
+
+{% block content %}
+<div style="padding-top: 2rem;">
+    <div class="container-sm">
+        <div class="breadcrumb">
+            <a href="{{ url_for('views.gestion_habitaciones') }}">Habitaciones</a>
+            <span class="breadcrumb-sep">/</span>
+            <span>Editar {{ habitacion.numero }}</span>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="alert alert-{{ 'danger' if category == 'danger' else 'success' if category == 'success' else 'info' }}">{{ message }}</div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
+        <div class="card">
+            <div class="card-header">Editar Habitación {{ habitacion.numero }}</div>
+            <div class="card-body">
+                <form id="editar-form" action="{{ url_for('views.gestion_habitaciones') }}" method="POST">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Número *</label>
+                            <input type="text" name="numero" class="form-control" value="{{ habitacion.numero }}" maxlength="10" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Tipo *</label>
+                            <select name="tipo" class="form-control" required>
+                                <option value="simple" {% if habitacion.tipo.value=='simple' %}selected{% endif %}>Simple</option>
+                                <option value="doble" {% if habitacion.tipo.value=='doble' %}selected{% endif %}>Doble</option>
+                                <option value="suite" {% if habitacion.tipo.value=='suite' %}selected{% endif %}>Suite</option>
+                                <option value="deluxe" {% if habitacion.tipo.value=='deluxe' %}selected{% endif %}>Deluxe</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Precio/Noche ($) *</label>
+                            <input type="number" name="precio_noche" class="form-control" value="{{ habitacion.precio_noche }}" min="10000" step="1000" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Capacidad *</label>
+                            <input type="number" name="capacidad" class="form-control" value="{{ habitacion.capacidad }}" min="1" max="10" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Piso *</label>
+                            <input type="number" name="piso" class="form-control" value="{{ habitacion.piso }}" min="1" max="50" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Estado *</label>
+                            <select name="estado" class="form-control" required>
+                                <option value="disponible" {% if habitacion.estado.value=='disponible' %}selected{% endif %}>Disponible</option>
+                                <option value="ocupada" {% if habitacion.estado.value=='ocupada' %}selected{% endif %}>Ocupada</option>
+                                <option value="mantenimiento" {% if habitacion.estado.value=='mantenimiento' %}selected{% endif %}>Mantenimiento</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Descripción</label>
+                        <textarea name="descripcion" class="form-control" rows="3" maxlength="500">{{ habitacion.descripcion or '' }}</textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" name="activo" value="1" {% if habitacion.activo %}checked{% endif %}> Activa
+                        </label>
+                    </div>
+                    <div class="d-flex-gap gap-2">
+                        <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+                        <a href="{{ url_for('views.gestion_habitaciones') }}" class="btn btn-secondary">Cancelar</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/api.js') }}"></script>
+<script>
+(function() {
+    var habitacionId = {{ habitacion.id }};
+
+    document.getElementById('editar-form').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        var formData = new FormData(e.target);
+        var payload = {};
+        for (var [k, v] of formData.entries()) {
+            if (k === 'activo') { payload.activo = true; continue; }
+            if (['precio_noche', 'capacidad', 'piso'].includes(k)) {
+                payload[k] = k === 'precio_noche' ? parseFloat(v) : parseInt(v);
+            } else {
+                payload[k] = v;
+            }
+        }
+
+        try {
+            var res = await HotelBookAPI.put('/api/v1/habitaciones/' + habitacionId, payload);
+            if (res.success) {
+                window.showToast('Habitación actualizada.', 'success');
+                setTimeout(function() { window.location.href = '/admin/habitaciones'; }, 800);
+            } else {
+                window.showToast(res.error?.message || 'Error.', 'error');
+            }
+        } catch(err) {
+            window.showToast(err.message, 'error');
+        }
+    });
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <title>{% block title %}HotelBook Pro — {% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/functional.css') }}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+<nav class="navbar">
+    <a href="/" class="navbar-brand">HotelBook Pro</a>
+    <ul class="navbar-nav">
+        <li><a href="{{ url_for('views.admin_dashboard') }}" id="nav-dashboard">Dashboard</a></li>
+        <li><a href="{{ url_for('views.usuarios') }}" id="nav-usuarios">Usuarios</a></li>
+        <li><a href="{{ url_for('views.gestion_habitaciones') }}" id="nav-habitaciones">Habitaciones</a></li>
+        <li><a href="{{ url_for('views.reportes') }}" id="nav-reportes">Reportes</a></li>
+    </ul>
+    <div class="navbar-right">
+        <span id="user-info" class="text-muted text-sm"></span>
+        <button id="logout-btn" class="btn btn-secondary btn-sm" style="display:none;">Cerrar Sesión</button>
+    </div>
+</nav>
+
+<div id="page-alerts"></div>
+
+<div class="container" style="padding-top: 1.5rem; padding-bottom: 3rem;">
+    {% block content %}{% endblock %}
+</div>
+
+<script src="{{ url_for('static', filename='js/api.js') }}"></script>
+<script>
+(function () {
+    var token = sessionStorage.getItem("hbp_token");
+    if (!token) { window.location.href = "/login"; return; }
+
+    try {
+        var payload = JSON.parse(atob(token.split(".")[1]));
+        if (payload.rol !== "admin" && payload.rol !== "gerente") {
+            window.location.href = "/";
+            return;
+        }
+        var el = document.getElementById("user-info");
+        if (el) el.textContent = payload.email + " (" + payload.rol + ")";
+
+        var logoutBtn = document.getElementById("logout-btn");
+        if (logoutBtn) {
+            logoutBtn.style.display = "inline-block";
+            logoutBtn.addEventListener("click", function () { HotelBookAPI.logout(); });
+        }
+
+        // Highlight active nav
+        var path = window.location.pathname;
+        var navMap = {
+            "{{ url_for('views.admin_dashboard') }}": "nav-dashboard",
+            "{{ url_for('views.usuarios') }}": "nav-usuarios",
+            "{{ url_for('views.gestion_habitaciones') }}": "nav-habitaciones",
+            "{{ url_for('views.reportes') }}": "nav-reportes",
+        };
+        for (var route in navMap) {
+            if (path === route) {
+                var activeEl = document.getElementById(navMap[route]);
+                if (activeEl) activeEl.classList.add("active");
+                break;
+            }
+        }
+    } catch (e) {
+        HotelBookAPI.logout();
+    }
+})();
+</script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

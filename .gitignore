@@ -65,6 +65,15 @@ app/static/facturas/*.pdf
 app/static/reportes/*.xlsx
 app/static/reportes/*.pdf
 
-#Datos de prueba
+# Datos de prueba
 tests/data/
 Datos.md
+
+# Agent instructions (privado)
+<<<<<<< HEAD
+.agents/
+# Postman collection (sensitive)
+postman.json
+=======
+.agents/
+>>>>>>> origin/Feature-front
