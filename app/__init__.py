@@ -19,13 +19,7 @@ def create_app(config_name="development"):
 
     # Inicializar extensiones
     db.init_app(app)
-    cors_origins = app.config.get("CORS_ORIGINS", [])
-    wildcard_origin = (
-        cors_origins == "*" or
-        (isinstance(cors_origins, (list, tuple, set)) and "*" in cors_origins)
-    )
-    supports_credentials = not wildcard_origin and bool(cors_origins)
-    CORS(app, origins=cors_origins, supports_credentials=supports_credentials)
+    CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=False, allow_headers=["Content-Type", "Authorization"], methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"], automatic_options=True)
 
     # Registrar Blueprints (controladores)
     from app.controllers.auth_controller import auth_bp
@@ -38,7 +32,7 @@ def create_app(config_name="development"):
     from app.controllers.servicio_adicional_controller import servicio_adicional_bp
     from app.controllers.reporte_controller import reporte_bp
     from app.controllers.puntos_fidelidad_controller import puntos_bp
-    from app.controllers.views_controller import views_bp
+    # from app.controllers.views_controller import views_bp  # Desactivado - usando Vue SPA
 
     app.register_blueprint(auth_bp, url_prefix="/api/v1/auth")
     app.register_blueprint(habitacion_bp, url_prefix="/api/v1/habitaciones")
@@ -50,7 +44,7 @@ def create_app(config_name="development"):
     app.register_blueprint(servicio_adicional_bp)
     app.register_blueprint(reporte_bp, url_prefix="/api/v1/reportes")
     app.register_blueprint(puntos_bp, url_prefix="/api/v1/huespedes")
-    app.register_blueprint(views_bp)
+    # app.register_blueprint(views_bp)  # Desactivado temporalmente
 
     # Importar modelos EN ORDEN para respetar dependencias FK
     from app.models import usuario  # noqa: F401
