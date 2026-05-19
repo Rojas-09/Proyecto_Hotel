@@ -1,0 +1,121 @@
+/*
+   Login / Register Styles - Editorial Luxury
+*/
+
+.auth-page {
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: 1fr 1.2fr;
+    background-color: var(--color-bg);
+}
+
+.auth-visual {
+    position: relative;
+    overflow: hidden;
+    background-color: var(--color-text);
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: var(--spacing-lg);
+    color: var(--color-bg);
+}
+
+.auth-visual img {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    object-fit: cover;
+    opacity: 0.4;
+    filter: grayscale(100%) contrast(110%);
+    transition: transform 2s ease;
+}
+.auth-visual:hover img { transform: scale(1.05); }
+
+.auth-visual-content {
+    position: relative;
+    z-index: 2;
+}
+
+.auth-visual h2 {
+    font-size: clamp(3rem, 6vw, 5rem);
+    line-height: 0.9;
+    margin-bottom: 2rem;
+    letter-spacing: -2px;
+}
+
+.auth-form-container {
+    padding: 160px var(--spacing-lg) 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.auth-card {
+    width: 100%;
+    max-width: 480px;
+}
+
+.auth-tabs {
+    display: flex;
+    gap: 3rem;
+    margin-bottom: 4rem;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.auth-tab {
+    padding-bottom: 1.25rem;
+    font-size: 0.75rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    cursor: pointer;
+    opacity: 0.3;
+    transition: all 0.4s ease;
+    position: relative;
+}
+
+.auth-tab.active {
+    opacity: 1;
+    color: var(--color-accent);
+}
+
+.auth-tab.active::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background: var(--color-accent);
+}
+
+.form-title {
+    font-size: 2.5rem;
+    margin-bottom: 3rem;
+    letter-spacing: -1px;
+}
+
+.form-group {
+    margin-bottom: 2.5rem;
+}
+
+.form-group label {
+    color: var(--color-text);
+    opacity: 0.6;
+}
+
+.auth-footer {
+    margin-top: 3rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--color-border);
+    font-size: 0.85rem;
+    opacity: 0.5;
+    display: flex;
+    justify-content: space-between;
+}
+
+@media (max-width: 1100px) {
+    .auth-page { grid-template-columns: 1fr; }
+    .auth-visual { display: none; }
+    .auth-form-container { padding-top: 140px; }
+}

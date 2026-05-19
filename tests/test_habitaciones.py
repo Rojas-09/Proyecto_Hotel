@@ -14,7 +14,7 @@ from app import db
 def habitacion_data():
     return {
         "numero": "101",
-        "tipo": "Simple",
+        "tipo": "simple",
         "descripcion": "Habitacion simple con vista al jardin",
         "precio_noche": 150000.00,
         "capacidad": 1,
@@ -104,7 +104,7 @@ class TestListarHabitaciones:
         assert data["data"][0]["id"] == habitacion_en_db["id"]
 
     def test_listar_filtro_por_tipo_valido(self, client, habitacion_en_db):
-        resp = client.get("/api/v1/habitaciones/?tipo=Simple")
+        resp = client.get("/api/v1/habitaciones/?tipo=simple")
         assert resp.status_code == 200
         assert resp.get_json()["total"] == 1
 
@@ -144,7 +144,7 @@ class TestCrearHabitacion:
         data = resp.get_json()
         assert data["success"] is True
         assert data["data"]["numero"] == "101"
-        assert data["data"]["tipo"] == "Simple"
+        assert data["data"]["tipo"] == "simple"
 
     def test_crear_habitacion_como_cliente_retorna_403(
         self, client, cliente_headers, habitacion_data
@@ -305,7 +305,7 @@ class TestBuscarDisponibles:
     def test_disponibles_filtro_por_tipo(self, client, habitacion_en_db):
         resp = client.get(
             "/api/v1/habitaciones/disponibles"
-            "?fecha_entrada=2027-01-10&fecha_salida=2027-01-15&tipo=Doble"
+            "?fecha_entrada=2027-01-10&fecha_salida=2027-01-15&tipo=doble"
         )
         assert resp.status_code == 200
         assert resp.get_json()["total"] == 0

@@ -3,11 +3,11 @@ Tests del módulo Facturación (RF-06).
 Cubre endpoints: consulta, emisión, descarga y anulación de facturas.
 """
 
-import os
+import os  # noqa: F401 (used in conftest.py)
 import tempfile
 from decimal import Decimal
 
-import pytest
+import pytest  # noqa: F401 (used in conftest.py)
 
 from app import db
 from app.models.factura import EstadoFactura, Factura
@@ -348,7 +348,7 @@ class TestDescargarFactura:
             huesped = _crear_huesped(huesped_u)
             hab = _crear_habitacion()
             reserva = _crear_reserva_completada(huesped, hab)
-            factura = _crear_factura(reserva, EstadoFactura.emitida)
+            _crear_factura(reserva, EstadoFactura.emitida)
             db.session.commit()
             rid = reserva.id
             token = _token(admin)
@@ -410,13 +410,9 @@ class TestDescargarFactura:
     def test_descargar_cliente_otra_reserva(self, client, app):
         """403 — cliente no puede descargar factura de otro huésped."""
         rid = None
-        huesped_id_dueño = None
-        email_dueño = None
         with app.app_context():
             cliente_u = _crear_usuario(RolEnum.cliente, "cli_desc4")
             huesped = _crear_huesped(cliente_u)
-            huesped_id_dueño = huesped.id
-            email_dueño = cliente_u.email
             hab = _crear_habitacion()
             reserva = _crear_reserva_completada(huesped, hab)
             _crear_factura(reserva, EstadoFactura.emitida)

@@ -7,16 +7,16 @@ from app.utils.fecha_helper import ahora_colombia
 
 
 class TipoHabitacion(enum.Enum):
-    simple = "Simple"
-    doble = "Doble"
-    suite = "Suite"
-    deluxe = "Deluxe"
+    simple = "simple"
+    doble = "doble"
+    suite = "suite"
+    deluxe = "deluxe"
 
 
 class EstadoHabitacion(enum.Enum):
-    disponible = "Disponible"
-    ocupada = "Ocupada"
-    mantenimiento = "Mantenimiento"
+    disponible = "disponible"
+    ocupada = "ocupada"
+    mantenimiento = "mantenimiento"
 
 
 class Habitacion(db.Model):

@@ -389,7 +389,7 @@ class TestFlujoReserva:
             headers=admin_user
         )
         assert resp.status_code == 200
-        assert resp.get_json()["data"]["estado"] == "Ocupada"
+        assert resp.get_json()["data"]["estado"].lower() == "ocupada"
 
     def test_checkout_de_reserva_ocupada(
         self,
