@@ -1,454 +1,159 @@
-# HotelBook Pro
->
-> *Solución integral de gestión hotelera para establecimientos medianos con proyección de crecimiento*
+# Proyecto HotelBook Pro
 
-**Versión:** 1.0.0 | **Estado:** Implementado
+HotelBook Pro es un sistema de gestión hotelera completo que permite administrar reservas, huéspedes, habitaciones, facturación, check-in, check-out y servicios adicionales. Cuenta con una arquitectura en dos capas: un backend robusto construido en Python (Flask) con una base de datos relacional (SQLite), y un frontend moderno y dinámico construido en Vue 3 y Tailwind CSS.
 
 ---
 
-## 📋 Tabla de Contenidos
+## 🚀 Arquitectura del Proyecto
 
-- Descripción
-- Características
-- Stack Tecnológico
-- Arquitectura
-- Instalación
-- Uso
-- Roles y Permisos
-- Estructura del Proyecto
-- API REST
-- Testing y CI/CD
-- Hitos de Implementación
-- Guía de Contribución
-- Licencia
-- Contacto
+El proyecto está dividido en dos partes principales:
+
+- **Backend (API REST):** Ubicado en `app/` y archivos raíz (como `run.py`). Maneja toda la lógica de negocio, autenticación JWT, conexión a base de datos y validaciones de flujo.
+- **Frontend (SPA):** Ubicado en el directorio `frontend/`. Construido con Vue 3, Vite, y Tailwind CSS. Se comunica exclusivamente con el backend a través de endpoints REST.
 
 ---
 
-## 🎯 Descripción
+## 🛠 Tecnologías Utilizadas
 
-**HotelBook Pro** es una solución integral orientada a la transformación digital y centralización operativa de establecimientos hoteleros medianos. El sistema resuelve fallos críticos de la gestión manual como:
+### Backend
+- **Python 3.12+**
+- **Flask** (Framework web)
+- **SQLAlchemy** (ORM)
+- **PyJWT** (Autenticación por tokens)
+- **SQLite** (Base de datos por defecto, archivo `hotelbook_dev.db`)
 
-- ⚠️ **Overbooking** (doble asignación de habitaciones)
-- ⚠️ **Inconsistencia en datos de facturación**
-- ⚠️ **Tiempos de respuesta prolongados** en atención al huésped
-
-El propósito fundamental es consolidar una plataforma madura, robusta y escalable que integre:
-
-- Gestión centralizada de reservas
-- Servicios adicionales (Comedor, Spa)
-- Sistema de fidelización de clientes
-- Pasarela de pagos electrónicos
-
----
-
-## ✨ Características
-
-### Gestión Principal
-
-- ✅ **Gestión de Reservas**: Crear, modificar, cancelar y consultar reservas
-- ✅ **Control de Habitaciones**: Tipos, precios, disponibilidad en tiempo real
-- ✅ **Registro de Huéspedes**: Historial completo, preferencias, documentos
-- ✅ **Check-in/Check-out**: Proceso digital con comprobantes automáticos
-
-### Operaciones Financieras
-
-- ✅ **Facturación Automatizada**: Generación de facturas en PDF con IVA (19%)
-- ✅ **Gestión de Pagos**: Registro de pagos, reembolsos y cargos
-- ✅ **Pasarela de Pagos**: Integración con proveedores externos
-- ✅ **Garantía de Reserva**: Pago inicial del 50% para confirmar reserva
-
-### Servicios Ampliados
-
-- ✅ **Gestor de Comedor**: Registro de pedidos vinculados a reservas
-- ✅ **Gestor de Spa**: Agenda de citas con validación de traslapes horarios
-- ✅ **Sistema de Fidelización**: Acumulación automática de puntos (10/noche)
-
-### Inteligencia de Negocio
-
-- ✅ **Reportes Estratégicos**: Ocupación, ingresos, estadísticas (Excel, PDF)
-- ✅ **Notificaciones**: Confirmaciones de reserva por correo automático
-- ✅ **Análisis de Desempeño**: Métricas institucionales en tiempo real
+### Frontend
+- **Vue 3** (Composition API, `<script setup>`)
+- **Vite** (Build tool ultra rápida)
+- **Tailwind CSS v4** (Framework de estilos de utilidad utilitaria)
+- **Pinia** (Manejo de estado global para sesión)
+- **Vue Router** (Enrutamiento del lado del cliente)
+- **Axios** (Cliente HTTP para consumir la API)
 
 ---
 
-## 🛠️ Stack Tecnológico
+## 💻 Instalación y Ejecución Local
 
-| Componente | Tecnología | Versión |
-|------------|-----------|---------|
-| **Backend** | Flask | 3.1.3 |
-| **Lenguaje** | Python | 3.12 |
-| **ORM** | SQLAlchemy | - |
-| **BD (Producción)** | PostgreSQL | 12+ |
-| **BD (Desarrollo)** | SQLite | - |
-| **API Doc** | Swagger/OpenAPI | - |
-| **IDE Recomendado** | Visual Studio Code | - |
-| **Extensiones** | Pylance, Python Debugger | - |
+### 1. Levantar el Backend (API Flask)
 
----
-
-## 🏗️ Arquitectura
-
-### Modelo: Arquitectura Monolítica Modular
-
-```
-┌─────────────────────────────────────────┐
-│   CAPA DE PRESENTACIÓN (Frontend)       │
-│  HTML5 | CSS3 | JavaScript Vanilla      │
-└────────────────┬────────────────────────┘
-                 │ HTTP REST (JSON)
-┌────────────────▼────────────────────────┐
-│  CAPA DE LÓGICA DE NEGOCIO (Módulos)    │
-│  ┌──────────────────────────────────┐   │
-│  │ Módulo Reservas      │ Modelos   │   │
-│  │ Módulo Habitaciones  │ Servicios │   │
-│  │ Módulo Facturación   │ Controladores │
-│  │ Módulo Sp/Comedor    │ (Endpoints)   │
-│  │ Módulo Fidelización  │           │   │
-│  └──────────────────────────────────┘   │
-└────────────────┬────────────────────────┘
-                 │
-┌────────────────▼────────────────────────┐
-│   CAPA DE DATOS (Persistencia)          │
-│  PostgreSQL (Producción)                │
-│  SQLite (Desarrollo/Testing)            │
-└─────────────────────────────────────────┘
-```
-
-**Ventajas del enfoque modular:**
-
-- 💰 Costo operacional mínimo (USD 5-10/mes por servidor VPS)
-- 🚀 Despliegue simple con un único comando (`git push`)
-- 🔍 Depuración rápida (stack trace centralizado)
-- 📊 Transacciones de BD simples sin patrones Saga
-- 👥 Coordinación directa para equipos pequeños
-- 📈 Escalable a microservicios sin reescritura de lógica
-
----
-
-## 📦 Instalación
-
-### Requisitos Previos
-
-- Python 3.11+
-- PostgreSQL 12+ (o SQLite para desarrollo)
-- Git
-- pip o conda
-
-### Pasos de Instalación
-
-1. **Clonar el repositorio**
-
-   ```bash
-   git clone https://github.com/Rojas-09/Proyecto_Hotel.git
-   cd Proyecto_Hotel
-   ```
-
-2. **Crear entorno virtual**
-
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # En Windows: venv\Scripts\activate
-   ```
-
-3. **Instalar dependencias**
-
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-4. **Configurar variables de entorno**
-
-   ```bash
-   cp .env.example .env
-   # Editar .env con tus configuraciones
-   ```
-
-5. **Inicializar base de datos**
-
-   ```bash
-   flask db init
-   flask db migrate
-   flask db upgrade
-   ```
-
-6. **Ejecutar la aplicación**
-
-   ```bash
-   flask run
-   ```
-
-   La aplicación estará disponible en `http://localhost:5000`
-
----
-
-## 🚀 Uso
-
-### Inicio de Sesión
-
-```
-URL: http://localhost:5000/login
-- Administrador: admin@hotel.com
-- Recepcionista: recepcionista@hotel.com
-- Gerente: gerente@hotel.com
-```
-
-### Casos de Uso Principales
-
-#### 1. Realizar una Reserva (Cliente)
-
-```
-1. Consultar disponibilidad (rango de fechas)
-2. Seleccionar habitación
-3. Confirmar datos
-4. Realizar pago (50% garantía)
-5. Recibir confirmación por email
-```
-
-#### 2. Check-in/Check-out (Recepcionista)
-
-```
-Check-in:
-- Verificar reserva
-- Registrar entrada
-- Generar comprobante
-
-Check-out:
-- Registrar salida
-- Calcular total
-- Procesar pago
-```
-
-#### 3. Ver Reportes (Gerente)
-
-```
-1. Acceder a Reportes
-2. Seleccionar período
-3. Descargar en Excel o PDF
-```
-
----
-
-## 👥 Roles y Permisos
-
-| Rol | Nivel de Acceso | Funciones |
-|-----|--------------|-----------|
-| **Administrador** | Total (Root) | Configuración global, gestión de usuarios, auditoría, parámetros |
-| **Recepcionista** | Transaccional | Reservas, check-in/out, cargos adicionales |
-| **Cliente/Huésped** | Limitado | Consulta de disponibilidad, reservas, ver puntos fidelidad |
-| **Gerente** | Lectura | Reportes de ocupación, ingresos, análisis |
-
----
-
-## 📁 Estructura del Proyecto
-
-```
-Proyecto_Hotel/
-├── app/
-│   ├── __init__.py
-│   ├── models/                    # Entidades de datos
-│   │   ├── usuario.py
-│   │   ├── reserva.py
-│   │   ├── habitacion.py
-│   │   ├── factura.py
-│   │   └── ...
-│   ├── services/                  # Lógica de negocio
-│   │   ├── reserva_service.py
-│   │   ├── factura_service.py
-│   │   ├── pago_service.py
-│   │   └── ...
-│   ├── controllers/               # Endpoints API
-│   │   ├── reserva_controller.py
-│   │   ├── usuario_controller.py
-│   │   └── ...
-│   ├── templates/                 # HTML (Presentación)
-│   │   ├── index.html
-│   │   ├── login.html
-│   │   └── ...
-│   └── static/                    # CSS, JavaScript
-│       ├── css/
-│       └── js/
-├── tests/                         # Suite de pruebas (pytest)
-│   ├── test_reserva.py
-│   ├── test_factura.py
-│   └── ...
-├── config.py                      # Configuración de la APP
-├── requirements.txt               # Dependencias
-├── .env.example                   # Variables de entorno
-├── .gitignore
-└── README.md
-```
-
----
-
-## 🔌 API REST
-
-### Autenticación
-
-Todos los endpoints requieren **JWT (JSON Web Tokens)** en el header:
-
-```
-Authorization: Bearer <token>
-```
-
-### Endpoints Principales
-
-#### Reservas
-
-| Método | Endpoint | Descripción |
-|--------|----------|-------------|
-| GET | `/api/reservas/disponibilidad` | Consultar disponibilidad |
-| POST | `/api/reservas` | Crear reserva |
-| PUT | `/api/reservas/{id}` | Modificar reserva |
-| DELETE | `/api/reservas/{id}` | Cancelar reserva |
-| GET | `/api/reservas` | Listar reservas |
-
-#### Check-in/Check-out
-
-| Método | Endpoint | Descripción |
-|--------|----------|-------------|
-| POST | `/api/checkin` | Registrar check-in |
-| POST | `/api/checkout` | Registrar check-out |
-
-#### Facturación
-
-| Método | Endpoint | Descripción |
-|--------|----------|-------------|
-| POST | `/api/facturas` | Generar factura |
-| GET | `/api/facturas/{id}` | Obtener factura (PDF) |
-
-#### Reportes
-
-| Método | Endpoint | Descripción |
-|--------|----------|-------------|
-| GET | `/api/reportes/ocupacion` | Reporte de ocupación |
-| GET | `/api/reportes/ingresos` | Reporte de ingresos |
-
-### Documentación Completa de API
-
-```
-Swagger UI: http://localhost:5000/api/docs
-```
-
----
-
-## 📊 Requerimientos de Calidad
-
-### Requerimientos Funcionales (RF)
-
-- RF-01: Consulta disponibilidad < 500ms
-- RF-02: Gestión completa de reservas
-- RF-03: Notificaciones automáticas por email
-- RF-04: Restricción de cambios < 24h
-- RF-05: Control sincrónico de estados
-- RF-06: Facturación automatizada (PDF)
-- RF-07: CRUD de tipos de habitación
-- RF-08: Exportación de reportes (Excel/PDF)
-- RF-09: Seguridad por roles (JWT)
-- RF-10: Gestión de comedor
-- RF-11: Gestión de spa
-- RF-12: Sistema de fidelización (10 puntos/noche)
-- RF-13: Pasarela de pagos
-
-### Requerimientos No Funcionales (RNF)
-
-- ⚡ **Rendimiento**: 50 solicitudes concurrentes, latencia < 2s
-- 🔒 **Seguridad**: bcrypt con factor 12 mínimo
-- 📈 **Disponibilidad**: 99.5% uptime en producción
-- 🎓 **Usabilidad**: Check-in en < 2 minutos
-- 🔧 **Mantenibilidad**: Calificación "A" en PEP8 (flake8)
-
----
-
-## 🔄 Flujo de Trabajo (Git)
-
-### Ramas Principales
-
-```
-main          → Código productivo (tagged releases)
-develop       → Integración de features
-feature/*     → Nuevas funcionalidades
-hotfix/*      → Correcciones urgentes
-```
-
-### Convención de Commits
-
-```
-feat:     Nueva funcionalidad
-fix:      Corrección de errores
-docs:     Cambios en documentación
-refactor: Mejora de código
-test:     Adición de pruebas
-chore:    Tareas de mantenimiento
-```
-
-### Ejemplo
+Abre una terminal en la raíz del proyecto y ejecuta:
 
 ```bash
-git commit -m "feat: integrar pasarela de pagos Stripe"
-git commit -m "fix: validar fechas de salida en reserva"
+# Crear y activar el entorno virtual
+python3 -m venv venv
+source venv/bin/activate
+
+# Instalar las dependencias
+pip install -r requirements.txt
+
+# Iniciar la aplicación en modo desarrollo
+python run.py
 ```
+> El backend se levantará en **http://127.0.0.1:5000**
 
----
+### 2. Levantar el Frontend (Vue 3)
 
-## ✅ Testing y CI/CD
-
-### Ejecutar Pruebas Locales
+Abre **otra pestaña de terminal** y ejecuta:
 
 ```bash
-# Instalar dependencias de test
-pip install pytest pytest-cov
+cd frontend
 
-# Ejecutar suite completa
-pytest
+# Instalar dependencias de Node.js
+npm install
 
-# Con cobertura
-pytest --cov=app tests/
+# Iniciar el servidor de desarrollo
+npm run dev
 ```
-
-### Pipeline de CI (GitHub Actions)
-
-Cada Pull Request activa automáticamente:
-
-1. **Linting** (flake8): Validación PEP8
-2. **Tests** (pytest): Suite completa
-3. **Quality Gate**: Mínimo 90% cobertura
+> El frontend se levantará en **http://localhost:5173**
 
 ---
 
-## 📅 Hitos de Implementación
+## 🔑 Credenciales de Acceso
 
-| Semana | Hito | Descripción |
-|--------|------|-------------|
-| 1-2 | Expansión BD | Nuevas entidades para servicios y fidelidad |
-| 3-4 | Pasarela de Pagos | Integración SDK y validación en Staging |
-| 5 | QA Final | Pruebas de carga y cobertura al 90% |
+La base de datos incluye usuarios de prueba para desarrollo local. **No uses estas credenciales en producción** y rota/actualiza las contraseñas antes de cualquier despliegue.
 
----
-
-## 🤝 Guía de Contribución
-
-1. Crear rama: `git checkout -b feature/mi-funcionalidad`
-2. Realizar cambios y commits
-3. Seguir convención de commits
-4. Crear Pull Request a `develop`
-5. Esperar aprobación y merge
+| Rol | Email | Contraseña | Descripción y Permisos |
+|-----|-------|------------|------------------------|
+| **Administrador** | `admin@hotel.com` | *(configurable en seed local)* | Acceso total al sistema. Puede crear habitaciones, eliminar, emitir facturas, etc. |
+| **Recepcionista** | `recepcionista@hotel.com` | *(configurable en seed local)* | Gestión operativa: reservas, check-in, check-out, servicios, huéspedes. |
+| **Gerente** | `gerente@hotel.com` | *(configurable en seed local)* | Acceso de solo lectura a los Reportes estratégicos (Ocupación e Ingresos). |
 
 ---
 
-## 📝 Licencia
+## 📋 Flujo de Operación (Workflow Principal)
 
-MIT License - Ver `LICENSE` para más detalles
+El sistema tiene reglas de negocio estrictas basadas en los requerimientos del hotel. Para realizar un ciclo completo de estadía, sigue este flujo usando la cuenta de **Administrador** o **Recepcionista**:
+
+1. **Gestión de Habitaciones:**
+   - Ve a "Habitaciones" y crea una nueva habitación (Tipos válidos: `Simple`, `Doble`, `Suite`, `Deluxe`).
+2. **Gestión de Huéspedes:**
+   - Ve a "Huéspedes" y registra a un nuevo cliente con sus datos personales.
+3. **Creación de Reserva:**
+   - Ve a "Reservas" y crea una nueva reserva seleccionando la habitación y el huésped creados anteriormente. La reserva nace en estado **Pendiente**.
+4. **Confirmación y Pago de Garantía:**
+   - En la tabla de Reservas, presiona "Confirmar". Esto internamente procesa el pago de *garantía (50%)* y cambia el estado a **Confirmada**.
+5. **Check-In:**
+   - Ve al módulo "Recepción" (pestaña Check-in). Selecciona la reserva confirmada para registrar la llegada del huésped. La reserva pasa a estado **Ocupada**.
+6. **Servicios Adicionales (Opcional):**
+   - Ve al módulo "Servicios". Como la reserva está "Ocupada", podrás agregarle cargos por Comedor, Spa, Lavandería, etc.
+7. **Check-Out y Liquidación:**
+   - Vuelve a "Recepción" (pestaña Check-out).
+   - Al seleccionar la reserva, el sistema calculará el total restante (saldo de habitación + servicios adicionales).
+   - Al confirmar, el sistema automáticamente procesa el pago de *liquidación* y cambia el estado a **Completada**.
+8. **Facturación:**
+   - Ve a "Facturación". Selecciona la reserva que acaba de completarse y haz clic en "Emitir". El sistema generará la factura oficial y te permitirá descargarla en formato PDF.
 
 ---
 
-## 📞 Contacto
+## 📊 Módulos del Sistema
 
-- **Repositorio**: GitHub - Proyecto_Hotel (<https://github.com/Rojas-09/Proyecto_Hotel>)
-- **Rama Actual**: Development
-- **Equipo**: Desarrolladores UTP
-- **Email**: <sistemahotelbook@gmail.com>
+1. **Autenticación y Sesión:**
+   - Control de acceso por roles usando interceptores HTTP y guardias de navegación (`router.beforeEach`). El sidebar de navegación se adapta automáticamente según tu rol.
+2. **Habitaciones:**
+   - CRUD completo de habitaciones con control de estado (Disponible, Ocupada, Mantenimiento).
+3. **Huéspedes:**
+   - Directorio de clientes con historial individualizado de sus reservas.
+4. **Reservas:**
+   - Gestión de disponibilidad por fechas, creación, edición, cancelación y confirmación.
+5. **Recepción (Check-in/out):**
+   - Control de ingreso y salida con resúmenes financieros automáticos.
+6. **Servicios (Spa, Comedor, etc.):**
+   - Cargos a la habitación ("Room Service") que se suman dinámicamente a la cuenta final.
+7. **Facturación:**
+   - Generación, anulación y descarga en formato PDF.
+8. **Reportes Estratégicos:**
+   - Dashboard analítico exclusivo para Administradores y Gerentes con KPIs de ocupación y cálculo de ingresos totales en un rango de fechas. (Incluye exportación a CSV/PDF en el backend).
 
 ---
 
-**Última actualización**: Mayo 2026 | **Versión**: 1.0.0
+## 🎨 Diseño y UI
+
+El frontend ha sido diseñado con un estilo moderno, profesional y *premium* (Dark Mode), incluyendo:
+- Tonos sobrios (`gray-900`, `gray-800`) con un acento dorado (`#D4AF37`) que transmite exclusividad.
+- Micro-animaciones en los botones, tablas y transiciones de estado.
+- Interfaz completamente *Responsive*, adaptable a tablets y computadores de escritorio.
+- Componentes modulares (`BaseButton`, `BaseTable`, `BaseModal`) para una UI consistente.
+
+### Mockups de Alta Fidelidad
+Aquí se presentan los diseños visuales de referencia de la aplicación:
+
+**1. Pantalla de Inicio de Sesión (Login)**
+![Mockup Login](docs/images/mockup_login.png)
+
+**2. Panel de Control (Dashboard)**
+![Mockup Dashboard](docs/images/mockup_dashboard.png)
+
+**3. Módulo de Reservas**
+![Mockup Reservas](docs/images/mockup_reservas.png)
+
+### Prototipos (Wireframes)
+Estructura y flujo lógico del sistema previo al diseño final:
+
+**1. Flujo de Usuario Principal (User Flow)**
+![Prototipo Flujo](docs/images/prototype_flow.png)
+
+**2. Modal de Creación de Reserva**
+![Prototipo Modal](docs/images/prototype_modal.png)
+
+---
+*Desarrollado para HotelBook Pro*

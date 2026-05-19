@@ -19,8 +19,13 @@ def create_app(config_name="development"):
 
     # Inicializar extensiones
     db.init_app(app)
-    CORS(app, origins=app.config.get("CORS_ORIGINS", ["*"]),
-         supports_credentials=True)
+    cors_origins = app.config.get("CORS_ORIGINS", [])
+    wildcard_origin = (
+        cors_origins == "*" or
+        (isinstance(cors_origins, (list, tuple, set)) and "*" in cors_origins)
+    )
+    supports_credentials = not wildcard_origin and bool(cors_origins)
+    CORS(app, origins=cors_origins, supports_credentials=supports_credentials)
 
     # Registrar Blueprints (controladores)
     from app.controllers.auth_controller import auth_bp

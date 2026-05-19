@@ -43,6 +43,8 @@ def rol_requerido(*roles):
 
 
 @views_bp.route("/api-test")
+@login_required
+@rol_requerido("admin")
 def api_test():
     return render_template("public/api_test.html")
 

@@ -369,7 +369,19 @@ def _obtener_id_huesped(current_user, datos=None):
         raise ValueError(
             "Debes proporcionar 'id_huesped' en los datos para este rol."
         )
-    return datos["id_huesped"]
+
+    try:
+        id_huesped = int(datos["id_huesped"])
+    except (TypeError, ValueError) as exc:
+        raise ValueError("'id_huesped' debe ser un entero válido.") from exc
+
+    huesped = db.session.get(Huesped, id_huesped)
+    if not huesped:
+        raise LookupError(
+            f"No existe un huésped con id {id_huesped}."
+        )
+
+    return id_huesped
 
 
 def _validar_campos_obligatorios(datos):
