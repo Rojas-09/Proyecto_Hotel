@@ -144,10 +144,7 @@ def obtener_mis_reservas(current_user):
         select(Huesped).filter_by(id_usuario=current_user.id)
     ).scalar_one_or_none()
     if not huesped:
-        raise ValueError(
-            "No se encontró un perfil de huésped asociado a tu cuenta. "
-            "Contacta al administrador."
-        )
+        return []
 
     reservas = db.session.execute(
         select(Reserva).filter_by(id_huesped=huesped.id)
