@@ -48,6 +48,11 @@ const router = createRouter({
 router.beforeEach((to, from) => {
   const authStore = useAuthStore();
   const dashboardRoles = ['admin', 'recepcionista', 'gerente'];
+  const homeByRole = {
+    admin: '/habitaciones',
+    recepcionista: '/habitaciones',
+    gerente: '/reportes',
+  };
 
   // Ruta requiere auth y usuario no autenticado → login
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {
@@ -63,6 +68,9 @@ router.beforeEach((to, from) => {
     route => route.meta?.roles && !route.meta.roles.includes(authStore.userRole)
   );
   if (hasUnauthorizedRole) {
+    if (authStore.isAuthenticated && homeByRole[authStore.userRole]) {
+      return homeByRole[authStore.userRole];
+    }
     return '/login';
   }
 

@@ -68,16 +68,14 @@
         <div v-if="showDemoCredentials" class="mt-6 pt-5 border-t border-gray-800">
           <p class="text-xs text-gray-600 font-medium mb-3 uppercase tracking-wider">Correos de prueba</p>
           <div class="space-y-2">
-            <button
+            <div
               v-for="cred in demoCredentials"
               :key="cred.email"
-              type="button"
-              @click="fillCredentials(cred)"
-              class="w-full text-left px-3 py-2 rounded-lg bg-gray-800/50 hover:bg-gray-800 border border-gray-800 hover:border-gray-700 transition-colors text-xs"
+              class="w-full text-left px-3 py-2 rounded-lg bg-gray-800/50 border border-gray-800 text-xs"
             >
               <span class="text-hotel-gold font-medium capitalize">{{ cred.role }}</span>
               <span class="text-gray-500 ml-2">{{ cred.email }}</span>
-            </button>
+            </div>
           </div>
         </div>
       </div>
@@ -105,10 +103,6 @@ const demoCredentials = [
   { role: 'Recepcionista', email: 'recepcionista@hotel.com' },
   { role: 'Gerente', email: 'gerente@hotel.com' },
 ];
-
-function fillCredentials(cred) {
-  form.value.email = cred.email;
-}
 
 async function handleLogin() {
   loading.value = true;
