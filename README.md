@@ -1,34 +1,65 @@
-# Proyecto HotelBook Pro
+# HotelBook Pro
+> *Solución integral de gestión hotelera para establecimientos medianos con proyección de crecimiento*
 
-HotelBook Pro es un sistema de gestión hotelera completo que permite administrar reservas, huéspedes, habitaciones, facturación, check-in, check-out y servicios adicionales. Cuenta con una arquitectura en dos capas: un backend robusto construido en Python (Flask) con una base de datos relacional (SQLite), y un frontend moderno y dinámico construido en Vue 3 y Tailwind CSS.
-
----
-
-## 🚀 Arquitectura del Proyecto
-
-El proyecto está dividido en dos partes principales:
-
-- **Backend (API REST):** Ubicado en `app/` y archivos raíz (como `run.py`). Maneja toda la lógica de negocio, autenticación JWT, conexión a base de datos y validaciones de flujo.
-- **Frontend (SPA):** Ubicado en el directorio `frontend/`. Construido con Vue 3, Vite, y Tailwind CSS. Se comunica exclusivamente con el backend a través de endpoints REST.
+**HotelBook Pro** es un sistema de gestión hotelera completo que permite administrar reservas, huéspedes, habitaciones, facturación, check-in, check-out y servicios adicionales. El propósito fundamental es consolidar una plataforma madura, robusta y escalable que resuelva fallos críticos de la gestión manual como el overbooking y las inconsistencias en facturación.
 
 ---
 
-## 🛠 Tecnologías Utilizadas
+## ✨ Características Principales
 
-### Backend
+### Gestión Principal
+- ✅ **Gestión de Reservas**: Crear, modificar, cancelar y consultar reservas.
+- ✅ **Control de Habitaciones**: Tipos, precios, disponibilidad en tiempo real.
+- ✅ **Registro de Huéspedes**: Historial completo y gestión de datos.
+- ✅ **Check-in/Check-out**: Proceso digital con comprobantes y flujos automáticos.
+
+### Operaciones Financieras
+- ✅ **Facturación Automatizada**: Generación de facturas en PDF con impuestos (19%).
+- ✅ **Gestión de Pagos**: Registro de liquidaciones y cargos adicionales.
+- ✅ **Garantía de Reserva**: Pago inicial obligatorio para confirmar reservas.
+
+### Servicios Ampliados
+- ✅ **Servicios Adicionales**: Cargos por Comedor, Spa, Lavandería, etc., enlazados directamente a la factura de la habitación.
+- ✅ **Sistema de Fidelización**: Acumulación automática de puntos por noche.
+
+### Inteligencia de Negocio
+- ✅ **Reportes Estratégicos**: Métricas de ocupación e ingresos exportables (Excel, PDF).
+
+---
+
+## 🏗️ Arquitectura y Stack Tecnológico
+
+El proyecto cuenta con una arquitectura en dos capas separadas e independientes:
+
+### Backend (API REST)
+Ubicado en el directorio `app/`. Maneja toda la lógica de negocio, autenticación JWT, conexión a la base de datos y validaciones de flujo estrictas.
 - **Python 3.12+**
 - **Flask** (Framework web)
-- **SQLAlchemy** (ORM)
-- **PyJWT** (Autenticación por tokens)
-- **SQLite** (Base de datos por defecto, archivo `hotelbook_dev.db`)
+- **SQLAlchemy 2.0+** (ORM)
+- **PyJWT** (Autenticación)
+- **SQLite** (Base de datos por defecto `hotelbook_dev.db`)
 
-### Frontend
+### Frontend (SPA)
+Ubicado en el directorio `frontend/`. Se comunica exclusivamente con el backend a través de endpoints REST.
 - **Vue 3** (Composition API, `<script setup>`)
-- **Vite** (Build tool ultra rápida)
-- **Tailwind CSS v4** (Framework de estilos de utilidad utilitaria)
-- **Pinia** (Manejo de estado global para sesión)
-- **Vue Router** (Enrutamiento del lado del cliente)
-- **Axios** (Cliente HTTP para consumir la API)
+- **Vite** (Motor de construcción rápido)
+- **Tailwind CSS v4** (Framework de diseño)
+- **Pinia** (Manejo de estado global y sesión)
+- **Axios** (Cliente HTTP)
+
+```
+┌─────────────────────────────────────────┐
+│   CAPA DE PRESENTACIÓN (Frontend Vue 3) │
+└────────────────┬────────────────────────┘
+                 │ HTTP REST (JSON + JWT)
+┌────────────────▼────────────────────────┐
+│  CAPA DE LÓGICA DE NEGOCIO (Backend API)│
+└────────────────┬────────────────────────┘
+                 │
+┌────────────────▼────────────────────────┐
+│   CAPA DE DATOS (SQLite / PostgreSQL)   │
+└─────────────────────────────────────────┘
+```
 
 ---
 
@@ -45,6 +76,11 @@ source venv/bin/activate
 
 # Instalar las dependencias
 pip install -r requirements.txt
+
+# Inicializar y migrar base de datos (Si es la primera vez)
+flask db init
+flask db migrate
+flask db upgrade
 
 # Iniciar la aplicación en modo desarrollo
 python run.py
@@ -64,13 +100,13 @@ npm install
 # Iniciar el servidor de desarrollo
 npm run dev
 ```
-> El frontend se levantará en **http://localhost:5173**
+> El frontend se levantará en **http://localhost:5173** (o el puerto que indique la terminal).
 
 ---
 
 ## 🔑 Credenciales de Acceso
 
-La base de datos ya incluye usuarios de prueba para que puedas explorar todos los módulos del sistema según los diferentes niveles de acceso:
+La base de datos incluye usuarios de prueba para explorar los distintos niveles de acceso:
 
 | Rol | Email | Contraseña | Descripción y Permisos |
 |-----|-------|------------|------------------------|
@@ -82,47 +118,36 @@ La base de datos ya incluye usuarios de prueba para que puedas explorar todos lo
 
 ## 📋 Flujo de Operación (Workflow Principal)
 
-El sistema tiene reglas de negocio estrictas basadas en los requerimientos del hotel. Para realizar un ciclo completo de estadía, sigue este flujo usando la cuenta de **Administrador** o **Recepcionista**:
+El sistema tiene reglas de negocio estrictas. Para realizar un ciclo completo de estadía de forma exitosa, sigue este flujo usando la cuenta de **Administrador** o **Recepcionista**:
 
-1. **Gestión de Habitaciones:**
-   - Ve a "Habitaciones" y crea una nueva habitación (Tipos válidos: `Simple`, `Doble`, `Suite`, `Deluxe`).
-2. **Gestión de Huéspedes:**
-   - Ve a "Huéspedes" y registra a un nuevo cliente con sus datos personales.
-3. **Creación de Reserva:**
-   - Ve a "Reservas" y crea una nueva reserva seleccionando la habitación y el huésped creados anteriormente. La reserva nace en estado **Pendiente**.
-4. **Confirmación y Pago de Garantía:**
-   - En la tabla de Reservas, presiona "Confirmar". Esto internamente procesa el pago de *garantía (50%)* y cambia el estado a **Confirmada**.
-5. **Check-In:**
-   - Ve al módulo "Recepción" (pestaña Check-in). Selecciona la reserva confirmada para registrar la llegada del huésped. La reserva pasa a estado **Ocupada**.
-6. **Servicios Adicionales (Opcional):**
-   - Ve al módulo "Servicios". Como la reserva está "Ocupada", podrás agregarle cargos por Comedor, Spa, Lavandería, etc.
-7. **Check-Out y Liquidación:**
-   - Vuelve a "Recepción" (pestaña Check-out).
-   - Al seleccionar la reserva, el sistema calculará el total restante (saldo de habitación + servicios adicionales).
-   - Al confirmar, el sistema automáticamente procesa el pago de *liquidación* y cambia el estado a **Completada**.
-8. **Facturación:**
-   - Ve a "Facturación". Selecciona la reserva que acaba de completarse y haz clic en "Emitir". El sistema generará la factura oficial y te permitirá descargarla en formato PDF.
+1. **Gestión de Habitaciones:** Ve a "Habitaciones" y crea una nueva habitación.
+2. **Gestión de Huéspedes:** Ve a "Huéspedes" y registra a un nuevo cliente.
+3. **Creación de Reserva:** Ve a "Reservas" y crea una reserva (nace en estado **Pendiente**).
+4. **Confirmación y Pago de Garantía:** En la tabla de Reservas, presiona "Confirmar". Esto procesa el pago inicial y la cambia a **Confirmada**.
+5. **Check-In:** Ve a "Recepción" (Check-in). Selecciona la reserva para registrar la llegada. Pasa a estado **Ocupada**.
+6. **Servicios Adicionales:** Ve a "Servicios". Agrega cargos por Comedor, Spa, etc.
+7. **Check-Out y Liquidación:** Ve a "Recepción" (Check-out). El sistema sumará el saldo de la habitación más los servicios adicionales. Al confirmar, procesa el pago de liquidación y la reserva pasa a **Completada**.
+8. **Facturación:** Ve a "Facturación". Emite la factura oficial (PDF).
 
 ---
 
-## 📊 Módulos del Sistema
+## 🔌 Documentación de la API REST
 
-1. **Autenticación y Sesión:**
-   - Control de acceso por roles usando interceptores HTTP y guardias de navegación (`router.beforeEach`). El sidebar de navegación se adapta automáticamente según tu rol.
-2. **Habitaciones:**
-   - CRUD completo de habitaciones con control de estado (Disponible, Ocupada, Mantenimiento).
-3. **Huéspedes:**
-   - Directorio de clientes con historial individualizado de sus reservas.
-4. **Reservas:**
-   - Gestión de disponibilidad por fechas, creación, edición, cancelación y confirmación.
-5. **Recepción (Check-in/out):**
-   - Control de ingreso y salida con resúmenes financieros automáticos.
-6. **Servicios (Spa, Comedor, etc.):**
-   - Cargos a la habitación ("Room Service") que se suman dinámicamente a la cuenta final.
-7. **Facturación:**
-   - Generación, anulación y descarga en formato PDF.
-8. **Reportes Estratégicos:**
-   - Dashboard analítico exclusivo para Administradores y Gerentes con KPIs de ocupación y cálculo de ingresos totales en un rango de fechas. (Incluye exportación a CSV/PDF en el backend).
+Todos los endpoints requieren un **JWT (JSON Web Tokens)** válido enviado a través de la cabecera: `Authorization: Bearer <token>`.
+
+### Endpoints Principales
+
+| Categoría | Método | Endpoint | Descripción |
+|-----------|--------|----------|-------------|
+| **Reservas** | GET | `/api/v1/reservas/` | Listar reservas |
+| **Reservas** | POST | `/api/v1/reservas/` | Crear reserva |
+| **Habitaciones** | GET | `/api/v1/habitaciones/disponibles` | Consultar disponibilidad |
+| **Check-in/out**| PUT | `/api/v1/reservas/{id}/checkin` | Registrar check-in |
+| **Check-in/out**| PUT | `/api/v1/reservas/{id}/checkout`| Registrar check-out |
+| **Servicios** | GET | `/api/v1/reservas/{id}/servicios` | Listar servicios cargados |
+| **Facturación** | POST | `/api/v1/facturas/reserva/{id}/emitir` | Emitir factura PDF |
+
+*Para ver la documentación completa y dinámica de los endpoints, navega a Swagger UI (si está habilitado): `http://127.0.0.1:5000/api/docs`*
 
 ---
 
