@@ -79,3 +79,6 @@ postman.json
 
 # Configuración de pytest (sensitive)
 pytest.ini
+
+# Diagramas Mermaid
+*.mmd

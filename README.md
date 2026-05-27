@@ -164,6 +164,12 @@ Estructura y flujo lógico del sistema previo al diseño final:
 
 ---
 
+## 📚 Documentación
+
+Toda la documentación del proyecto (diagramas, guías, especificaciones) está disponible en la carpeta [`docs/`](docs/).
+
+---
+
 ## 📄 Licencia
 
 Este proyecto está bajo la **Licencia MIT**. Consulta el archivo [LICENSE](LICENSE) para más detalles.
