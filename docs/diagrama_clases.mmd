@@ -1,0 +1,161 @@
+classDiagram
+    class Usuario {
+        +int id
+        +string nombre
+        +string apellido
+        +string email
+        +string password_hash
+        +string telefono
+        +string rol
+        +bool activo
+        +datetime created_at
+        +datetime updated_at
+        +to_dict() dict
+    }
+
+    class Huesped {
+        +int id
+        +int id_usuario
+        +string documento_id
+        +string tipo_documento
+        +text preferencias
+        +datetime created_at
+        +datetime updated_at
+        +to_dict() dict
+    }
+
+    class Habitacion {
+        +int id
+        +string numero
+        +string tipo
+        +text descripcion
+        +decimal precio_noche
+        +int capacidad
+        +int piso
+        +string estado
+        +bool activo
+        +datetime created_at
+        +datetime updated_at
+        +to_dict() dict
+    }
+
+    class Reserva {
+        +int id
+        +int id_huesped
+        +int id_habitacion
+        +date fecha_entrada
+        +date fecha_salida
+        +int noches
+        +decimal subtotal
+        +decimal impuestos
+        +decimal total
+        +string estado
+        +string motivo_cancelacion
+        +datetime created_at
+        +datetime updated_at
+        +to_dict() dict
+        +crear(datos) dict
+        +confirmar(id) dict
+        +cancelar(id) dict
+    }
+
+    class CheckInCheckOut {
+        +int id
+        +int id_reserva
+        +datetime fecha_checkin
+        +datetime fecha_checkout
+        +int realizado_por
+        +datetime created_at
+        +datetime updated_at
+        +to_dict() dict
+    }
+
+    class Factura {
+        +int id
+        +int id_reserva
+        +datetime fecha_emision
+        +decimal subtotal
+        +decimal impuestos
+        +decimal servicios_adicionales_total
+        +decimal total
+        +string estado
+        +string pdf_path
+        +datetime created_at
+        +datetime updated_at
+        +to_dict() dict
+        +generar_pdf() str
+    }
+
+    class Pago {
+        +int id
+        +int id_reserva
+        +datetime fecha
+        +decimal monto
+        +string metodo
+        +string tipo
+        +string estado
+        +string referencia_externa
+        +datetime created_at
+        +datetime updated_at
+        +to_dict() dict
+    }
+
+    class Reembolso {
+        +int id
+        +int id_pago
+        +datetime fecha
+        +decimal monto
+        +string motivo
+        +string estado
+        +datetime created_at
+        +datetime updated_at
+        +to_dict() dict
+    }
+
+    class ServicioAdicional {
+        +int id
+        +int id_reserva
+        +string tipo
+        +string descripcion
+        +decimal costo
+        +datetime fecha_hora
+        +int duracion_minutos
+        +datetime created_at
+        +datetime updated_at
+        +to_dict() dict
+    }
+
+    class PuntosFidelidad {
+        +int id
+        +int id_huesped
+        +int id_reserva
+        +int puntos
+        +datetime fecha
+        +string concepto
+        +to_dict() dict
+    }
+
+    class Notificacion {
+        +int id
+        +int id_reserva
+        +string tipo
+        +text mensaje
+        +datetime fecha_envio
+        +bool enviado
+        +datetime created_at
+        +datetime updated_at
+        +to_dict() dict
+    }
+
+    Usuario "1" --> "1" Huesped : tiene
+    Usuario "1" --> "0..*" CheckInCheckOut : realiza
+    Huesped "1" --> "0..*" Reserva : hace
+    Huesped "1" --> "0..*" PuntosFidelidad : acumula
+    Habitacion "1" --> "0..*" Reserva : tiene
+    Reserva "1" --> "1" CheckInCheckOut : registra
+    Reserva "1" --> "1" Factura : genera
+    Reserva "1" --> "0..*" Pago : recibe
+    Reserva "1" --> "0..*" ServicioAdicional : incluye
+    Reserva "1" --> "0..*" Notificacion : genera
+    Reserva "1" --> "0..*" PuntosFidelidad : genera_puntos
+    Pago "1" --> "0..1" Reembolso : puede_tener

@@ -1,0 +1,60 @@
+usecaseDiagram
+    actor Cliente as "Cliente / Huésped"
+    actor Recepcionista as "Recepcionista"
+    actor Administrador as "Administrador"
+    actor Gerente as "Gerente"
+
+    rectangle HotelBookPro {
+        usercase CU01  as "Autenticarse"
+        usercase CU02  as "Consultar disponibilidad"
+        usercase CU03  as "Reservar habitación"
+        usercase CU04  as "Ver mis reservas"
+        usercase CU05  as "Ver puntos de fidelidad"
+        usercase CU06  as "Canjear puntos"
+        usercase CU07  as "Gestionar reservas"
+        usercase CU08  as "Realizar check-in"
+        usercase CU09  as "Realizar check-out"
+        usercase CU10  as "Agregar servicios adicionales"
+        usercase CU11  as "Gestionar huéspedes"
+        usercase CU12  as "Gestionar habitaciones"
+        usercase CU13  as "Gestionar usuarios"
+        usercase CU14  as "Procesar reembolsos"
+        usercase CU15  as "Ver reportes de ocupación"
+        usercase CU16  as "Ver reportes de ingresos"
+        usercase CU17  as "Generar factura PDF"
+        usercase CU18  as "Pagar garantía"
+        usercase CU19  as "Pagar liquidación"
+        usercase CU20  as "Exportar reportes"
+    }
+
+    Cliente --> CU01
+    Cliente --> CU02
+    Cliente --> CU03
+    Cliente --> CU04
+    Cliente --> CU05
+    Cliente --> CU06
+    Cliente --> CU18
+
+    Recepcionista --> CU01
+    Recepcionista --> CU07
+    Recepcionista --> CU08
+    Recepcionista --> CU09
+    Recepcionista --> CU10
+    Recepcionista --> CU11
+
+    Administrador --> CU01
+    Administrador --> CU07
+    Administrador --> CU12
+    Administrador --> CU13
+    Administrador --> CU14
+    Administrador --> CU20
+
+    Gerente --> CU01
+    Gerente --> CU15
+    Gerente --> CU16
+
+    CU03 <. CU02 : <<include>>
+    CU09 <. CU19 : <<include>>
+    CU08 <. CU18 : <<include>>
+    CU17 <. CU09 : <<include>>
+    CU07 <. CU10 : <<extend>>

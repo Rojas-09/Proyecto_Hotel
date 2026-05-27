@@ -1,7 +1,18 @@
-# Diagrama Entidad-Relación (ERD)
+# Diagramas del Sistema
 
-Diagrama que modela la estructura de la base de datos del hotel, incluyendo las entidades principales (usuarios, huéspedes, habitaciones, reservas, pagos, facturas, etc.) y sus relaciones.
+## Diagramas disponibles
 
-Puedes visualizarlo e interactuar con él en Mermaid Live:
+| Diagrama | Archivo | Formato |
+|----------|---------|---------|
+| Entidad-Relación (ERD) | `diagram.mmd` | Mermaid |
+| Casos de Uso | `casos_de_uso.mmd` | Mermaid |
+| Clases | `diagrama_clases.mmd` | Mermaid |
+| Secuencia (Realizar Reserva) | `secuencia_reserva.mmd` | Mermaid |
 
-🔗 [Ver ERD en Mermaid Live](https://mermaid.live/edit#pako:eNq1V1tz2joQ_isezfQtycQBGuDNBaf1NAcyXM7DmcxohLVgtbbkkeSctkn--5HAGIxtQhsOL8bai3a__bRaP6NQUEB9BHLIyEqS5JE75jefzr1JMJ46z5t3-2NcO4w6D193S0pLxlcOF8lCQmWZpBDHjIqKABLC4spqSpT6V0iKI6KiilRDDEvBq86kiMsxphnXQuEloxCzXyRkgu8UFkLEDgk1e9rzRIkGzRJwQgnmL8VE1wizlJaEr4-53y9zf_rgD_230Nos4UxlRDLh3FWBpCLMEjDhY0arCLBU4EJjJ9bwwyQtYQkSeMiIOl9i3qdg5g2C8cg_lQkmOClqQz8ImIIKJUvL1Vmbs9BmYwSYizCC8rYhSU1FKaEHNWeqhmZKk332_R-1n_hTf_K3d2LpowxUCrRU-q2ILJhek7UkLSJYQhgRLEGBfCJleS4zrJCE1ssUMQeRlDddo6uq4KtsoYUmcVXCktQkYA5XVXRg0VCBfDkRtgY4JDyE-OCAvrMegy_-4GswwuvneD47rS45rMeQN1iF3xk_LheZLvs2OdgeRAVOhax3_2d53nmD2XxyKu9OyA8SpmrP4h_RwW7HTGEVJtQ-OYlB4QY_v8WdlC5xSnR0NiQfvM_js8FYTS4RpWa9PQGgBX2rTx4HYtfwsemnIDk5Y1Pz__o0vp-eiktKVuIcoIhya27I_731no9m4ym-C4b-fTD0hu_u3HWs2M0hb4OSpxkK0w3TLSxFuPZ6CcwVPMXe0D5H3r3_DroeI9rRKzkUSovG7hEJeT76jcaz4C4YnDZ4_G6u6-HDTFCKfIPmZsif2OHgYNfOycMPH5xJfvttb-Fi6n55ubx8edkbLPvOI0pBLlmMKTyiw7nT6ovn3TBi1SMS7jT3B7k6Zc2AF9qFJA-jcqdai_w-NMCvmAFaNBkXF5U1WpldDFHqVE1Em05s9ez4tyji2azn_vZ60xqUDChgbf02ua0_QdaY8TDOfkKT4QEPqwlUClDpLdaGmIk9i0kTQLU2m31w3kJQDT3MbrV1yScOa4Mu0EoyivpaZnCBzDk2313mFa1PlCl6BIlJ3lpRIr9bk1djkxL-jxDJ1kyKbBWh_pLEyrxt6Jx_KxYqwCnIgTDRon6rd7v2gfrP6Afquy33qn3d6bSve2636_a67Qv0E_Uvb9tXHffmpuV2el233W61Xi_Qr_W27lXrY--me93q3Pbcj51Ox339D7-tcIM)
+## Cómo visualizar
+
+Abre los archivos `.mmd` en:
+
+- **VS Code** con la extensión "Mermaid Diagram" (bierner.markdown-mermaid)
+- **GitHub** — los renderiza automáticamente
+- **Mermaid Live**: https://mermaid.live/edit — pega el contenido
