@@ -4,57 +4,55 @@ usecaseDiagram
     actor Administrador as "Administrador"
     actor Gerente as "Gerente"
 
-    rectangle HotelBookPro {
-        usercase CU01  as "Autenticarse"
-        usercase CU02  as "Consultar disponibilidad"
-        usercase CU03  as "Reservar habitación"
-        usercase CU04  as "Ver mis reservas"
-        usercase CU05  as "Ver puntos de fidelidad"
-        usercase CU06  as "Canjear puntos"
-        usercase CU07  as "Gestionar reservas"
-        usercase CU08  as "Realizar check-in"
-        usercase CU09  as "Realizar check-out"
-        usercase CU10  as "Agregar servicios adicionales"
-        usercase CU11  as "Gestionar huéspedes"
-        usercase CU12  as "Gestionar habitaciones"
-        usercase CU13  as "Gestionar usuarios"
-        usercase CU14  as "Procesar reembolsos"
-        usercase CU15  as "Ver reportes de ocupación"
-        usercase CU16  as "Ver reportes de ingresos"
-        usercase CU17  as "Generar factura PDF"
-        usercase CU18  as "Pagar garantía"
-        usercase CU19  as "Pagar liquidación"
-        usercase CU20  as "Exportar reportes"
-    }
+    usecase CU01 as "Autenticarse"
+    usecase CU02 as "Consultar disponibilidad"
+    usecase CU03 as "Gestionar habitaciones"
+    usecase CU04 as "Gestionar huéspedes"
+    usecase CU05 as "Gestionar usuarios"
+    usecase CU06 as "Reservar habitación"
+    usecase CU07 as "Ver mis reservas"
+    usecase CU08 as "Gestionar reservas"
+    usecase CU09 as "Realizar check-in"
+    usecase CU10 as "Realizar check-out"
+    usecase CU11 as "Pagar garantía"
+    usecase CU12 as "Pagar liquidación"
+    usecase CU13 as "Procesar reembolsos"
+    usecase CU14 as "Agregar servicios adicionales"
+    usecase CU15 as "Generar factura PDF"
+    usecase CU16 as "Ver puntos de fidelidad"
+    usecase CU17 as "Canjear puntos"
+    usecase CU18 as "Ver reportes de ocupación"
+    usecase CU19 as "Ver reportes de ingresos"
+    usecase CU20 as "Exportar reportes"
 
     Cliente --> CU01
     Cliente --> CU02
-    Cliente --> CU03
-    Cliente --> CU04
-    Cliente --> CU05
     Cliente --> CU06
-    Cliente --> CU18
+    Cliente --> CU07
+    Cliente --> CU11
+    Cliente --> CU16
+    Cliente --> CU17
 
     Recepcionista --> CU01
-    Recepcionista --> CU07
+    Recepcionista --> CU04
     Recepcionista --> CU08
     Recepcionista --> CU09
     Recepcionista --> CU10
-    Recepcionista --> CU11
+    Recepcionista --> CU14
 
     Administrador --> CU01
-    Administrador --> CU07
-    Administrador --> CU12
+    Administrador --> CU03
+    Administrador --> CU05
+    Administrador --> CU08
     Administrador --> CU13
-    Administrador --> CU14
     Administrador --> CU20
 
     Gerente --> CU01
-    Gerente --> CU15
-    Gerente --> CU16
+    Gerente --> CU18
+    Gerente --> CU19
 
-    CU03 <. CU02 : <<include>>
-    CU09 <. CU19 : <<include>>
-    CU08 <. CU18 : <<include>>
-    CU17 <. CU09 : <<include>>
-    CU07 <. CU10 : <<extend>>
+    CU06 ..> CU02 : include
+    CU10 ..> CU12 : include
+    CU09 ..> CU11 : include
+    CU15 ..> CU10 : include
+    CU08 ..> CU14 : extend
