@@ -1,6 +1,13 @@
-# Proyecto HotelBook Pro
+# 🏨 HotelBook Pro
 
-HotelBook Pro es un sistema de gestión hotelera completo que permite administrar reservas, huéspedes, habitaciones, facturación, check-in, check-out y servicios adicionales. Cuenta con una arquitectura en dos capas: un backend robusto construido en Python (Flask) con una base de datos relacional (SQLite), y un frontend moderno y dinámico construido en Vue 3 y Tailwind CSS.
+HotelBook Pro es un sistema de gestión hotelera completo que permite administrar reservas, huéspedes, habitaciones, facturación, check-in, check-out y servicios adicionales. Cuenta con una arquitectura en dos capas: un backend robusto construido en Python (Flask) con una base de datos relacional (PostgreSQL/SQLite), y un frontend moderno y dinámico construido en Vue 3 y Tailwind CSS.
+
+---
+
+## 👥 Integrantes
+
+- **Juan Andrés Rojas**
+- **Paul Moreno**
 
 ---
 
@@ -156,4 +163,7 @@ Estructura y flujo lógico del sistema previo al diseño final:
 ![Prototipo Modal](docs/images/prototype_modal.png)
 
 ---
-*Desarrollado para HotelBook Pro*
+
+## 📄 Licencia
+
+Este proyecto está bajo la **Licencia MIT**. Consulta el archivo [LICENSE](LICENSE) para más detalles.
