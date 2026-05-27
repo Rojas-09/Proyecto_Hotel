@@ -71,11 +71,14 @@ Datos.md
 
 # Agent instructions (privado)
 .agents/
+
+# Vite cache
+.vite/
 # Postman collection (sensitive)
 postman.json
 
 # Configuración de cobertura (sensitive)
-.converagerc
+.coveragerc
 
 # Configuración de pytest (sensitive)
 pytest.ini

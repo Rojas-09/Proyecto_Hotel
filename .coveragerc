@@ -1,5 +1,0 @@
-[run]
-omit =
-    */controllers/views_controller.py
-    */controllers/auth_views_controller.py
-    */utils/session_helper.py
