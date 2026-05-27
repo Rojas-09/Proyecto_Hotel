@@ -23,11 +23,13 @@ def agregar_servicio(current_user, reserva_id: int):
     """
     data = request.get_json(silent=True) or {}
     try:
+        duracion = data.get("duracion_minutos")
         servicio = servicio_adicional_service.agregar(
             reserva_id=reserva_id,
             tipo_str=data.get("tipo"),
             descripcion=data.get("descripcion"),
             costo_raw=data.get("costo"),
+            duracion_minutos=int(duracion) if duracion is not None else None,
         )
         return jsonify({"servicio": servicio}), 201
     except LookupError as e:

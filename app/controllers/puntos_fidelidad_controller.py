@@ -1,10 +1,12 @@
 """
 PuntosFidelidad Controller - Endpoints REST para puntos de fidelización (RF-12)
-GET /api/v1/huespedes/<huesped_id>/puntos         → total de puntos
-GET /api/v1/huespedes/<huesped_id>/puntos/historial → historial completo
+GET    /api/v1/huespedes/<huesped_id>/puntos           → total de puntos
+GET    /api/v1/huespedes/<huesped_id>/puntos/historial → historial completo
+GET    /api/v1/huespedes/<huesped_id>/puntos/canjeos   → opciones de canje
+POST   /api/v1/huespedes/<huesped_id>/puntos/canjear   → canjear puntos
 """
 
-from flask import Blueprint, jsonify
+from flask import Blueprint, jsonify, request
 
 from app.services import puntos_fidelidad_service
 from app.utils.jwt_helper import token_required, rol_requerido
@@ -60,3 +62,63 @@ def listar_historial(current_user, huesped_id):
             "data": None,
             "mensaje": str(e)
         }), 404
+
+
+@puntos_bp.route("/<int:huesped_id>/puntos/canjeos", methods=["GET"])
+@token_required
+@rol_requerido("admin", "recepcionista", "gerente", "cliente")
+def listar_canjeos(current_user, huesped_id):
+    """
+    GET /api/v1/huespedes/<huesped_id>/puntos/canjeos
+
+    Retorna las opciones de canje disponibles.
+    Roles permitidos: todos los roles autenticados.
+    """
+    canjeos = puntos_fidelidad_service.listar_canjeos()
+    return jsonify({
+        "success": True,
+        "data": {"canjeos": canjeos},
+    }), 200
+
+
+@puntos_bp.route("/<int:huesped_id>/puntos/canjear", methods=["POST"])
+@token_required
+@rol_requerido("admin", "recepcionista", "cliente")
+def canjear_puntos(current_user, huesped_id):
+    """
+    POST /api/v1/huespedes/<huesped_id>/puntos/canjear
+
+    Canjea puntos por una opción disponible.
+    Body: { "opcion_id": int }
+
+    Roles permitidos: admin, recepcionista, cliente.
+    """
+    data = request.get_json(silent=True) or {}
+    opcion_id = data.get("opcion_id")
+
+    if opcion_id is None:
+        return jsonify({
+            "success": False,
+            "data": None,
+            "mensaje": "El campo 'opcion_id' es obligatorio."
+        }), 400
+
+    try:
+        resultado = puntos_fidelidad_service.canjear(huesped_id, int(opcion_id))
+        return jsonify({
+            "success": True,
+            "data": resultado,
+            "mensaje": "Canje realizado exitosamente."
+        }), 200
+    except LookupError as e:
+        return jsonify({
+            "success": False,
+            "data": None,
+            "mensaje": str(e)
+        }), 404
+    except ValueError as e:
+        return jsonify({
+            "success": False,
+            "data": None,
+            "mensaje": str(e)
+        }), 400

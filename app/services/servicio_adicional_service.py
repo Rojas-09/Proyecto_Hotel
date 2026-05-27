@@ -2,6 +2,7 @@
 Módulo ServicioAdicional — RF-10 (Comedor) y RF-11 (Spa)
 Gestiona servicios adicionales vinculados a una reserva en estado Ocupada.
 """
+from datetime import timedelta
 from decimal import Decimal, InvalidOperation
 
 from app import db
@@ -56,9 +57,52 @@ def _factura_emitida(reserva_id: int) -> bool:
     return factura.estado in (EstadoFactura.emitida, EstadoFactura.pagada)
 
 
-def agregar(reserva_id: int, tipo_str: str, descripcion: str, costo_raw) -> dict:
+def _validar_sin_traslapes_spa(
+    reserva_id: int,
+    fecha_hora,
+    duracion_minutos: int,
+    servicio_id_excluir: int = None,
+):
+    """
+    Valida que un servicio de tipo Spa no se traslape con otro existente
+    en la misma reserva (RF-11 / R7).
+    """
+    desde = fecha_hora
+    hasta = fecha_hora + timedelta(minutes=duracion_minutos)
+
+    existentes = db.session.execute(
+        select(ServicioAdicional).filter(
+            ServicioAdicional.id_reserva == reserva_id,
+            ServicioAdicional.tipo == TipoServicio.spa,
+        )
+    ).scalars().all()
+
+    for s in existentes:
+        if servicio_id_excluir and s.id == servicio_id_excluir:
+            continue
+        s_desde = s.fecha_hora
+        s_hasta = s.fecha_hora + timedelta(
+            minutes=s.duracion_minutos or 60
+        )
+        if s_desde < hasta and s_hasta > desde:
+            raise ValueError(
+                "La fecha y hora seleccionada se traslapa con otro servicio "
+                f"de Spa (ID {s.id}: "
+                f"{s_desde.strftime('%H:%M')} - "
+                f"{s_hasta.strftime('%H:%M')})."
+            )
+
+
+def agregar(
+    reserva_id: int,
+    tipo_str: str,
+    descripcion: str,
+    costo_raw,
+    duracion_minutos: int = None,
+) -> dict:
     """
     Agrega un servicio adicional a una reserva en estado Ocupada.
+    Si el tipo es Spa, valida que no haya traslapes de horario (RF-11).
     """
     reserva = _get_reserva(reserva_id)
 
@@ -74,6 +118,10 @@ def agregar(reserva_id: int, tipo_str: str, descripcion: str, costo_raw) -> dict
         )
 
     tipo = _validar_tipo(tipo_str)
+    if duracion_minutos is None:
+        duracion_minutos = 60
+    elif duracion_minutos < 15 or duracion_minutos > 480:
+        raise ValueError("La duración debe estar entre 15 y 480 minutos.")
     costo = _validar_costo(costo_raw)
 
     if not descripcion or not str(descripcion).strip():
@@ -81,12 +129,16 @@ def agregar(reserva_id: int, tipo_str: str, descripcion: str, costo_raw) -> dict
     if len(descripcion.strip()) > 255:
         raise ValueError("La descripción no puede superar 255 caracteres.")
 
+    if tipo == TipoServicio.spa:
+        _validar_sin_traslapes_spa(reserva_id, ahora_colombia(), duracion_minutos)
+
     servicio = ServicioAdicional(
         id_reserva=reserva_id,
         tipo=tipo,
         descripcion=descripcion.strip(),
         costo=costo,
         fecha_hora=ahora_colombia(),
+        duracion_minutos=duracion_minutos,
     )
     db.session.add(servicio)
     db.session.commit()

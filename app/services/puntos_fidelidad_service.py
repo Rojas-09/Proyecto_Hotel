@@ -67,3 +67,56 @@ def listar_historial(huesped_id):
         .order_by(PuntosFidelidad.fecha.desc())
     ).scalars().all()
     return [r.to_dict() for r in registros]
+
+
+CANJES_DISPONIBLES = [
+    {"id": 1, "nombre": "10% de descuento en próxima reserva", "puntos_requeridos": 100},
+    {"id": 2, "nombre": " upgrade de habitación (Suite)", "puntos_requeridos": 250},
+    {"id": 3, "nombre": "1 noche gratis", "puntos_requeridos": 500},
+    {"id": 4, "nombre": "Cena romántica en el Comedor", "puntos_requeridos": 150},
+    {"id": 5, "nombre": "Sesión de Spa gratuita (60 min)", "puntos_requeridos": 200},
+]
+
+
+def listar_canjeos():
+    """Retorna la lista de opciones de canje disponibles."""
+    return CANJES_DISPONIBLES
+
+
+def canjear(huesped_id, opcion_id):
+    """
+    Canjea puntos por una opción disponible.
+    Registra el canje como puntos negativos en el historial.
+    """
+    huesped = db.session.get(Huesped, huesped_id)
+    if not huesped:
+        raise LookupError(f"Huésped con id {huesped_id} no encontrado.")
+
+    opcion = next((o for o in CANJES_DISPONIBLES if o["id"] == opcion_id), None)
+    if not opcion:
+        raise ValueError(
+            f"Opción de canje inválida: {opcion_id}. "
+            f"Usa GET /huespedes/<id>/puntos/canjeos para ver las opciones."
+        )
+
+    total_actual = obtener_total(huesped_id)
+    if total_actual < opcion["puntos_requeridos"]:
+        raise ValueError(
+            f"Puntos insuficientes. Tienes {total_actual} pts, "
+            f"necesitas {opcion['puntos_requeridos']} pts para "
+            f"'{opcion['nombre']}'."
+        )
+
+    registro = PuntosFidelidad(
+        id_huesped=huesped_id,
+        id_reserva=None,
+        puntos=-opcion["puntos_requeridos"],
+        concepto=f"Canje: {opcion['nombre']}",
+    )
+    db.session.add(registro)
+    db.session.commit()
+
+    return {
+        "canje": registro.to_dict(),
+        "puntos_restantes": obtener_total(huesped_id),
+    }

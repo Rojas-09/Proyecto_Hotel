@@ -36,6 +36,7 @@ class ServicioAdicional(db.Model):
         default=ahora_colombia,
         nullable=False
     )
+    duracion_minutos = db.Column(db.Integer, default=60, nullable=False)
     created_at = db.Column(db.DateTime, default=ahora_colombia, nullable=False)
     updated_at = db.Column(
         db.DateTime,
@@ -55,6 +56,7 @@ class ServicioAdicional(db.Model):
             "descripcion": self.descripcion,
             "costo": float(self.costo),
             "fecha_hora": self.fecha_hora.isoformat(),
+            "duracion_minutos": self.duracion_minutos,
             "created_at": self.created_at.isoformat(),
             "updated_at": self.updated_at.isoformat(),
         }
