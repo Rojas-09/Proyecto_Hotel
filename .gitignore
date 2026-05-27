@@ -77,8 +77,5 @@ Datos.md
 # Postman collection (sensitive)
 postman.json
 
-# Configuración de cobertura (sensitive)
-.coveragerc
-
 # Configuración de pytest (sensitive)
 pytest.ini
