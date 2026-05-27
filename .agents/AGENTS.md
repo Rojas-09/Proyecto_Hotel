@@ -4,9 +4,12 @@
 
 - **Flask 3.1** con Application Factory (`create_app()` en `app/__init__.py`)
 - **SQLAlchemy 2.0** + Flask-SQLAlchemy 3.1
-- **Python 3.12** en CI, desarrollo local también
+- **PostgreSQL** (producción y desarrollo) / SQLite en testing
+- **Python 3.12+** en CI y desarrollo local
+- **Vue 3** (Composition API, `<script setup>`) + Vite + Tailwind CSS v4
+- **Pinia** (estado global), **Vue Router** (SPA routing), **Axios** (HTTP client)
 - Backend API REST en `app/` (controllers, services, models)
-- Frontend (HTML/CSS/JS vanilla) en `app/templates/` y `app/static/`
+- Frontend SPA en `frontend/`
 - Tests en `tests/` con pytest + pytest-cov
 
 ## Convenios obligatorios (backend)
@@ -73,22 +76,34 @@ Jerarquía: admin > gerente > recepcionista > cliente
 - Servicios: `/api/v1/servicios/*`
 - Pagos: `/api/v1/pagos/*`
 - Reportes: `/api/v1/reportes/*`
+- Servicios adicionales: registro propio sin prefijo
+- Puntos fidelidad: `/api/v1/huespedes` (bajo blueprint de huéspedes)
 
-## Frontend (14 pantallas — IMPLEMENTADAS)
+## Frontend (Vue SPA)
 
-Cliente: Login/Registro → Buscar habitaciones → Detalle habitación → Mis reservas → Detalle reserva + pago
-Recepcionista: Dashboard → Lista reservas + acciones → Checkin/Checkout → Agregar servicios → Huéspedes + puntos
-Admin/Gerente: Dashboard métricas → Gestión habitaciones → Gestión usuarios → Reportes
+### Estructura
 
-### Arquitectura Frontend
+- **Entrada**: `frontend/index.html` → monta Vue en `#app`
+- **Código fuente**: `frontend/src/`
+- **Build tool**: Vite 8
+- **Estilos**: Tailwind CSS v4
+- **Gestor de paquetes**: pnpm
 
-- **Templates**: `app/templates/` — organizados por rol (`public/`, `cliente/`, `admin/`, `recepcionista/`, `layouts/`)
-- **CSS**: `app/static/css/` — `global.css` + CSS por rol, diseño editorial luxury (Playfair Display + Inter, paleta beige/dorado)
-- **JS**: `app/static/js/` — `global.js` (reveal animations + navbar scroll + mobile menu) + JS por rol
-- **Base layout**: `app/templates/layouts/base_public.html` — navbar + footer + Google Fonts, SIN inline styles/scripts
-- **Blueprint**: `views_bp` registrado en `app/__init__.py` sin prefijo (`url_prefix="/"`)
+### Navegación por roles
 
-### Modelo Enum — VALORES LOWERCASE
+- **Cliente**: Login/Registro → Buscar habitaciones → Detalle habitación → Mis reservas → Detalle reserva + pago
+- **Recepcionista**: Dashboard → Lista reservas + acciones → Checkin/Checkout → Agregar servicios → Huéspedes + puntos
+- **Admin/Gerente**: Dashboard métricas → Gestión habitaciones → Gestión usuarios → Reportes
+
+### Ejecución
+
+```bash
+cd frontend
+pnpm install
+pnpm run dev    # http://localhost:5173
+```
+
+## Modelo Enum — VALORES LOWERCASE
 
 `TipoHabitacion`: `"simple"`, `"doble"`, `"suite"`, `"deluxe"`
 `EstadoHabitacion`: `"disponible"`, `"ocupada"`, `"mantenimiento"`
@@ -98,8 +113,25 @@ Filtros en templates y API usan valores lowercase para TipoHabitacion y EstadoHa
 ## Configuración de BD
 
 - Producción: PostgreSQL (configurar `DATABASE_URL` o `DB_*` en `.env`)
-- Desarrollo: SQLite local si no hay `DB_HOST` ni `DATABASE_URL`
+- Desarrollo: PostgreSQL local (por defecto `localhost:5432`, DB `hotelbook`)
 - Testing: SQLite en memoria (`create_app("testing")`)
+
+## Diagrama de datos
+
+El modelo entidad-relación está documentado en `docs/diagram.mmd` (formato Mermaid).
+Incluye 11 tablas: usuarios, huéspedes, habitaciones, reservas, checkin_checkout, facturas, pagos, reembolsos, puntos_fidelidad, servicios_adicionales, notificaciones.
+
+## Estrategia de ramas
+
+- `main` — producción estable
+- `Development` — integración (rama por defecto del equipo)
+- `feature/*` — funcionalidades nuevas
+- `Testing` — rama de pruebas
+
+## Convención de commits
+
+Se sigue [Conventional Commits](https://www.conventionalcommits.org/):
+`feat:`, `fix:`, `docs:`, `refactor:`, `test:`, `chore:`, `style:`
 
 ## Known issues
 
