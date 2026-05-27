@@ -28,7 +28,7 @@ cd Proyecto_Hotel
 git status
 
 # Traer cambios nuevos
-git pull origin develop
+git pull origin Development
 
 # Crear feature branch
 git checkout -b feature/mi-funcionalidad
@@ -43,7 +43,7 @@ git checkout -b feature/mi-funcionalidad
 git diff
 
 # Ver cambios de un archivo específico
-git diff app/services/reserva_service.py
+git diff app/controllers/reserva_controller.py
 
 # Ver cambios staged
 git diff --staged
@@ -71,17 +71,6 @@ git commit
 git commit --amend
 ```
 
-### 📋 Tipos de Commits
-```
-feat:     Nueva funcionalidad
-fix:      Corrección de bug
-docs:     Documentación
-refactor: Mejora de código
-test:     Tests/Cobertura
-chore:    Mantenimiento
-style:    Formato (sin lógica)
-```
-
 ---
 
 ## 5️⃣ SINCRONIZACIÓN
@@ -94,7 +83,7 @@ git push origin feature/mi-funcionalidad
 git push -u origin feature/mi-funcionalidad
 
 # Traer cambios nuevos
-git pull origin develop
+git pull origin Development
 
 # Ver cambios remotos sin mergear
 git fetch origin
@@ -112,16 +101,16 @@ git branch
 git branch -a
 
 # Cambiar de rama
-git checkout develop
+git checkout Development
 
 # Crear y cambiar a nueva rama
-git checkout -b feature/nueva-rama
+git checkout -b feature/puntos-fidelidad
 
 # Borrar rama local
-git branch -d feature/vieja-rama
+git branch -d feature/rama-vieja
 
 # Borrar rama remota
-git push origin --delete feature/vieja-rama
+git push origin --delete feature/rama-vieja
 ```
 
 ---
@@ -139,7 +128,7 @@ git log feature/mi-rama --oneline
 git log -p -3
 
 # Ver quien hizo qué en una línea
-git blame app/models/reserva.py
+git blame app/models/pago.py
 ```
 
 ---
@@ -148,7 +137,7 @@ git blame app/models/reserva.py
 
 ```bash
 # Descartar cambios de un archivo (⚠️ DESTRUCTIVO)
-git checkout -- app/models/reserva.py
+git checkout -- app/controllers/auth_controller.py
 
 # Descartar todos los cambios (⚠️ DESTRUCTIVO)
 git reset --hard HEAD
@@ -165,253 +154,11 @@ git revert <commit-hash>
 
 ---
 
-## 9️⃣ PULL REQUESTS & MERGE
-
-```bash
-# Mergear en local
-git checkout develop
-git pull origin develop
-git merge feature/mi-rama
-git push origin develop
-
-# Ver cambios antes de mergear
-git diff develop feature/mi-rama
-```
-
----
-
-## 🔟 TROUBLESHOOTING
-
-### Conflictos en Merge
-```bash
-# Ver estado
-git status
-
-# Editar archivos con conflictos (buscar <<<<<<, ======, >>>>>>)
-# Luego:
-git add .
-git commit -m "merge: resolver conflictos"
-```
-
-### Cambios por Accidente en Rama Equivocada
-```bash
-# Guardar cambios en stash
-git stash
-
-# Cambiar a rama correcta
-git checkout feature/correcta
-
-# Aplicar cambios
-git stash pop
-```
-
-### Tu Rama Está Muy Atrás de develop
-```bash
-# Actualizar feature con cambios de develop
-git checkout feature/mi-rama
-git rebase origin/develop
-```
-
-### Olvidé Qué Rama Tenía
-```bash
-# Ver rama actual
-git branch
-
-# Mostrar más detalles
-git status
-```
-
----
-
-## 🎯 WORKFLOW COMPLETO (Paso a Paso)
-
-```bash
-# 1. Empezar el día
-git checkout develop
-git pull origin develop
-
-# 2. Crear feature
-git checkout -b feature/validar-fechas
-
-# 3. Desarrollar (editar archivos)
-# ... editar app/services/reserva_service.py ...
-
-# 4. Ver qué cambió
-git status
-git diff
-
-# 5. Preparar commit
-git add app/services/reserva_service.py
-
-# 6. Commitear
-git commit -m "feat(reservas): agregar validación de fechas
-
-- Valida que fecha_salida > fecha_entrada
-- Prohíbe reservas con menos de 24h
-- Cubre 92% del código"
-
-# 7. Subir a GitHub
-git push -u origin feature/validar-fechas
-
-# 8. En GitHub: Crear Pull Request
-# - Base: develop
-# - Compare: feature/validar-fechas
-# - Escribir descripción
-# - Hacer click en "Create Pull Request"
-
-# 9. Esperar aprobación del revisor
-
-# 10. Mergear en GitHub (o localmente)
-
-# 11. Limpiar rama local
-git checkout develop
-git pull origin develop
-git branch -d feature/validar-fechas
-```
-
----
-
-## 📊 REFERENCIA RÁPIDA DE ESTADOS
-
-| Situación | Comando | Resultado |
-|-----------|---------|-----------|
-| ¿Dónde estoy? | `git status` | Muestra rama y cambios |
-| Ver últimos cambios | `git log --oneline -5` | Últimos 5 commits |
-| Ver diferencias | `git diff` | Cambios no staged |
-| Cambiar de rama | `git checkout main` | Cambia a main |
-| Traer cambios | `git pull` | Trae cambios de remoto |
-| Subir cambios | `git push` | Sube cambios locales |
-| Crear commit | `git commit -m "..."` | Crea snapshot |
-| Ver ramas | `git branch -a` | Todas las ramas |
-
----
-
-## 🔐 SEGURIDAD - NUNCA HAGAS
-
-```bash
-# ❌ NUNCA commitear directamente a main
-git commit (mientras estés en main)
-
-# ❌ NUNCA commitear directamente a develop
-git commit (mientras estés en develop)
-
-# ❌ NUNCA hacer git push sin pull antes
-# (Siempre: git pull primero, luego git push)
-
-# ❌ NUNCA usar git reset --hard sin saber qué haces
-# (Es destructivo, no hay forma de recuperar)
-
-# ❌ NUNCA commitear archivos sensibles
-# .env, passwords, tokens
-# (Configurar .gitignore para estos)
-```
-
----
-
-## 📋 CHECKLIST ANTES DE git push
-
-```
-🔍 Verificar:
-□ Estoy en rama feature/xxx (no en main ni develop)
-□ git status muestra los cambios que espero
-□ Los tests pasan: pytest
-□ No hay errores de linting: flake8 .
-□ El commit tiene mensaje descriptivo
-□ Tracé git pull antes (para evitar conflictos)
-□ Tracé git status está limpio después del commit
-```
-
----
-
-## 🎓 EJEMPLOS DE USO REAL
-
-### Ejemplo 1: Feature de Validación Rápida
-
-```bash
-# Iniciar
-git checkout develop && git pull
-
-# Crear feature
-git checkout -b feature/validar-email
-
-# Editar archivo
-code app/services/usuario_service.py
-
-# Commit
-git add app/services/usuario_service.py
-git commit -m "feat(usuario): validar formato de email"
-
-# Subir
-git push -u origin feature/validar-email
-```
-
-### Ejemplo 2: Corregir un Bug
-
-```bash
-# Cambiar a develop
-git checkout develop && git pull
-
-# Crear feature
-git checkout -b fix/calcular-impuestos
-
-# Editar
-code app/services/factura_service.py
-
-# Commit (nota: usar "fix" en lugar de "feat")
-git add app/services/factura_service.py
-git commit -m "fix(factura): corregir cálculo doble de IVA"
-
-# Subir
-git push -u origin fix/calcular-impuestos
-```
-
-### Ejemplo 3: Actualizar Tests
-
-```bash
-# Cambiar a develop
-git checkout develop && git pull
-
-# Crear feature
-git checkout -b test/cobertura-reserva
-
-# Editar
-code tests/test_reserva.py
-
-# Commit
-git add tests/test_reserva.py
-git commit -m "test(reserva): aumentar cobertura al 95%"
-
-# Subir
-git push -u origin test/cobertura-reserva
-```
-
----
-
-## 🔗 ESTRUCTURA DE URL DE RAMA CORRECTA
-
-```bash
-✅ CORRECTO - Nombres descriptivos:
-   feature/validar-fechas-reserva
-   feature/integrar-stripe
-   fix/calcular-doble-iva
-   test/cobertura-factura
-   docs/actualizar-endpoints
-
-❌ INCORRECTO - No descriptivo:
-   feature/1
-   fix/bug
-   feature/wip
-   test/test
-   docs/update
-```
-
----
-
-## 📞 COMANDOS URGENTES
+## 9️⃣ COMANDOS URGENTES
 
 ```bash
 # "¡Cambié algo sin querer!"
-git checkout -- archivo.py
+git checkout -- app/models/reserva.py
 
 # "¡Hice commit en rama equivocada!"
 git reset --soft HEAD~1
@@ -423,11 +170,17 @@ git status              # Ver archivos conflictivos
 git add .
 git commit -m "merge: resolver conflictos"
 
-# "¿Qué hay en develop?"
-git log develop --oneline -10
+# "¿Qué hay en Development?"
+git log Development --oneline -10
 
 # "¿Qué cambios tengo sin subir?"
-git log origin/develop..HEAD --oneline
+git log origin/Development..HEAD --oneline
+
+# "¡Las pruebas fallaron!"
+pytest tests/ -q --no-cov-on-fail   # Correr tests rápido
+
+# "¿El linting?"
+flake8 app/ --max-line-length=100 --select=E,F
 ```
 
 ---
@@ -437,7 +190,7 @@ git log origin/develop..HEAD --oneline
 - **Git Docs**: https://git-scm.com/doc
 - **GitHub Help**: https://docs.github.com
 - **Conventional Commits**: https://www.conventionalcommits.org/
-- **Git Cheat Sheet**: https://github.com/joshnh/Git-Commands
+- **Repositorio**: https://github.com/Rojas-09/Proyecto_Hotel
 
 ---
 
