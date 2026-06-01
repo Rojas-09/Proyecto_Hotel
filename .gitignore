@@ -82,3 +82,6 @@ pytest.ini
 
 # Diagramas Mermaid
 *.mmd
+
+# Evidencias generadas (coverage, flake8, etc)
+docs/evidencias/
