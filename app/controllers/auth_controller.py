@@ -12,10 +12,7 @@ DELETE /api/v1/auth/usuarios/<id> → Soft delete usuario (solo admin)
 """
 
 from flask import Blueprint, request, jsonify
-from sqlalchemy import select
 
-from app import db
-from app.models.usuario import Usuario
 from app.services.auth_service import AuthService
 from app.utils.jwt_helper import token_required, rol_requerido
 
@@ -115,91 +112,89 @@ def editar_usuario(current_user, usuario_id):
 @rol_requerido("admin")
 def listar_usuarios(current_user):
     """Listar todos los usuarios (solo admin)."""
-    usuarios = db.session.execute(
-        select(Usuario).order_by(Usuario.created_at.desc())
-    ).scalars().all()
-    return jsonify({
-        "success": True,
-        "data": [u.to_dict() for u in usuarios],
-        "total": len(usuarios),
-        "mensaje": "Usuarios obtenidos correctamente."
-    }), 200
+    try:
+        usuarios = AuthService.listar_usuarios()
+        return jsonify({
+            "success": True,
+            "data": usuarios,
+            "total": len(usuarios),
+            "mensaje": "Usuarios obtenidos correctamente."
+        }), 200
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": {"code": "SERVER_ERROR", "message": str(e)}
+        }), 500
 
 
 @auth_bp.route("/usuarios/<int:usuario_id>", methods=["DELETE"])
 @token_required
 @rol_requerido("admin")
 def eliminar_usuario(current_user, usuario_id):
-    usuario = db.session.get(Usuario, usuario_id)
-    if not usuario:
-        return jsonify({
-            "success": False,
-            "error": {"code": "NOT_FOUND", "message": f"Usuario con id {usuario_id} no encontrado."}
-        }), 404
-
     if usuario_id == current_user.id:
         return jsonify({
             "success": False,
             "error": {"code": "FORBIDDEN", "message": "No puedes eliminarte a ti mismo."}
         }), 403
 
-    if not AuthService._puede_gestionar_usuario(current_user, usuario):
+    try:
+        resultado = AuthService.eliminar_usuario(usuario_id)
+        return jsonify({
+            "success": True,
+            "data": None,
+            "mensaje": f"Usuario {resultado['email']} eliminado correctamente."
+        }), 200
+    except LookupError as e:
         return jsonify({
             "success": False,
-            "error": {
-                "code": "FORBIDDEN",
-                "message": "No tienes permiso para eliminar este usuario."
-            }
-        }), 403
-
-    usuario.activo = False
-    db.session.commit()
-
-    return jsonify({
-        "success": True,
-        "data": None,
-        "mensaje": f"Usuario {usuario.email} eliminado correctamente."
-    }), 200
+            "error": {"code": "NOT_FOUND", "message": str(e)}
+        }), 404
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": {"code": "SERVER_ERROR", "message": str(e)}
+        }), 500
 
 
 @auth_bp.route("/usuarios/<int:usuario_id>", methods=["GET"])
 @token_required
 def obtener_usuario(current_user, usuario_id):
-    usuario = db.session.get(Usuario, usuario_id)
-    if not usuario:
+    try:
+        usuario = AuthService.obtener_usuario(usuario_id)
+        return jsonify({
+            "success": True,
+            "data": {"usuario": usuario}
+        }), 200
+    except LookupError as e:
         return jsonify({
             "success": False,
-            "error": {"code": "NOT_FOUND", "message": f"Usuario con id {usuario_id} no encontrado."}
+            "error": {"code": "NOT_FOUND", "message": str(e)}
         }), 404
-
-    if not AuthService._puede_gestionar_usuario(current_user, usuario):
+    except Exception as e:
         return jsonify({
             "success": False,
-            "error": {"code": "FORBIDDEN", "message": "No autorizado para ver este usuario."}
-        }), 403
-
-    return jsonify({
-        "success": True,
-        "data": {"usuario": usuario.to_dict()}
-    }), 200
+            "error": {"code": "SERVER_ERROR", "message": str(e)}
+        }), 500
 
 
 @auth_bp.route("/me", methods=["DELETE"])
 @token_required
 def eliminar_mi_cuenta(current_user):
     """Eliminar (soft-delete) la propia cuenta del usuario."""
-    usuario = db.session.get(Usuario, current_user.id)
-    if not usuario:
+    try:
+        AuthService.eliminar_usuario(current_user.id)
+        return jsonify({
+            "success": True,
+            "data": None,
+            "mensaje": "Cuenta desactivada correctamente."
+        }), 200
+    except LookupError:
         return jsonify({
             "success": False,
             "error": {"code": "NOT_FOUND", "message": "Usuario no encontrado."}
         }), 404
-
-    usuario.activo = False
-    db.session.commit()
-
-    return jsonify({
-        "success": True,
-        "data": None,
-        "mensaje": "Cuenta desactivada correctamente."
-    }), 200
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": {"code": "SERVER_ERROR", "message": str(e)}
+        }), 500

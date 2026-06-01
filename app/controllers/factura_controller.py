@@ -10,6 +10,8 @@ from flask import Blueprint, jsonify, request, send_file
 from sqlalchemy import select
 
 from app import db
+from app.models.huesped import Huesped
+from app.models.reserva import Reserva
 from app.services import factura_service
 from app.utils.jwt_helper import rol_requerido, token_required
 
@@ -67,9 +69,6 @@ def descargar_factura(current_user, reserva_id):
     Cliente: solo su propia reserva.
     """
     try:
-        from app.models.reserva import Reserva
-        from app.models.huesped import Huesped
-
         rol_value = (
             current_user.rol.value
             if hasattr(current_user.rol, "value")

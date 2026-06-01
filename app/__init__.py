@@ -34,7 +34,6 @@ def create_app(config_name="development"):
     from app.controllers.huesped_controller import huesped_bp
     from app.controllers.reserva_controller import reserva_bp
     from app.controllers.factura_controller import factura_bp
-    from app.controllers.servicio_controller import servicio_bp
     from app.controllers.pago_controller import pago_bp
     from app.controllers.servicio_adicional_controller import servicio_adicional_bp
     from app.controllers.reporte_controller import reporte_bp
@@ -45,7 +44,6 @@ def create_app(config_name="development"):
     app.register_blueprint(huesped_bp, url_prefix="/api/v1/huespedes")
     app.register_blueprint(reserva_bp, url_prefix="/api/v1/reservas")
     app.register_blueprint(factura_bp, url_prefix="/api/v1/facturas")
-    app.register_blueprint(servicio_bp, url_prefix="/api/v1/servicios")
     app.register_blueprint(pago_bp, url_prefix="/api/v1/pagos")
     app.register_blueprint(servicio_adicional_bp)
     app.register_blueprint(reporte_bp, url_prefix="/api/v1/reportes")

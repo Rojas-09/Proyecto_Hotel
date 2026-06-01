@@ -164,7 +164,7 @@ def cancelar(current_user, reserva_id):
 @rol_requerido("admin", "recepcionista")
 def hacer_checkin(current_user, reserva_id):
     try:
-        reserva = reserva_service.hacer_checkin(reserva_id)
+        reserva = reserva_service.hacer_checkin(reserva_id, realizado_por_id=current_user.id)
         return jsonify({
             "success": True,
             "data": reserva,
@@ -187,7 +187,7 @@ def hacer_checkin(current_user, reserva_id):
 @rol_requerido("admin", "recepcionista")
 def hacer_checkout(current_user, reserva_id):
     try:
-        reserva = reserva_service.hacer_checkout(reserva_id)
+        reserva = reserva_service.hacer_checkout(reserva_id, realizado_por_id=current_user.id)
         return jsonify({
             "success": True,
             "data": reserva,

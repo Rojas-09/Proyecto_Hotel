@@ -144,7 +144,7 @@ class TestGetPagosReserva:
         resp = client.get(f"/api/v1/pagos/reserva/{rid}", headers=_auth(token))
         assert resp.status_code == 200
         data = resp.get_json()
-        assert data["pagos"] == []
+        assert data["data"] == []
         assert data["total"] == 0
 
     def test_lista_con_pagos(self, client, app):
@@ -163,9 +163,9 @@ class TestGetPagosReserva:
         resp = client.get(f"/api/v1/pagos/reserva/{rid}", headers=_auth(token))
         assert resp.status_code == 200
         data = resp.get_json()
-        assert len(data["pagos"]) == 1
+        assert len(data["data"]) == 1
         assert data["total"] == 1
-        assert data["pagos"][0]["tipo"] == "Garantia"
+        assert data["data"][0]["tipo"] == "Garantia"
 
     def test_reserva_no_existe(self, client, app):
         """404 — reserva inexistente."""
@@ -220,8 +220,8 @@ class TestPostLiquidacionController:
         )
         assert resp.status_code == 201
         data = resp.get_json()
-        assert data["pago"]["tipo"] == "Liquidacion"
-        assert data["pago"]["estado"] == "Aprobado"
+        assert data["data"]["tipo"] == "Liquidacion"
+        assert data["data"]["estado"] == "Aprobado"
 
     def test_liquidacion_reserva_no_existe(self, client, app):
         """404 — reserva inexistente."""
@@ -255,7 +255,7 @@ class TestPostLiquidacionController:
             headers=_auth(token),
         )
         assert resp.status_code == 400
-        assert "garantía" in resp.get_json()["error"].lower()
+        assert "garantía" in resp.get_json()["mensaje"].lower()
 
     def test_liquidacion_estado_incorrecto(self, client, app):
         """400 — reserva no está en estado Ocupada."""
@@ -276,7 +276,7 @@ class TestPostLiquidacionController:
             headers=_auth(token),
         )
         assert resp.status_code == 400
-        assert "ocupada" in resp.get_json()["error"].lower()
+        assert "ocupada" in resp.get_json()["mensaje"].lower()
 
     def test_liquidacion_metodo_invalido(self, client, app):
         """400 — método de pago no reconocido."""
@@ -297,7 +297,7 @@ class TestPostLiquidacionController:
             headers=_auth(token),
         )
         assert resp.status_code == 400
-        assert "inválido" in resp.get_json()["error"].lower()
+        assert "inválido" in resp.get_json()["mensaje"].lower()
 
     def test_liquidacion_duplicada(self, client, app):
         """400 — ya existe una liquidación aprobada."""
@@ -319,7 +319,7 @@ class TestPostLiquidacionController:
             headers=_auth(token),
         )
         assert resp.status_code == 400
-        assert "liquidación" in resp.get_json()["error"].lower()
+        assert "liquidación" in resp.get_json()["mensaje"].lower()
 
 
 # ---------------------------------------------------------------------------
@@ -349,8 +349,8 @@ class TestPostReembolsoController:
         )
         assert resp.status_code == 201
         data = resp.get_json()
-        assert data["reembolso"]["estado"] == "Procesado"
-        assert data["reembolso"]["motivo"] == "Cliente canceló por emergencia"
+        assert data["data"]["estado"] == "Procesado"
+        assert data["data"]["motivo"] == "Cliente canceló por emergencia"
 
     def test_reembolso_pago_no_existe(self, client, app):
         """404 — pago inexistente."""
@@ -385,7 +385,7 @@ class TestPostReembolsoController:
             headers=_auth(token),
         )
         assert resp.status_code == 400
-        assert "obligatorio" in resp.get_json()["error"].lower()
+        assert "obligatorio" in resp.get_json()["mensaje"].lower()
 
     def test_reembolso_motivo_ausente(self, client, app):
         """400 — body sin campo motivo."""
@@ -427,7 +427,7 @@ class TestPostReembolsoController:
             headers=_auth(token),
         )
         assert resp.status_code == 400
-        assert "aprobados" in resp.get_json()["error"].lower()
+        assert "aprobados" in resp.get_json()["mensaje"].lower()
 
     def test_reembolso_duplicado(self, client, app):
         """400 — el pago ya tiene un reembolso asociado."""
@@ -455,7 +455,7 @@ class TestPostReembolsoController:
             headers=_auth(token),
         )
         assert resp.status_code == 400
-        assert "reembolso" in resp.get_json()["error"].lower()
+        assert "reembolso" in resp.get_json()["mensaje"].lower()
 
 
 # ---------------------------------------------------------------------------
@@ -483,7 +483,7 @@ class TestPostGarantiaController:
             headers=_auth(token),
         )
         assert resp.status_code == 400
-        assert "inválido" in resp.get_json()["error"].lower()
+        assert "inválido" in resp.get_json()["mensaje"].lower()
 
     def test_garantia_metodo_ausente(self, client, app):
         """400 — body sin campo metodo."""
@@ -503,7 +503,7 @@ class TestPostGarantiaController:
             headers=_auth(token),
         )
         assert resp.status_code == 400
-        assert "obligatorio" in resp.get_json()["error"].lower()
+        assert "obligatorio" in resp.get_json()["mensaje"].lower()
 
     def test_garantia_reserva_ya_confirmada(self, client, app):
         """400 — reserva no está en pendiente."""
@@ -523,7 +523,7 @@ class TestPostGarantiaController:
             headers=_auth(token),
         )
         assert resp.status_code == 400
-        assert "Pendiente" in resp.get_json()["error"]
+        assert "Pendiente" in resp.get_json()["mensaje"]
 
     def test_garantia_con_transferencia(self, client, app):
         """201 — garantía con método Transferencia."""
@@ -544,8 +544,8 @@ class TestPostGarantiaController:
         )
         assert resp.status_code == 201
         data = resp.get_json()
-        assert data["pago"]["tipo"] == "Garantia"
-        assert data["pago"]["metodo"] == "Transferencia"
+        assert data["data"]["tipo"] == "Garantia"
+        assert data["data"]["metodo"] == "Transferencia"
 
     def test_garantia_con_tarjeta_mock(self, client, app):
         """201 — garantía con tarjeta usa referencia mock (STRIPE_MOCK=True)."""
@@ -566,4 +566,4 @@ class TestPostGarantiaController:
         )
         assert resp.status_code == 201
         data = resp.get_json()
-        assert data["pago"]["referencia_externa"].startswith("pi_mock_")
+        assert data["data"]["referencia_externa"].startswith("pi_mock_")

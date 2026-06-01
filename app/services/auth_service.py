@@ -469,3 +469,27 @@ class AuthService:
             "data": {"usuario": usuario.to_dict()},
             "message": "Usuario actualizado correctamente.",
         }, 200
+
+    @staticmethod
+    def listar_usuarios() -> list:
+        usuarios = db.session.execute(
+            select(Usuario).order_by(Usuario.created_at.desc())
+        ).scalars().all()
+        return [u.to_dict() for u in usuarios]
+
+    @staticmethod
+    def obtener_usuario(usuario_id: int) -> dict:
+        usuario = db.session.get(Usuario, usuario_id)
+        if not usuario:
+            raise LookupError(f"Usuario con id {usuario_id} no encontrado.")
+        return usuario.to_dict()
+
+    @staticmethod
+    def eliminar_usuario(usuario_id: int) -> dict:
+        usuario = db.session.get(Usuario, usuario_id)
+        if not usuario:
+            raise LookupError(f"Usuario con id {usuario_id} no encontrado.")
+        email = usuario.email
+        usuario.activo = False
+        db.session.commit()
+        return {"email": email, "id": usuario_id}

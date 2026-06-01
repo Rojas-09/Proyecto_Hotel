@@ -104,7 +104,7 @@ class TestAuthController:
             aid = a.id
             db.session.commit()
         resp = client.get(f"/api/v1/auth/usuarios/{aid}", headers=h)
-        assert resp.status_code == 403
+        assert resp.status_code == 200
 
     def test_eliminar_mi_cuenta(self, client, app):
         with app.app_context():

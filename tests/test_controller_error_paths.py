@@ -325,7 +325,7 @@ def test_reservas_cancelar_lookup_permission_error_500(client, app, monkeypatch)
 def test_reservas_checkin_lookup_valor_error_500(client, app, monkeypatch):
     token = _token_para(client, app, "re11@test.com", "admin")
 
-    def _lk(_id):
+    def _lk(_id, **kwargs):
         raise LookupError("no")
 
     monkeypatch.setattr("app.controllers.reserva_controller.reserva_service.hacer_checkin", _lk)
@@ -335,7 +335,7 @@ def test_reservas_checkin_lookup_valor_error_500(client, app, monkeypatch):
     )
     assert resp_lk.status_code == 404
 
-    def _val(_id):
+    def _val(_id, **kwargs):
         raise ValueError("bad")
 
     monkeypatch.setattr("app.controllers.reserva_controller.reserva_service.hacer_checkin", _val)
@@ -345,7 +345,7 @@ def test_reservas_checkin_lookup_valor_error_500(client, app, monkeypatch):
     )
     assert resp_val.status_code == 400
 
-    def _boom(_id):
+    def _boom(_id, **kwargs):
         raise RuntimeError("boom")
 
     monkeypatch.setattr("app.controllers.reserva_controller.reserva_service.hacer_checkin", _boom)
@@ -359,7 +359,7 @@ def test_reservas_checkin_lookup_valor_error_500(client, app, monkeypatch):
 def test_reservas_checkout_lookup_valor_error_500(client, app, monkeypatch):
     token = _token_para(client, app, "re12@test.com", "admin")
 
-    def _lk(_id):
+    def _lk(_id, **kwargs):
         raise LookupError("no")
 
     monkeypatch.setattr("app.controllers.reserva_controller.reserva_service.hacer_checkout", _lk)
@@ -369,7 +369,7 @@ def test_reservas_checkout_lookup_valor_error_500(client, app, monkeypatch):
     )
     assert resp_lk.status_code == 404
 
-    def _val(_id):
+    def _val(_id, **kwargs):
         raise ValueError("bad")
 
     monkeypatch.setattr("app.controllers.reserva_controller.reserva_service.hacer_checkout", _val)
@@ -379,7 +379,7 @@ def test_reservas_checkout_lookup_valor_error_500(client, app, monkeypatch):
     )
     assert resp_val.status_code == 400
 
-    def _boom(_id):
+    def _boom(_id, **kwargs):
         raise RuntimeError("boom")
 
     monkeypatch.setattr("app.controllers.reserva_controller.reserva_service.hacer_checkout", _boom)

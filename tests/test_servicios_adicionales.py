@@ -556,7 +556,7 @@ class TestServicioControllerEndpoints:
         )
         assert resp.status_code == 201
         data = resp.get_json()
-        assert data["servicio"]["tipo"] == "Comedor"
+        assert data["data"]["tipo"] == "Comedor"
 
     def test_post_reserva_no_existe(self, client, app):
         with app.app_context():
@@ -588,7 +588,7 @@ class TestServicioControllerEndpoints:
             headers=headers,
         )
         assert resp.status_code == 400
-        assert "inválido" in resp.get_json()["error"].lower()
+        assert "inválido" in resp.get_json()["mensaje"].lower()
 
     def test_get_listar_exitoso(self, client, app):
         with app.app_context():
@@ -605,8 +605,8 @@ class TestServicioControllerEndpoints:
         resp = client.get(f"/api/v1/reservas/{rid}/servicios", headers=headers)
         assert resp.status_code == 200
         data = resp.get_json()
-        assert data["total"] == 1
-        assert data["subtotal"] == 80000.0
+        assert data["data"]["total"] == 1
+        assert data["data"]["subtotal"] == 80000.0
 
     def test_put_actualizar_exitoso(self, client, app):
         with app.app_context():
@@ -626,7 +626,7 @@ class TestServicioControllerEndpoints:
             headers=headers,
         )
         assert resp.status_code == 200
-        assert resp.get_json()["servicio"]["costo"] == 18000.0
+        assert resp.get_json()["data"]["costo"] == 18000.0
 
     def test_delete_exitoso(self, client, app):
         with app.app_context():

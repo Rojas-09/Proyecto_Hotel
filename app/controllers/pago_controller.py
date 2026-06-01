@@ -17,10 +17,6 @@ def procesar_garantia(current_user, reserva_id):
 
     Procesa el pago de garantía (50 %) y confirma la reserva.
     Roles permitidos: cliente, recepcionista, admin.
-
-    Body JSON:
-        metodo          (str)  — "Tarjeta" | "Efectivo" | "Transferencia"
-        payment_method_id (str, opcional) — requerido si metodo=Tarjeta
     """
     datos = request.get_json() or {}
     metodo = datos.get("metodo")
@@ -30,11 +26,14 @@ def procesar_garantia(current_user, reserva_id):
         resultado = pago_service.procesar_garantia(
             reserva_id, metodo, payment_method_id
         )
-        return jsonify({"pago": resultado}), 201
+        return jsonify({
+            "success": True, "data": resultado,
+            "mensaje": "Garantía procesada correctamente."
+        }), 201
     except LookupError as e:
-        return jsonify({"error": str(e)}), 404
+        return jsonify({"success": False, "data": None, "mensaje": str(e)}), 404
     except ValueError as e:
-        return jsonify({"error": str(e)}), 400
+        return jsonify({"success": False, "data": None, "mensaje": str(e)}), 400
 
 
 @pago_bp.route("/liquidacion/<int:reserva_id>", methods=["POST"])
@@ -45,12 +44,7 @@ def procesar_liquidacion(current_user, reserva_id):
     POST /api/v1/pagos/liquidacion/<reserva_id>
 
     Procesa el pago de liquidación (saldo restante + servicios adicionales).
-    Se ejecuta antes del checkout.
     Roles permitidos: recepcionista, admin.
-
-    Body JSON:
-        metodo          (str)
-        payment_method_id (str, opcional)
     """
     datos = request.get_json() or {}
     metodo = datos.get("metodo")
@@ -60,11 +54,14 @@ def procesar_liquidacion(current_user, reserva_id):
         resultado = pago_service.procesar_liquidacion(
             reserva_id, metodo, payment_method_id
         )
-        return jsonify({"pago": resultado}), 201
+        return jsonify({
+            "success": True, "data": resultado,
+            "mensaje": "Liquidación procesada correctamente."
+        }), 201
     except LookupError as e:
-        return jsonify({"error": str(e)}), 404
+        return jsonify({"success": False, "data": None, "mensaje": str(e)}), 404
     except ValueError as e:
-        return jsonify({"error": str(e)}), 400
+        return jsonify({"success": False, "data": None, "mensaje": str(e)}), 400
 
 
 @pago_bp.route("/reserva/<int:reserva_id>", methods=["GET"])
@@ -79,9 +76,12 @@ def obtener_pagos_reserva(current_user, reserva_id):
     """
     try:
         pagos = pago_service.obtener_pagos_reserva(reserva_id)
-        return jsonify({"pagos": pagos, "total": len(pagos)}), 200
+        return jsonify({
+            "success": True, "data": pagos, "total": len(pagos),
+            "mensaje": "Pagos obtenidos correctamente."
+        }), 200
     except LookupError as e:
-        return jsonify({"error": str(e)}), 404
+        return jsonify({"success": False, "data": None, "mensaje": str(e)}), 404
 
 
 @pago_bp.route("/reembolso/<int:pago_id>", methods=["POST"])
@@ -93,17 +93,17 @@ def solicitar_reembolso(current_user, pago_id):
 
     Registra y procesa un reembolso para un pago aprobado.
     Roles permitidos: admin.
-
-    Body JSON:
-        motivo (str) — obligatorio
     """
     datos = request.get_json() or {}
     motivo = datos.get("motivo")
 
     try:
         resultado = pago_service.solicitar_reembolso(pago_id, motivo)
-        return jsonify({"reembolso": resultado}), 201
+        return jsonify({
+            "success": True, "data": resultado,
+            "mensaje": "Reembolso solicitado correctamente."
+        }), 201
     except LookupError as e:
-        return jsonify({"error": str(e)}), 404
+        return jsonify({"success": False, "data": None, "mensaje": str(e)}), 404
     except ValueError as e:
-        return jsonify({"error": str(e)}), 400
+        return jsonify({"success": False, "data": None, "mensaje": str(e)}), 400
