@@ -11,7 +11,7 @@ from app.models.reserva import EstadoReserva, Reserva
 from app.models.factura import EstadoFactura, Factura
 from sqlalchemy import select
 
-from app.utils.fecha_helper import ahora_colombia
+from app.utils.fecha_helper import ahora_colombia, COLOMBIA_TZ
 
 
 def _get_reserva(reserva_id: int) -> Reserva:
@@ -61,12 +61,19 @@ def _validar_sin_traslapes_spa(
     reserva_id: int,
     fecha_hora,
     duracion_minutos: int,
+    recurso: str = None,
     servicio_id_excluir: int = None,
 ):
     """
-    Valida que un servicio de tipo Spa no se traslape con otro existente
-    en la misma reserva (RF-11 / R7).
+    Valida que un servicio de tipo Spa no se traslape con otro del mismo
+    recurso (sala/masajista) en la misma reserva (RF-11).
+
+    Si el servicio no especifica recurso, se omite la validación
+    (backward compatibility).
     """
+    if not recurso:
+        return
+
     desde = fecha_hora
     hasta = fecha_hora + timedelta(minutes=duracion_minutos)
 
@@ -74,6 +81,7 @@ def _validar_sin_traslapes_spa(
         select(ServicioAdicional).filter(
             ServicioAdicional.id_reserva == reserva_id,
             ServicioAdicional.tipo == TipoServicio.spa,
+            ServicioAdicional.recurso == recurso,
         )
     ).scalars().all()
 
@@ -81,13 +89,16 @@ def _validar_sin_traslapes_spa(
         if servicio_id_excluir and s.id == servicio_id_excluir:
             continue
         s_desde = s.fecha_hora
-        s_hasta = s.fecha_hora + timedelta(
+        if s_desde.tzinfo is None:
+            s_desde = s_desde.replace(tzinfo=COLOMBIA_TZ)
+        s_hasta = s_desde + timedelta(
             minutes=s.duracion_minutos or 60
         )
         if s_desde < hasta and s_hasta > desde:
             raise ValueError(
                 "La fecha y hora seleccionada se traslapa con otro servicio "
-                f"de Spa (ID {s.id}: "
+                f"de Spa en el recurso '{recurso}' "
+                f"(ID {s.id}: "
                 f"{s_desde.strftime('%H:%M')} - "
                 f"{s_hasta.strftime('%H:%M')})."
             )
@@ -99,10 +110,12 @@ def agregar(
     descripcion: str,
     costo_raw,
     duracion_minutos: int = None,
+    recurso: str = None,
 ) -> dict:
     """
     Agrega un servicio adicional a una reserva en estado Ocupada.
-    Si el tipo es Spa, valida que no haya traslapes de horario (RF-11).
+    Si el tipo es Spa, valida que no haya traslapes de horario
+    por recurso (sala/masajista) (RF-11).
     """
     reserva = _get_reserva(reserva_id)
 
@@ -130,11 +143,14 @@ def agregar(
         raise ValueError("La descripción no puede superar 255 caracteres.")
 
     if tipo == TipoServicio.spa:
-        _validar_sin_traslapes_spa(reserva_id, ahora_colombia(), duracion_minutos)
+        _validar_sin_traslapes_spa(
+            reserva_id, ahora_colombia(), duracion_minutos, recurso
+        )
 
     servicio = ServicioAdicional(
         id_reserva=reserva_id,
         tipo=tipo,
+        recurso=recurso.strip() if recurso else None,
         descripcion=descripcion.strip(),
         costo=costo,
         fecha_hora=ahora_colombia(),

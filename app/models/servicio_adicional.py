@@ -29,6 +29,7 @@ class ServicioAdicional(db.Model):
         db.Enum(TipoServicio, native_enum=False),
         nullable=False
     )
+    recurso = db.Column(db.String(100), nullable=True)
     descripcion = db.Column(db.String(255), nullable=False)
     costo = db.Column(Numeric(10, 2), nullable=False)
     fecha_hora = db.Column(
@@ -53,6 +54,7 @@ class ServicioAdicional(db.Model):
             "id": self.id,
             "id_reserva": self.id_reserva,
             "tipo": self.tipo.value,
+            "recurso": self.recurso,
             "descripcion": self.descripcion,
             "costo": float(self.costo),
             "fecha_hora": self.fecha_hora.isoformat(),

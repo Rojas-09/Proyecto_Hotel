@@ -1,7 +1,9 @@
 """
 Tests del módulo ServicioAdicional — RF-10 (Comedor) y RF-11 (Spa)
 """
+from datetime import timedelta
 from decimal import Decimal
+from unittest.mock import patch
 
 import pytest
 
@@ -280,6 +282,81 @@ class TestAgregarServicio:
             from app.services import servicio_adicional_service as svc
             with pytest.raises(ValueError, match="descripción"):
                 svc.agregar(rid, "Comedor", "   ", "15000")
+
+
+class TestServicioSpaRecurso:
+    """RF-11: Validación de traslapes por recurso (sala/masajista)."""
+
+    def test_spa_mismo_recurso_traslape(self, app):
+        with app.app_context():
+            u = _usuario(RolEnum.cliente, "spa_rec1")
+            h = _huesped(u)
+            hab = _habitacion()
+            r = _reserva(h, hab)
+            db.session.commit()
+            rid = r.id
+
+            from app.services import servicio_adicional_service as svc
+            svc.agregar(rid, "Spa", "Masaje 1", "80000",
+                        recurso="Sala A", duracion_minutos=60)
+            with pytest.raises(ValueError, match="traslapa"):
+                svc.agregar(rid, "Spa", "Masaje 2", "80000",
+                            recurso="Sala A", duracion_minutos=60)
+
+    def test_spa_recurso_diferente_sin_traslape(self, app):
+        with app.app_context():
+            u = _usuario(RolEnum.cliente, "spa_rec2")
+            h = _huesped(u)
+            hab = _habitacion()
+            r = _reserva(h, hab)
+            db.session.commit()
+            rid = r.id
+
+            from app.services import servicio_adicional_service as svc
+            svc.agregar(rid, "Spa", "Masaje Sala A", "80000",
+                        recurso="Sala A", duracion_minutos=60)
+            resultado = svc.agregar(rid, "Spa", "Masaje Sala B", "80000",
+                                    recurso="Sala B", duracion_minutos=60)
+            assert resultado["tipo"] == "Spa"
+
+    def test_spa_sin_recurso_no_traslape(self, app):
+        with app.app_context():
+            u = _usuario(RolEnum.cliente, "spa_rec3")
+            h = _huesped(u)
+            hab = _habitacion()
+            r = _reserva(h, hab)
+            db.session.commit()
+            rid = r.id
+
+            from app.services import servicio_adicional_service as svc
+            resultado = svc.agregar(rid, "Spa", "Sin recurso", "80000",
+                                    duracion_minutos=60)
+            assert resultado["tipo"] == "Spa"
+            assert resultado["recurso"] is None
+
+    def test_spa_mismo_recurso_horario_diferente(self, app):
+        with app.app_context():
+            u = _usuario(RolEnum.cliente, "spa_rec4")
+            h = _huesped(u)
+            hab = _habitacion()
+            r = _reserva(h, hab)
+            db.session.commit()
+            rid = r.id
+
+            from unittest.mock import patch
+            from app.services import servicio_adicional_service as svc
+
+            fake_now = ahora_colombia()
+            with patch("app.services.servicio_adicional_service.ahora_colombia",
+                       return_value=fake_now):
+                svc.agregar(rid, "Spa", "Primero", "80000",
+                            recurso="Sala C", duracion_minutos=60)
+            mas_tarde = fake_now + timedelta(hours=3)
+            with patch("app.services.servicio_adicional_service.ahora_colombia",
+                       return_value=mas_tarde):
+                resultado = svc.agregar(rid, "Spa", "Segundo", "80000",
+                                        recurso="Sala C", duracion_minutos=60)
+            assert resultado["tipo"] == "Spa"
 
 
 class TestListarServicios:

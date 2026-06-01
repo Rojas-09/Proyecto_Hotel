@@ -87,7 +87,8 @@ class TestFlujoCompleto:
             r = client.post(f"/api/v1/reservas/{rid}/servicios",
                             json={"tipo": "spa",
                                   "descripcion": "Masaje relajante",
-                                  "costo": 120000},
+                                  "costo": 120000,
+                                  "recurso": "Sala 1"},
                             headers=admin_h)
             assert r.status_code == 201, f"Servicio spa: {r.get_json()}"
 

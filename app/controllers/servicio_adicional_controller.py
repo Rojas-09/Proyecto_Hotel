@@ -30,6 +30,7 @@ def agregar_servicio(current_user, reserva_id: int):
             descripcion=data.get("descripcion"),
             costo_raw=data.get("costo"),
             duracion_minutos=int(duracion) if duracion is not None else None,
+            recurso=data.get("recurso"),
         )
         return jsonify({"servicio": servicio}), 201
     except LookupError as e:
