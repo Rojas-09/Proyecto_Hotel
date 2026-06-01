@@ -63,21 +63,6 @@
             <span v-else>Ingresar</span>
           </button>
         </form>
-
-        <!-- Credenciales de ejemplo -->
-        <div v-if="showDemoCredentials" class="mt-6 pt-5 border-t border-gray-800">
-          <p class="text-xs text-gray-600 font-medium mb-3 uppercase tracking-wider">Correos de prueba</p>
-          <div class="space-y-2">
-            <div
-              v-for="cred in demoCredentials"
-              :key="cred.email"
-              class="w-full text-left px-3 py-2 rounded-lg bg-gray-800/50 border border-gray-800 text-xs"
-            >
-              <span class="text-hotel-gold font-medium capitalize">{{ cred.role }}</span>
-              <span class="text-gray-500 ml-2">{{ cred.email }}</span>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   </div>
@@ -96,13 +81,6 @@ const form = ref({ email: '', password: '' });
 const loading = ref(false);
 const errorMsg = ref('');
 const showPassword = ref(false);
-const showDemoCredentials = import.meta.env.DEV || import.meta.env.VITE_ENABLE_DEMO_CREDS === 'true';
-
-const demoCredentials = [
-  { role: 'Administrador', email: 'admin@hotel.com' },
-  { role: 'Recepcionista', email: 'recepcionista@hotel.com' },
-  { role: 'Gerente', email: 'gerente@hotel.com' },
-];
 
 async function handleLogin() {
   loading.value = true;
