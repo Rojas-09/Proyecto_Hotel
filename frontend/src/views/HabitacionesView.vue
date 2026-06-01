@@ -13,16 +13,16 @@
     <div class="bg-gray-900 border border-gray-800 rounded-xl p-4 mb-6 flex flex-wrap gap-3">
       <select v-model="filtroEstado" class="bg-gray-800 border border-gray-700 text-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-hotel-gold">
         <option value="">Todos los estados</option>
-        <option value="Disponible">Disponible</option>
-        <option value="Ocupada">Ocupada</option>
-        <option value="Mantenimiento">Mantenimiento</option>
+        <option value="disponible">Disponible</option>
+        <option value="ocupada">Ocupada</option>
+        <option value="mantenimiento">Mantenimiento</option>
       </select>
       <select v-model="filtroTipo" class="bg-gray-800 border border-gray-700 text-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-hotel-gold">
         <option value="">Todos los tipos</option>
-        <option value="Simple">Simple</option>
-        <option value="Doble">Doble</option>
-        <option value="Suite">Suite</option>
-        <option value="Deluxe">Deluxe</option>
+        <option value="simple">Simple</option>
+        <option value="doble">Doble</option>
+        <option value="suite">Suite</option>
+        <option value="deluxe">Deluxe</option>
       </select>
       <button @click="cargarHabitaciones" class="ml-auto text-xs text-gray-400 hover:text-white transition-colors">↻ Actualizar</button>
     </div>
@@ -70,10 +70,10 @@
         <div>
             <label class="block text-xs font-medium text-gray-400 mb-1">Tipo</label>
             <select v-model="form.tipo" required class="input-field w-full">
-              <option value="Simple">Simple</option>
-              <option value="Doble">Doble</option>
-              <option value="Suite">Suite</option>
-              <option value="Deluxe">Deluxe</option>
+              <option value="simple">Simple</option>
+              <option value="doble">Doble</option>
+              <option value="suite">Suite</option>
+              <option value="deluxe">Deluxe</option>
             </select>
           </div>
           <div>
@@ -89,9 +89,9 @@
           <div>
             <label class="block text-xs font-medium text-gray-400 mb-1">Estado</label>
             <select v-model="form.estado" class="input-field w-full">
-              <option value="Disponible">Disponible</option>
-              <option value="Ocupada">Ocupada</option>
-              <option value="Mantenimiento">Mantenimiento</option>
+              <option value="disponible">Disponible</option>
+              <option value="ocupada">Ocupada</option>
+              <option value="mantenimiento">Mantenimiento</option>
             </select>
           </div>
         </div>
@@ -130,7 +130,7 @@ const currentPage = ref(1);
 const totalPages = ref(1);
 const ITEMS_PER_PAGE = 10;
 
-const defaultForm = { numero: '', piso: 1, tipo: 'Simple', capacidad: 2, precio_noche: '', estado: 'Disponible', descripcion: '' };
+const defaultForm = { numero: '', piso: 1, tipo: 'simple', capacidad: 2, precio_noche: '', estado: 'disponible', descripcion: '' };
 const form = ref({ ...defaultForm });
 
 const columns = [
@@ -194,7 +194,7 @@ async function guardar() {
     showModal.value = false;
     await cargarHabitaciones();
   } catch (err) {
-    toast?.value?.add(err.response?.data?.error?.message || 'Error al guardar', 'error');
+    toast?.value?.add(err.response?.data?.mensaje || err.response?.data?.error?.message || 'Error al guardar', 'error');
   } finally {
     saving.value = false;
   }
@@ -212,21 +212,21 @@ async function eliminar(id) {
 }
 
 const tipoClass = (tipo) => ({
-  Simple: 'bg-blue-900/50 text-blue-300',
-  Doble: 'bg-indigo-900/50 text-indigo-300',
-  Suite: 'bg-hotel-gold/20 text-hotel-gold',
-  Deluxe: 'bg-purple-900/50 text-purple-300'
-}[tipo] || 'bg-gray-800 text-gray-400');
+  simple: 'bg-blue-900/50 text-blue-300',
+  doble: 'bg-indigo-900/50 text-indigo-300',
+  suite: 'bg-hotel-gold/20 text-hotel-gold',
+  deluxe: 'bg-purple-900/50 text-purple-300'
+}[tipo?.toLowerCase()] || 'bg-gray-800 text-gray-400');
 const estadoClass = (estado) => ({
-  Disponible: 'bg-green-900/50 text-green-300',
-  Ocupada: 'bg-red-900/50 text-red-300',
-  Mantenimiento: 'bg-yellow-900/50 text-yellow-300'
-}[estado] || 'bg-gray-800 text-gray-400');
+  disponible: 'bg-green-900/50 text-green-300',
+  ocupada: 'bg-red-900/50 text-red-300',
+  mantenimiento: 'bg-yellow-900/50 text-yellow-300'
+}[estado?.toLowerCase()] || 'bg-gray-800 text-gray-400');
 const estadoDot = (estado) => ({
-  Disponible: 'bg-green-400',
-  Ocupada: 'bg-red-400',
-  Mantenimiento: 'bg-yellow-400'
-}[estado] || 'bg-gray-500');
+  disponible: 'bg-green-400',
+  ocupada: 'bg-red-400',
+  mantenimiento: 'bg-yellow-400'
+}[estado?.toLowerCase()] || 'bg-gray-500');
 
 onMounted(cargarHabitaciones);
 </script>

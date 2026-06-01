@@ -69,7 +69,7 @@ def crear(datos):
         )
 
     try:
-        tipo = TipoHabitacion(datos["tipo"])
+        tipo = TipoHabitacion(datos["tipo"].lower())
     except ValueError:
         raise ValueError(
             f"Tipo invalido. Valores permitidos: "
@@ -114,7 +114,7 @@ def actualizar(habitacion_id, datos):
 
     if "tipo" in datos:
         try:
-            habitacion.tipo = TipoHabitacion(datos["tipo"])
+            habitacion.tipo = TipoHabitacion(datos["tipo"].lower())
         except ValueError:
             raise ValueError(
                 f"Tipo invalido. Valores permitidos: "
@@ -123,7 +123,7 @@ def actualizar(habitacion_id, datos):
 
     if "estado" in datos:
         try:
-            habitacion.estado = EstadoHabitacion(datos["estado"])
+            habitacion.estado = EstadoHabitacion(datos["estado"].lower())
         except ValueError:
             raise ValueError(
                 f"Estado invalido. Valores permitidos: "
