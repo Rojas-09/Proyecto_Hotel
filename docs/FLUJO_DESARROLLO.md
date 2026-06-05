@@ -1,7 +1,7 @@
 # 📋 FLUJO DE DESARROLLO - HotelBook Pro
 
 **Documento oficial del flujo de trabajo del equipo**  
-Versión: 1.0 | Última actualización: Marzo 2026
+Versión: 1.1 | Última actualización: Mayo 2026
 
 ---
 
@@ -11,13 +11,14 @@ Versión: 1.0 | Última actualización: Marzo 2026
 
 ```
 main (rama de producción - STABLE)
- ├── develop (rama de integración - PRE-RELEASE)
- │   ├── feature/reservas
- │   ├── feature/facturacion
- │   ├── feature/spa-comedor
- │   └── feature/fidelizacion
+ ├── Testing (rama de pre-producción)
+ │   └── Development (rama de integración)
+ │       ├── feature/frontend-vue
+ │       ├── feature/puntos-fidelidad
+ │       ├── feature/integracion-stripe
+ │       └── feature/reportes-ocupacion
  │
- └── hotfix/bug-critico (extraída de main)
+ └── hotfix/critico (extraída de main)
 ```
 
 ### 1.2 Descripción de Ramas
@@ -25,16 +26,17 @@ main (rama de producción - STABLE)
 | Rama | Propósito | Creada desde | Mergeada a | Duración |
 |------|----------|-------------|-----------|----------|
 | **main** | Código productivo, estable y taggeado | N/A | N/A | Permanente |
-| **develop** | Integración de features completados | main | main | Permanente |
-| **feature/*** | Desarrollo de funcionalidades nuevas | develop | develop (PR) | Temporal (1-2 semanas) |
-| **hotfix/*** | Correcciones críticas de production | main | main + develop | Temporal (1-3 días) |
+| **Testing** | Pre-producción para validación final | Development | main | Permanente |
+| **Development** | Integración de features completados | Testing | Testing | Permanente |
+| **feature/*** | Desarrollo de funcionalidades nuevas | Development | Development (PR) | Temporal (1-2 semanas) |
+| **hotfix/*** | Correcciones críticas de producción | main | main + Development | Temporal (1-3 días) |
 
 ### 1.3 Reglas de las Ramas
 
-- ✅ **main** solo recibe merges desde `develop` y `hotfix`
-- ✅ **develop** es la rama base para nuevos features
+- ✅ **main** solo recibe merges desde `Testing` y `hotfix`
+- ✅ **Development** es la rama base para nuevos features
 - ✅ **feature/** nunca se crean de main
-- ✅ **Nadie commitea directamente** a main o develop (solo por PR)
+- ✅ **Idealmente** nadie commitea directo a main, Testing o Development (solo por PR)
 
 ---
 
@@ -42,17 +44,17 @@ main (rama de producción - STABLE)
 
 ### 2.1 Iniciando una Nueva Funcionalidad
 
-#### Paso 1: Actualizar develop localmente
+#### Paso 1: Actualizar Development localmente
 ```bash
-# Asegurarse de estar en develop
-git checkout develop
+# Asegurarse de estar en Development
+git checkout Development
 
 # Traer cambios del repositorio remoto
-git pull origin develop
+git pull origin Development
 
 # Verificar que todo está limpio
 git status
-# Debe mostrar: On branch develop, nothing to commit, working tree clean
+# Debe mostrar: On branch Development, nothing to commit, working tree clean
 ```
 
 #### Paso 2: Crear rama de feature
@@ -62,8 +64,8 @@ git checkout -b feature/nombre-descriptivo
 
 # Las ramas deben tener nombres claros:
 # ✅ CORRECTO:
-#   - feature/validar-fechas-reserva
-#   - feature/integrar-stripe
+#   - feature/frontend-vue
+#   - feature/puntos-fidelidad
 #   - feature/reportes-ocupacion
 
 # ❌ INCORRECTO:
@@ -82,7 +84,7 @@ git checkout -b feature/nombre-descriptivo
 git status
 
 # Staging (preparar para commit)
-git add app/services/reserva_service.py
+git add app/controllers/reserva_controller.py
 
 # O agregar todo (cuidado)
 git add .
@@ -118,20 +120,20 @@ git add .
 
 ✅ **COMMITS BUENOS:**
 ```bash
-git commit -m "feat(reservas): agregar validación de fechas
+git commit -m "feat(servicios): agregar endpoint POST para cargo adicional
 
-- Valida que fecha_salida > fecha_entrada
-- Prohíbe reservas con menos de 24h
-- Retorna error HTTP 400 con mensaje descriptivo"
+- Valida que la reserva esté en estado Ocupada
+- Registra el cargo en tabla ServiciosAdicionales
+- Retorna error HTTP 409 si la reserva no admite cargos"
 
 git commit -m "fix(factura): corregir cálculo de IVA
 
 El sistema aplicaba IVA dos veces en reembolsos.
 Se corrigió la lógica en FacturaService.calcular_total()"
 
-git commit -m "test(reserva): aumentar cobertura de test_create_reserva
+git commit -m "test(pagos): aumentar cobertura de test_pago_controller
 
-Coverage pasó de 85% a 95% en módulo reservas"
+Coverage pasó de 82% a 94% en módulo pagos"
 ```
 
 ❌ **COMMITS MALOS:**
@@ -147,7 +149,7 @@ git commit -m "feat: todo"             # Demasiado genérico
 
 ```bash
 # Opción 1: Mensaje simple (features pequeñas)
-git commit -m "feat(comedor): crear endpoint POST para pedidos"
+git commit -m "feat(servicios): crear endpoint POST para pedidos de comedor"
 
 # Opción 2: Mensaje con descripción (features complejas)
 git commit -m "feat(fidelizacion): implementar acumulación automática de puntos
@@ -182,7 +184,7 @@ git push -u origin feature/nombre-descriptivo
 1. **Ir a GitHub** → Repo → Pull Requests
 2. **Clickear "New Pull Request"**
 3. **Comparar ramas:**
-   - Base: `develop`
+   - Base: `Development`
    - Compare: `feature/tu-rama`
 
 4. **Llenar el formulario:**
@@ -207,7 +209,7 @@ Breve descripción de qué hace este PR
 - [ ] Commits siguen la convención
 - [ ] README actualizado
 - [ ] Sin errores de linting (flake8)
-- [ ] No hay conflictos con develop
+- [ ] No hay conflictos con Development
 
 ## Screenshots (si aplica)
 [Adjuntar capturas de UI]
@@ -229,7 +231,7 @@ Cierra #123 (si está vinculado a un issue)
 ✅ Código limpio (flake8 sin errores)
 ✅ Tests con cobertura >= 90%
 ✅ Falta documentación o actualización del README
-✅ Sin conflictos con develop
+✅ Sin conflictos con Development
 ✅ La funcionalidad cumple los requerimientos
 ```
 
@@ -249,7 +251,7 @@ git push origin feature/nombre-descriptivo
 
 ---
 
-### 2.5 Mergeando a Develop
+### 2.5 Mergeando a Development
 
 #### Opción A: Merge vía GitHub (RECOMENDADO)
 ```
@@ -263,17 +265,17 @@ En el PR de GitHub:
 
 #### Opción B: Merge local (si es necesario)
 ```bash
-# Cambiar a develop
-git checkout develop
+# Cambiar a Development
+git checkout Development
 
 # Traer cambios remotos
-git pull origin develop
+git pull origin Development
 
 # Mergear la rama de feature
 git merge feature/nombre-descriptivo
 
 # Subir los cambios
-git push origin develop
+git push origin Development
 ```
 
 #### Resolver Conflictos (si los hay)
@@ -284,7 +286,7 @@ git merge feature/nombre-descriptivo
 
 # Abrir el archivo y buscar:
 # <<<<<<< HEAD
-# código en develop
+# código en Development
 # =======
 # código en feature
 # >>>>>>> feature/nombre-descriptivo
@@ -294,7 +296,7 @@ git merge feature/nombre-descriptivo
 # Luego:
 git add app/models/reserva.py
 git commit -m "merge: resolver conflictos al mergear feature/xxx"
-git push origin develop
+git push origin Development
 ```
 
 ---
@@ -338,15 +340,15 @@ git commit -m "fix(critico): describe el problema y solución"
 # 4. Subir
 git push -u origin hotfix/descripcion-critica
 
-# 5. Crear PR a main (no a develop)
+# 5. Crear PR a main (no a Development)
 # En GitHub: PR Base: main, Compare: hotfix/...
 
 # 6. Una vez aprobado y mergeado a main:
-git checkout develop
+git checkout Development
 git pull origin main
 git merge main
 
-# Para asegurar que la corrección esté también en develop
+# Para asegurar que la corrección esté también en Development
 ```
 
 ---
@@ -360,16 +362,14 @@ Cada push a una rama activa automáticamente en GitHub Actions:
 ✓ Linting (flake8): Validar sintaxis PEP8
 ✓ Tests (pytest): Ejecutar suite completa
 ✓ Coverage: Validar >= 90%
-✗ Si falla algo: No permitir merge a develop
+✗ Si falla algo: No permitir merge a Development
 ```
 
-### Para develop:
+### Para Development:
 ```yaml
-✓ Linting
-✓ Tests  
+✓ Linting: flake8 app/ --max-line-length=100 --select=E,F
+✓ Tests: pytest tests/ --cov=app --cov-config=.coveragerc --cov-fail-under=90
 ✓ Coverage >= 90%
-✓ Build Docker (si aplica)
-✓ Deploy a Staging
 ```
 
 ### Para main:
@@ -382,8 +382,8 @@ Cada push a una rama activa automáticamente en GitHub Actions:
 
 **Ver estado del CI:**
 ```bash
-# En GitHub Actions tab
-# O en el PR: checkear "Checks" sección
+# En GitHub: pestaña "Actions" del repositorio
+# O en el PR: checkear sección "Checks"
 ```
 
 ---
@@ -420,16 +420,16 @@ git push origin --tags
 ### ✅ HACER:
 - ✅ Commits pequeños y enfocados (una funcionalidad por commit)
 - ✅ Escribir mensajes descriptivos
-- ✅ Hacer PR antes de mergear a develop
+- ✅ Hacer PR antes de mergear a Development
 - ✅ Esperar aprobación de al menos 1 revisor
 - ✅ Actualizar README si hay cambios de estructura
 - ✅ Ejecutar tests localmente antes de push
-- ✅ Sincronizarse regularmente con develop (`git pull`)
+- ✅ Sincronizarse regularmente con Development (`git pull`)
 
 ### ❌ EVITAR:
 - ❌ Commits gigantes con múltiples funcionalidades
-- ❌ Mensajes de commit vagas ("fix", "update", "wip")
-- ❌ Commitear directamente a main o develop
+- ❌ Mensajes de commit vagos ("fix", "update", "wip")
+- ❌ Commitear directamente a main o Development
 - ❌ Mergear sin PR
 - ❌ Mezclar feature con fixes críticos en mismo commit
 - ❌ Olvidar pull antes de push (puede causar conflictos)
@@ -437,49 +437,7 @@ git push origin --tags
 
 ---
 
-## 7. Comandos Útiles Rápidos
-
-```bash
-# Ver estado actual
-git status
-
-# Ver últimos commits
-git log --oneline -10
-
-# Ver commits en una rama
-git log feature/mi-rama --oneline
-
-# Ver diferencias antes de commit
-git diff
-
-# Ver diferencias de una rama específica
-git diff develop feature/mi-rama
-
-# Cambiar de rama
-git checkout develop
-
-# Ver todas las ramas
-git branch -a
-
-# Obtener cambios remotos sin mergear
-git fetch origin
-
-# Sincronizar con develop (sin mergear la rama actual)
-git rebase origin/develop
-
-# Ver quién hizo cambios en una línea
-git blame archivo.py
-
-# Deshacer último commit (sin perder cambios)
-git reset --soft HEAD~1
-
-# Deshacer último commit (PERDIENDO cambios)
-git reset --hard HEAD~1
-```
-
----
-
-## 8. Troubleshooting
+## 7. Troubleshooting
 
 ### Problema: "conflict during merge"
 
@@ -493,18 +451,18 @@ git add .
 git commit -m "merge: resolver conflictos"
 ```
 
-### Problema: "feature muy vieja, mucho atrás de develop"
+### Problema: "feature muy vieja, mucho atrás de Development"
 
 ```bash
-# Actualizar feature con cambios de develop
+# Actualizar feature con cambios de Development
 git checkout feature/mi-rama
-git rebase origin/develop
+git rebase origin/Development
 
 # O si hay conflictos complejos:
-git merge origin/develop
+git merge origin/Development
 ```
 
-### Problema: "Olvidé cambiar de rama y commitee en develop"
+### Problema: "Olvidé cambiar de rama y commitee en Development"
 
 ```bash
 # Deshacer commit pero guardar cambios
@@ -525,7 +483,7 @@ git commit -m "feat: descripción"
 git diff
 
 # Descartar cambios (CUIDADO)
-git checkout -- archivo.py
+git checkout -- app/models/reserva.py
 
 # O descartar todo
 git reset --hard HEAD
@@ -533,7 +491,7 @@ git reset --hard HEAD
 
 ---
 
-## 9. Checklist Antes de Pushear
+## 8. Checklist Antes de Pushear
 
 ```
 Antes de hacer git push, verificar:
@@ -542,25 +500,26 @@ Antes de hacer git push, verificar:
 □ Todos los cambios relacionados están en staging
 □ Mensaje de commit describe bien los cambios
 □ Tests locales pasan: pytest
-□ Linting sin errores: flake8 .
-□ No hay conflictos: git pull origin develop
+□ Linting sin errores: flake8 app/ --max-line-length=100 --select=E,F
+□ No hay conflictos: git pull origin Development
 □ README actualizado si hay cambios de estructura
-□ No estoy en main ni develop
+□ No estoy en main ni Development
 □ La rama tiene nombre descriptivo (feature/xxx)
 ```
 
 ---
 
-## 10. Referencias Rápidas
+## 9. Referencias Rápidas
 
 - **Git Docs**: https://git-scm.com/doc
 - **GitHub Flow**: https://guides.github.com/introduction/flow/
 - **Conventional Commits**: https://www.conventionalcommits.org/
 - **Semantic Versioning**: https://semver.org/
 - **PEP8 Style Guide**: https://pep8.org/
+- **Repositorio**: https://github.com/Rojas-09/Proyecto_Hotel
 
 ---
 
 **Para cualquier duda sobre el flujo, referirse a este documento o consultar al Lead del proyecto.**
 
-Última revisión: Marzo 2026
+Última revisión: Mayo 2026
