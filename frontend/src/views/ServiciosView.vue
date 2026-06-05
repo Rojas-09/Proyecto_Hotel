@@ -153,7 +153,9 @@ async function cargarServicios() {
   if (!reservaId.value) return;
   try {
     const res = await api.get(`/reservas/${reservaId.value}/servicios`);
-    todosServicios.value = res.data.servicios || res.data.data || [];
+    // API responses use the shape { success, data: { servicios: [...] } }
+    const payload = res.data?.data || res.data || {};
+    todosServicios.value = payload.servicios || [];
   } catch {
     todosServicios.value = [];
   }

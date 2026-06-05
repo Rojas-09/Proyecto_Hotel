@@ -322,8 +322,9 @@ def generar_ingresos(fecha_inicio: str, fecha_fin: str, formato: str = "xlsx") -
             servicios_tipo += sum(
                 Decimal(str(s.costo)) for s in r.servicios_adicionales
             )
-            subtotal_total += _formatear_numero(r.subtotal)
-            iva_total += _formatear_numero(r.impuestos)
+            # Sumar usando Decimal para evitar mezclar floats y Decimals
+            subtotal_total += Decimal(str(r.subtotal))
+            iva_total += Decimal(str(r.impuestos))
 
         ingresos_por_tipo[tipo.value] = {
             "ingresos": _formatear_numero(total_tipo),

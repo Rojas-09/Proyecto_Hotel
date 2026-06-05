@@ -85,6 +85,14 @@ La base de datos incluye usuarios de prueba para desarrollo local. **No uses est
 | **Recepcionista** | `recepcionista@hotel.com` | *(configurable en seed local)* | Gestión operativa: reservas, check-in, check-out, servicios, huéspedes. |
 | **Gerente** | `gerente@hotel.com` | *(configurable en seed local)* | Acceso de solo lectura a los Reportes estratégicos (Ocupación e Ingresos). |
 
+Si quieres cargar datos de demo para probar el CRUD con información más visible, ejecuta:
+
+```bash
+FLASK_ENV=development python scripts/seed_demo_data.py
+```
+
+Ese seed crea 3 usuarios reales de ejemplo, huéspedes, habitaciones, reservas en varios estados, pagos, servicios, factura y puntos de fidelidad.
+
 ---
 
 ## 📋 Flujo de Operación (Workflow Principal)
