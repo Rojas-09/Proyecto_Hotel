@@ -39,6 +39,28 @@ def procesar_garantia(current_user, reserva_id):
         return jsonify({"success": False, "data": None, "mensaje": str(e)}), 403
 
 
+@pago_bp.route("/<int:pago_id>/confirmar", methods=["PUT"])
+@token_required
+@rol_requerido("recepcionista", "admin")
+def confirmar_pago_manual(current_user, pago_id):
+    """
+    PUT /api/v1/pagos/<pago_id>/confirmar
+
+    Confirma un pago manual (efectivo/transferencia) y activa la reserva.
+    Roles permitidos: recepcionista, admin.
+    """
+    try:
+        resultado = pago_service.confirmar_pago_manual(pago_id, current_user)
+        return jsonify({
+            "success": True, "data": resultado,
+            "mensaje": "Pago confirmado correctamente."
+        }), 200
+    except LookupError as e:
+        return jsonify({"success": False, "data": None, "mensaje": str(e)}), 404
+    except ValueError as e:
+        return jsonify({"success": False, "data": None, "mensaje": str(e)}), 400
+
+
 @pago_bp.route("/liquidacion/<int:reserva_id>", methods=["POST"])
 @token_required
 @rol_requerido("recepcionista", "admin")

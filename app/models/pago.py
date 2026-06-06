@@ -51,6 +51,12 @@ class Pago(db.Model):
         nullable=False
     )
     referencia_externa = db.Column(db.String(100), nullable=True)
+    confirmado_por = db.Column(
+        db.Integer,
+        db.ForeignKey("usuarios.id", name="fk_pago_confirmado_por"),
+        nullable=True
+    )
+    fecha_confirmacion = db.Column(db.DateTime, nullable=True)
     created_at = db.Column(db.DateTime, default=ahora_colombia, nullable=False)
     updated_at = db.Column(
         db.DateTime,
@@ -61,6 +67,7 @@ class Pago(db.Model):
 
     # Relationships
     reserva = db.relationship("Reserva", back_populates="pagos")
+    confirmador = db.relationship("Usuario", foreign_keys=[confirmado_por])
     reembolso = db.relationship(
         "Reembolso",
         back_populates="pago",
@@ -77,6 +84,11 @@ class Pago(db.Model):
             "tipo": self.tipo.value,
             "estado": self.estado.value,
             "referencia_externa": self.referencia_externa,
+            "confirmado_por": self.confirmado_por,
+            "fecha_confirmacion": (
+                self.fecha_confirmacion.isoformat()
+                if self.fecha_confirmacion else None
+            ),
             "created_at": self.created_at.isoformat(),
             "updated_at": self.updated_at.isoformat(),
         }

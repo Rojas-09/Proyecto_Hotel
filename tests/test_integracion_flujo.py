@@ -66,7 +66,7 @@ class TestFlujoCompleto:
 
             # 2. Garantía
             r = client.post(f"/api/v1/pagos/garantia/{rid}",
-                            json={"metodo": "Efectivo"}, headers=cliente_h)
+                            json={"metodo": "Tarjeta"}, headers=cliente_h)
             assert r.status_code == 201, f"Garantía: {r.get_json()}"
 
             # 3. Check-in

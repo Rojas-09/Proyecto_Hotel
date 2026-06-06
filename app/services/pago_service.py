@@ -60,15 +60,22 @@ def procesar_garantia(reserva_id, metodo_str, payment_method_id=None, current_us
     if metodo == MetodoPago.tarjeta:
         referencia_externa = _cobrar_stripe(monto, payment_method_id, reserva_id)
 
+    es_manual = metodo in (MetodoPago.efectivo, MetodoPago.transferencia)
+
     pago = Pago(
         id_reserva=reserva_id,
         monto=monto,
         metodo=metodo,
         tipo=TipoPago.garantia,
-        estado=EstadoPago.aprobado,
+        estado=EstadoPago.pendiente if es_manual else EstadoPago.aprobado,
         referencia_externa=referencia_externa,
     )
     db.session.add(pago)
+
+    if es_manual:
+        # Pago manual: queda pendiente hasta que recepcionista/admin confirme
+        db.session.commit()
+        return pago.to_dict()
 
     reserva.estado = EstadoReserva.confirmada
     reserva.updated_at = ahora_colombia()
@@ -176,6 +183,40 @@ def solicitar_reembolso(pago_id, motivo):
     pago.estado = EstadoPago.reembolsado
     db.session.commit()
     return reembolso.to_dict()
+
+
+def confirmar_pago_manual(pago_id, current_user):
+    """
+    Confirma un pago manual (efectivo/transferencia) y cambia la reserva a confirmada.
+
+    Flujo:
+      Pago PENDIENTE + Reserva PENDIENTE → Pago APROBADO + Reserva CONFIRMADA
+    """
+    pago = db.session.get(Pago, pago_id)
+    if not pago:
+        raise LookupError(f"Pago con id {pago_id} no encontrado.")
+
+    if pago.estado != EstadoPago.pendiente:
+        raise ValueError(
+            f"El pago no está pendiente. Estado actual: {pago.estado.value}"
+        )
+
+    if pago.metodo not in (MetodoPago.efectivo, MetodoPago.transferencia):
+        raise ValueError(
+            "Solo pagos en efectivo o transferencia requieren confirmación manual."
+        )
+
+    pago.estado = EstadoPago.aprobado
+    pago.confirmado_por = current_user.id
+    pago.fecha_confirmacion = ahora_colombia()
+
+    reserva = db.session.get(Reserva, pago.id_reserva)
+    if reserva and reserva.estado == EstadoReserva.pendiente:
+        reserva.estado = EstadoReserva.confirmada
+        reserva.updated_at = ahora_colombia()
+
+    db.session.commit()
+    return pago.to_dict()
 
 
 # ---------------------------------------------------------------------------

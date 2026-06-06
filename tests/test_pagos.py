@@ -49,11 +49,11 @@ class TestProcesarGarantia:
             resultado = procesar_garantia(reserva_id, "Efectivo")
 
             assert resultado["tipo"] == "Garantia"
-            assert resultado["estado"] == "Aprobado"
+            assert resultado["estado"] == "Pendiente"
             assert resultado["metodo"] == "Efectivo"
             assert float(resultado["monto"]) == pytest.approx(119000.0, rel=1e-2)
             reserva = db.session.get(Reserva, reserva_id)
-            assert reserva.estado == EstadoReserva.confirmada
+            assert reserva.estado == EstadoReserva.pendiente
 
     def test_garantia_reserva_no_encontrada(self, app):
         from app.services.pago_service import procesar_garantia
@@ -113,9 +113,9 @@ class TestProcesarGarantia:
             db.session.add(r)
             db.session.commit()
 
-            procesar_garantia(r.id, "Efectivo")
+            procesar_garantia(r.id, "Tarjeta")
             with pytest.raises(ValueError, match="ya tiene un pago de garantía"):
-                procesar_garantia(r.id, "Efectivo")
+                procesar_garantia(r.id, "Tarjeta")
 
     def test_garantia_metodo_invalido(self, app):
         from app.services.pago_service import procesar_garantia
@@ -168,6 +168,97 @@ class TestProcesarGarantia:
 
             with pytest.raises(ValueError, match="obligatorio"):
                 procesar_garantia(r.id, None)
+
+
+class TestConfirmarPagoManual:
+    def test_confirmar_efectivo_exitoso(self, app):
+        from app.services.pago_service import confirmar_pago_manual, procesar_garantia
+        with app.app_context():
+            u_admin = Usuario(
+                nombre="Admin", apellido="T", email=f"admin_conf_{id(self)}@test.com",
+                rol=RolEnum.admin
+            )
+            u_admin.password = "Pass1234!"
+            db.session.add(u_admin)
+            db.session.flush()
+
+            u = Usuario(nombre="Cli", apellido="T",
+                        email=f"cli_conf_{id(self)}@test.com", rol=RolEnum.cliente)
+            u.password = "Pass1234!"
+            db.session.add(u)
+            db.session.flush()
+            h = Huesped(id_usuario=u.id, documento_id=f"DOC-CONF-{id(self)}", tipo_documento="cc")
+            db.session.add(h)
+            hab = Habitacion(numero=f"CONF-{id(self)}", tipo=TipoHabitacion.simple,
+                             precio_noche=Decimal("100000"), capacidad=1,
+                             estado=EstadoHabitacion.disponible)
+            db.session.add(hab)
+            db.session.flush()
+            r = Reserva(id_huesped=h.id, id_habitacion=hab.id,
+                        fecha_entrada=date.today() + timedelta(days=5),
+                        fecha_salida=date.today() + timedelta(days=7),
+                        noches=2, subtotal=Decimal("200000"), impuestos=Decimal("38000"),
+                        total=Decimal("238000"), estado=EstadoReserva.pendiente)
+            db.session.add(r)
+            db.session.commit()
+
+            pago = procesar_garantia(r.id, "Efectivo")
+            assert pago["estado"] == "Pendiente"
+
+            resultado = confirmar_pago_manual(pago["id"], u_admin)
+            assert resultado["estado"] == "Aprobado"
+            assert resultado["confirmado_por"] == u_admin.id
+            assert resultado["fecha_confirmacion"] is not None
+
+            reserva = db.session.get(Reserva, r.id)
+            assert reserva.estado == EstadoReserva.confirmada
+
+    def test_confirmar_pago_inexistente(self, app):
+        from app.services.pago_service import confirmar_pago_manual
+        with app.app_context():
+            u = Usuario(nombre="Admin", apellido="T",
+                        email=f"adm_{id(self)}@test.com", rol=RolEnum.admin)
+            u.password = "Pass1234!"
+            db.session.add(u)
+            db.session.commit()
+            with pytest.raises(LookupError):
+                confirmar_pago_manual(99999, u)
+
+    def test_confirmar_pago_tarjeta_rechazado(self, app):
+        from app.services.pago_service import confirmar_pago_manual, procesar_garantia
+        with app.app_context():
+            u_admin = Usuario(
+                nombre="Admin", apellido="T", email=f"adm_tarj_{id(self)}@test.com",
+                rol=RolEnum.admin
+            )
+            u_admin.password = "Pass1234!"
+            db.session.add(u_admin)
+            db.session.flush()
+            u = Usuario(nombre="Cli", apellido="T",
+                        email=f"cli_tarj_{id(self)}@test.com", rol=RolEnum.cliente)
+            u.password = "Pass1234!"
+            db.session.add(u)
+            db.session.flush()
+            h = Huesped(id_usuario=u.id, documento_id=f"DOC-TARJ-{id(self)}", tipo_documento="cc")
+            db.session.add(h)
+            hab = Habitacion(numero=f"TARJ-{id(self)}", tipo=TipoHabitacion.simple,
+                             precio_noche=Decimal("100000"), capacidad=1,
+                             estado=EstadoHabitacion.disponible)
+            db.session.add(hab)
+            db.session.flush()
+            r = Reserva(id_huesped=h.id, id_habitacion=hab.id,
+                        fecha_entrada=date.today() + timedelta(days=5),
+                        fecha_salida=date.today() + timedelta(days=7),
+                        noches=2, subtotal=Decimal("200000"), impuestos=Decimal("38000"),
+                        total=Decimal("238000"), estado=EstadoReserva.pendiente)
+            db.session.add(r)
+            db.session.commit()
+
+            pago = procesar_garantia(r.id, "Tarjeta")
+            assert pago["estado"] == "Aprobado"
+
+            with pytest.raises(ValueError, match="no está pendiente"):
+                confirmar_pago_manual(pago["id"], u_admin)
 
 
 class TestProcesarLiquidacion:
