@@ -1,6 +1,7 @@
 from flask import Blueprint, jsonify, request
 
 import app.services.reserva_service as reserva_service
+from app.utils.error_helper import handle_service_error
 from app.utils.jwt_helper import token_required, rol_requerido
 
 reserva_bp = Blueprint("reservas", __name__, url_prefix="/api/v1/reservas")
@@ -25,17 +26,13 @@ def crear(current_user):
             "mensaje": "Reserva creada correctamente."
         }), 201
     except LookupError as e:
-        return jsonify({"success": False, "mensaje": str(e)}), 404
+        return handle_service_error(e, 404)
     except ValueError as e:
-        return jsonify({"success": False, "mensaje": str(e)}), 400
+        return handle_service_error(e, 400)
     except PermissionError as e:
-        return jsonify({"success": False, "mensaje": str(e)}), 403
+        return handle_service_error(e, 403)
     except Exception as e:
-        return jsonify({
-            "success": False,
-            "mensaje": "Error interno del servidor.",
-            "detalle": str(e)
-        }), 500
+        return handle_service_error(e, 500)
 
 
 @reserva_bp.route("/", methods=["GET"])
@@ -58,13 +55,9 @@ def obtener_todas(current_user):
             "mensaje": "Reservas obtenidas correctamente."
         }), 200
     except ValueError as e:
-        return jsonify({"success": False, "mensaje": str(e)}), 400
+        return handle_service_error(e, 400)
     except Exception as e:
-        return jsonify({
-            "success": False,
-            "mensaje": "Error interno del servidor.",
-            "detalle": str(e)
-        }), 500
+        return handle_service_error(e, 500)
 
 
 @reserva_bp.route("/mis-reservas", methods=["GET"])
@@ -80,11 +73,7 @@ def obtener_mis_reservas(current_user):
             "mensaje": "Tus reservas obtenidas correctamente."
         }), 200
     except Exception as e:
-        return jsonify({
-            "success": False,
-            "mensaje": "Error interno del servidor.",
-            "detalle": str(e)
-        }), 500
+        return handle_service_error(e, 500)
 
 
 @reserva_bp.route("/<int:reserva_id>", methods=["GET"])
@@ -98,15 +87,11 @@ def obtener_por_id(current_user, reserva_id):
             "mensaje": "Reserva encontrada."
         }), 200
     except LookupError as e:
-        return jsonify({"success": False, "mensaje": str(e)}), 404
+        return handle_service_error(e, 404)
     except PermissionError as e:
-        return jsonify({"success": False, "mensaje": str(e)}), 403
+        return handle_service_error(e, 403)
     except Exception as e:
-        return jsonify({
-            "success": False,
-            "mensaje": "Error interno del servidor.",
-            "detalle": str(e)
-        }), 500
+        return handle_service_error(e, 500)
 
 
 @reserva_bp.route("/<int:reserva_id>/confirmar", methods=["PUT"])
@@ -121,15 +106,11 @@ def confirmar(current_user, reserva_id):
             "mensaje": "Reserva confirmada correctamente."
         }), 200
     except LookupError as e:
-        return jsonify({"success": False, "mensaje": str(e)}), 404
+        return handle_service_error(e, 404)
     except ValueError as e:
-        return jsonify({"success": False, "mensaje": str(e)}), 400
+        return handle_service_error(e, 400)
     except Exception as e:
-        return jsonify({
-            "success": False,
-            "mensaje": "Error interno del servidor.",
-            "detalle": str(e)
-        }), 500
+        return handle_service_error(e, 500)
 
 
 @reserva_bp.route("/<int:reserva_id>/cancelar", methods=["PUT"])
@@ -146,17 +127,13 @@ def cancelar(current_user, reserva_id):
             "mensaje": "Reserva cancelada correctamente."
         }), 200
     except LookupError as e:
-        return jsonify({"success": False, "mensaje": str(e)}), 404
+        return handle_service_error(e, 404)
     except ValueError as e:
-        return jsonify({"success": False, "mensaje": str(e)}), 400
+        return handle_service_error(e, 400)
     except PermissionError as e:
-        return jsonify({"success": False, "mensaje": str(e)}), 403
+        return handle_service_error(e, 403)
     except Exception as e:
-        return jsonify({
-            "success": False,
-            "mensaje": "Error interno del servidor.",
-            "detalle": str(e)
-        }), 500
+        return handle_service_error(e, 500)
 
 
 @reserva_bp.route("/<int:reserva_id>/checkin", methods=["PUT"])
@@ -171,15 +148,11 @@ def hacer_checkin(current_user, reserva_id):
             "mensaje": "Check-in realizado correctamente."
         }), 200
     except LookupError as e:
-        return jsonify({"success": False, "mensaje": str(e)}), 404
+        return handle_service_error(e, 404)
     except ValueError as e:
-        return jsonify({"success": False, "mensaje": str(e)}), 400
+        return handle_service_error(e, 400)
     except Exception as e:
-        return jsonify({
-            "success": False,
-            "mensaje": "Error interno del servidor.",
-            "detalle": str(e)
-        }), 500
+        return handle_service_error(e, 500)
 
 
 @reserva_bp.route("/<int:reserva_id>/checkout", methods=["PUT"])
@@ -197,12 +170,8 @@ def hacer_checkout(current_user, reserva_id):
             )
         }), 200
     except LookupError as e:
-        return jsonify({"success": False, "mensaje": str(e)}), 404
+        return handle_service_error(e, 404)
     except ValueError as e:
-        return jsonify({"success": False, "mensaje": str(e)}), 400
+        return handle_service_error(e, 400)
     except Exception as e:
-        return jsonify({
-            "success": False,
-            "mensaje": "Error interno del servidor.",
-            "detalle": str(e)
-        }), 500
+        return handle_service_error(e, 500)

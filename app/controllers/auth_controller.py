@@ -14,6 +14,7 @@ DELETE /api/v1/auth/usuarios/<id> → Soft delete usuario (solo admin)
 from flask import Blueprint, request, jsonify
 
 from app.services.auth_service import AuthService
+from app.utils.error_helper import handle_service_error
 from app.utils.jwt_helper import token_required, rol_requerido
 
 auth_bp = Blueprint("auth", __name__)
@@ -136,10 +137,7 @@ def listar_usuarios(current_user):
             "mensaje": "Usuarios obtenidos correctamente."
         }), 200
     except Exception as e:
-        return jsonify({
-            "success": False,
-            "error": {"code": "SERVER_ERROR", "message": str(e)}
-        }), 500
+        return handle_service_error(e, 500)
 
 
 @auth_bp.route("/usuarios/<int:usuario_id>", methods=["DELETE"])
@@ -160,15 +158,9 @@ def eliminar_usuario(current_user, usuario_id):
             "mensaje": f"Usuario {resultado['email']} eliminado correctamente."
         }), 200
     except LookupError as e:
-        return jsonify({
-            "success": False,
-            "error": {"code": "NOT_FOUND", "message": str(e)}
-        }), 404
+        return handle_service_error(e, 404)
     except Exception as e:
-        return jsonify({
-            "success": False,
-            "error": {"code": "SERVER_ERROR", "message": str(e)}
-        }), 500
+        return handle_service_error(e, 500)
 
 
 @auth_bp.route("/usuarios/<int:usuario_id>", methods=["GET"])
@@ -181,15 +173,9 @@ def obtener_usuario(current_user, usuario_id):
             "data": {"usuario": usuario}
         }), 200
     except LookupError as e:
-        return jsonify({
-            "success": False,
-            "error": {"code": "NOT_FOUND", "message": str(e)}
-        }), 404
+        return handle_service_error(e, 404)
     except Exception as e:
-        return jsonify({
-            "success": False,
-            "error": {"code": "SERVER_ERROR", "message": str(e)}
-        }), 500
+        return handle_service_error(e, 500)
 
 
 @auth_bp.route("/me", methods=["DELETE"])
@@ -209,7 +195,4 @@ def eliminar_mi_cuenta(current_user):
             "error": {"code": "NOT_FOUND", "message": "Usuario no encontrado."}
         }), 404
     except Exception as e:
-        return jsonify({
-            "success": False,
-            "error": {"code": "SERVER_ERROR", "message": str(e)}
-        }), 500
+        return handle_service_error(e, 500)

@@ -4,6 +4,7 @@ Controlador ServicioAdicional — RF-10 (Comedor) y RF-11 (Spa)
 from flask import Blueprint, jsonify, request
 
 from app.services import servicio_adicional_service
+from app.utils.error_helper import handle_service_error
 from app.utils.jwt_helper import rol_requerido, token_required
 
 servicio_adicional_bp = Blueprint("servicio_adicional", __name__)
@@ -37,11 +38,11 @@ def agregar_servicio(current_user, reserva_id: int):
             "mensaje": "Servicio agregado correctamente."
         }), 201
     except LookupError as e:
-        return jsonify({"success": False, "data": None, "mensaje": str(e)}), 404
+        return handle_service_error(e, 404)
     except ValueError as e:
-        return jsonify({"success": False, "data": None, "mensaje": str(e)}), 400
+        return handle_service_error(e, 400)
     except PermissionError as e:
-        return jsonify({"success": False, "data": None, "mensaje": str(e)}), 403
+        return handle_service_error(e, 403)
 
 
 @servicio_adicional_bp.route(
@@ -58,7 +59,7 @@ def listar_servicios(current_user, reserva_id: int):
             "mensaje": "Servicios listados correctamente."
         }), 200
     except LookupError as e:
-        return jsonify({"success": False, "data": None, "mensaje": str(e)}), 404
+        return handle_service_error(e, 404)
 
 
 @servicio_adicional_bp.route(
@@ -72,7 +73,7 @@ def obtener_servicio(current_user, servicio_id: int):
         servicio = servicio_adicional_service.obtener(servicio_id)
         return jsonify({"success": True, "data": servicio, "mensaje": "Servicio encontrado."}), 200
     except LookupError as e:
-        return jsonify({"success": False, "data": None, "mensaje": str(e)}), 404
+        return handle_service_error(e, 404)
 
 
 @servicio_adicional_bp.route(
@@ -99,9 +100,9 @@ def actualizar_servicio(current_user, servicio_id: int):
             "mensaje": "Servicio actualizado correctamente."
         }), 200
     except LookupError as e:
-        return jsonify({"success": False, "data": None, "mensaje": str(e)}), 404
+        return handle_service_error(e, 404)
     except ValueError as e:
-        return jsonify({"success": False, "data": None, "mensaje": str(e)}), 400
+        return handle_service_error(e, 400)
 
 
 @servicio_adicional_bp.route(
@@ -118,6 +119,6 @@ def eliminar_servicio(current_user, servicio_id: int):
             "mensaje": "Servicio eliminado correctamente."
         }), 200
     except LookupError as e:
-        return jsonify({"success": False, "data": None, "mensaje": str(e)}), 404
+        return handle_service_error(e, 404)
     except ValueError as e:
-        return jsonify({"success": False, "data": None, "mensaje": str(e)}), 400
+        return handle_service_error(e, 400)

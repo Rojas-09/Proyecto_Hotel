@@ -12,6 +12,7 @@ from sqlalchemy import select
 from app import db
 from app.models.huesped import Huesped
 from app.services import puntos_fidelidad_service
+from app.utils.error_helper import handle_service_error
 from app.utils.jwt_helper import token_required, rol_requerido
 
 puntos_bp = Blueprint("puntos_fidelidad", __name__)
@@ -49,11 +50,7 @@ def obtener_total(current_user, huesped_id):
             "mensaje": "Puntos obtenidos correctamente."
         }), 200
     except LookupError as e:
-        return jsonify({
-            "success": False,
-            "data": None,
-            "mensaje": str(e)
-        }), 404
+        return handle_service_error(e, 404)
 
 
 @puntos_bp.route("/<int:huesped_id>/puntos/historial", methods=["GET"])
@@ -74,11 +71,7 @@ def listar_historial(current_user, huesped_id):
             "mensaje": "Historial obtenido correctamente."
         }), 200
     except LookupError as e:
-        return jsonify({
-            "success": False,
-            "data": None,
-            "mensaje": str(e)
-        }), 404
+        return handle_service_error(e, 404)
 
 
 @puntos_bp.route("/<int:huesped_id>/puntos/canjeos", methods=["GET"])
@@ -129,20 +122,8 @@ def canjear_puntos(current_user, huesped_id):
             "mensaje": "Canje realizado exitosamente."
         }), 200
     except LookupError as e:
-        return jsonify({
-            "success": False,
-            "data": None,
-            "mensaje": str(e)
-        }), 404
+        return handle_service_error(e, 404)
     except ValueError as e:
-        return jsonify({
-            "success": False,
-            "data": None,
-            "mensaje": str(e)
-        }), 400
+        return handle_service_error(e, 400)
     except PermissionError as e:
-        return jsonify({
-            "success": False,
-            "data": None,
-            "mensaje": str(e)
-        }), 403
+        return handle_service_error(e, 403)

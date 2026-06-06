@@ -4,6 +4,7 @@ Pago Controller - Endpoints REST para pagos y reembolsos (RF-13)
 from flask import Blueprint, jsonify, request
 
 from app.services import pago_service
+from app.utils.error_helper import handle_service_error
 from app.utils.jwt_helper import rol_requerido, token_required
 
 pago_bp = Blueprint("pago", __name__, url_prefix="/api/v1/pagos")
@@ -32,11 +33,11 @@ def procesar_garantia(current_user, reserva_id):
             "mensaje": "Garantía procesada correctamente."
         }), 201
     except LookupError as e:
-        return jsonify({"success": False, "data": None, "mensaje": str(e)}), 404
+        return handle_service_error(e, 404)
     except ValueError as e:
-        return jsonify({"success": False, "data": None, "mensaje": str(e)}), 400
+        return handle_service_error(e, 400)
     except PermissionError as e:
-        return jsonify({"success": False, "data": None, "mensaje": str(e)}), 403
+        return handle_service_error(e, 403)
 
 
 @pago_bp.route("/<int:pago_id>/confirmar", methods=["PUT"])
@@ -56,9 +57,9 @@ def confirmar_pago_manual(current_user, pago_id):
             "mensaje": "Pago confirmado correctamente."
         }), 200
     except LookupError as e:
-        return jsonify({"success": False, "data": None, "mensaje": str(e)}), 404
+        return handle_service_error(e, 404)
     except ValueError as e:
-        return jsonify({"success": False, "data": None, "mensaje": str(e)}), 400
+        return handle_service_error(e, 400)
 
 
 @pago_bp.route("/liquidacion/<int:reserva_id>", methods=["POST"])
@@ -84,9 +85,9 @@ def procesar_liquidacion(current_user, reserva_id):
             "mensaje": "Liquidación procesada correctamente."
         }), 201
     except LookupError as e:
-        return jsonify({"success": False, "data": None, "mensaje": str(e)}), 404
+        return handle_service_error(e, 404)
     except ValueError as e:
-        return jsonify({"success": False, "data": None, "mensaje": str(e)}), 400
+        return handle_service_error(e, 400)
 
 
 @pago_bp.route("/reserva/<int:reserva_id>", methods=["GET"])
@@ -106,7 +107,7 @@ def obtener_pagos_reserva(current_user, reserva_id):
             "mensaje": "Pagos obtenidos correctamente."
         }), 200
     except LookupError as e:
-        return jsonify({"success": False, "data": None, "mensaje": str(e)}), 404
+        return handle_service_error(e, 404)
 
 
 @pago_bp.route("/reembolso/<int:pago_id>", methods=["POST"])
@@ -129,6 +130,6 @@ def solicitar_reembolso(current_user, pago_id):
             "mensaje": "Reembolso solicitado correctamente."
         }), 201
     except LookupError as e:
-        return jsonify({"success": False, "data": None, "mensaje": str(e)}), 404
+        return handle_service_error(e, 404)
     except ValueError as e:
-        return jsonify({"success": False, "data": None, "mensaje": str(e)}), 400
+        return handle_service_error(e, 400)

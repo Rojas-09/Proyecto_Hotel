@@ -62,12 +62,12 @@ class Config:
     ADMIN_BOOTSTRAP_ENABLED = os.environ.get("ADMIN_BOOTSTRAP_ENABLED", "False") == "True"
     ADMIN_BOOTSTRAP_SECRET = os.environ.get("ADMIN_BOOTSTRAP_SECRET", "")
     PERMANENT_SESSION_LIFETIME = 86400  # 24 horas en segundos
+    STRIPE_MOCK = os.environ.get("STRIPE_MOCK", "False") == "True"
 
 
 class DevelopmentConfig(Config):
     """Entorno de desarrollo: PostgreSQL o SQLite fallback."""
     DEBUG = True
-    STRIPE_MOCK = True
     SQLALCHEMY_DATABASE_URI = (
         _get_database_uri()
         if os.environ.get("DB_HOST") or os.environ.get("DATABASE_URL")
@@ -92,7 +92,6 @@ class TestingConfig(Config):
 class ProductionConfig(Config):
     """Entorno de producción: PostgreSQL, debug desactivado."""
     DEBUG = False
-    STRIPE_MOCK = False
     SQLALCHEMY_DATABASE_URI = _get_database_uri()
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SESSION_COOKIE_SECURE = True

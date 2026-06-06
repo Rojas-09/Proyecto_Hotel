@@ -13,6 +13,7 @@ from app import db
 from app.models.huesped import Huesped
 from app.models.reserva import Reserva
 from app.services import factura_service
+from app.utils.error_helper import handle_service_error
 from app.utils.jwt_helper import rol_requerido, token_required
 
 factura_bp = Blueprint("factura", __name__, url_prefix="/api/v1/facturas")
@@ -32,7 +33,7 @@ def get_factura_por_reserva(current_user, reserva_id):
         factura = factura_service.obtener_por_reserva(reserva_id)
         return jsonify({"success": True, "data": factura, "mensaje": "Factura encontrada."}), 200
     except LookupError as e:
-        return jsonify({"success": False, "data": None, "mensaje": str(e)}), 404
+        return handle_service_error(e, 404)
 
 
 @factura_bp.route("/reserva/<int:reserva_id>/emitir", methods=["POST"])
@@ -52,9 +53,9 @@ def emitir_factura(current_user, reserva_id):
             {"success": True, "data": factura, "mensaje": "Factura emitida correctamente."}
         ), 201
     except LookupError as e:
-        return jsonify({"success": False, "data": None, "mensaje": str(e)}), 404
+        return handle_service_error(e, 404)
     except ValueError as e:
-        return jsonify({"success": False, "data": None, "mensaje": str(e)}), 400
+        return handle_service_error(e, 400)
 
 
 @factura_bp.route("/reserva/<int:reserva_id>/descargar", methods=["GET"])
@@ -101,11 +102,11 @@ def descargar_factura(current_user, reserva_id):
             download_name="factura.pdf",
         )
     except LookupError as e:
-        return jsonify({"success": False, "data": None, "mensaje": str(e)}), 404
+        return handle_service_error(e, 404)
     except FileNotFoundError as e:
-        return jsonify({"success": False, "data": None, "mensaje": str(e)}), 404
+        return handle_service_error(e, 404)
     except ValueError as e:
-        return jsonify({"success": False, "data": None, "mensaje": str(e)}), 400
+        return handle_service_error(e, 400)
 
 
 @factura_bp.route("/<int:factura_id>/anular", methods=["PUT"])
@@ -127,6 +128,6 @@ def anular_factura(current_user, factura_id):
             {"success": True, "data": resultado, "mensaje": "Factura anulada correctamente."}
         ), 200
     except LookupError as e:
-        return jsonify({"success": False, "data": None, "mensaje": str(e)}), 404
+        return handle_service_error(e, 404)
     except ValueError as e:
-        return jsonify({"success": False, "data": None, "mensaje": str(e)}), 400
+        return handle_service_error(e, 400)

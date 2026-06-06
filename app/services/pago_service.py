@@ -196,14 +196,14 @@ def confirmar_pago_manual(pago_id, current_user):
     if not pago:
         raise LookupError(f"Pago con id {pago_id} no encontrado.")
 
-    if pago.estado != EstadoPago.pendiente:
-        raise ValueError(
-            f"El pago no está pendiente. Estado actual: {pago.estado.value}"
-        )
-
     if pago.metodo not in (MetodoPago.efectivo, MetodoPago.transferencia):
         raise ValueError(
             "Solo pagos en efectivo o transferencia requieren confirmación manual."
+        )
+
+    if pago.estado != EstadoPago.pendiente:
+        raise ValueError(
+            f"El pago no está pendiente. Estado actual: {pago.estado.value}"
         )
 
     pago.estado = EstadoPago.aprobado

@@ -8,6 +8,7 @@ from datetime import date
 from flask import Blueprint, jsonify, request, send_file
 
 from app.services import reporte_service
+from app.utils.error_helper import handle_service_error
 from app.utils.jwt_helper import rol_requerido, token_required
 
 reporte_bp = Blueprint("reporte", __name__, url_prefix="/api/v1/reportes")
@@ -56,7 +57,7 @@ def reporte_ocupacion(current_user):
     try:
         _validar_fechas(fecha_inicio, fecha_fin)
     except ValueError as e:
-        return jsonify({"success": False, "data": None, "mensaje": str(e)}), 400
+        return handle_service_error(e, 400)
 
     try:
         resultado = reporte_service.generar_ocupacion(
@@ -82,13 +83,9 @@ def reporte_ocupacion(current_user):
             download_name=nombre_descarga,
         )
     except ValueError as e:
-        return jsonify({"success": False, "data": None, "mensaje": str(e)}), 400
+        return handle_service_error(e, 400)
     except Exception as e:
-        return jsonify({
-            "success": False,
-            "data": None,
-            "mensaje": f"Error interno: {str(e)}",
-        }), 500
+        return handle_service_error(e, 500)
 
 
 @reporte_bp.route("/ingresos", methods=["GET"])
@@ -116,7 +113,7 @@ def reporte_ingresos(current_user):
     try:
         _validar_fechas(fecha_inicio, fecha_fin)
     except ValueError as e:
-        return jsonify({"success": False, "data": None, "mensaje": str(e)}), 400
+        return handle_service_error(e, 400)
 
     try:
         resultado = reporte_service.generar_ingresos(
@@ -142,13 +139,9 @@ def reporte_ingresos(current_user):
             download_name=nombre_descarga,
         )
     except ValueError as e:
-        return jsonify({"success": False, "data": None, "mensaje": str(e)}), 400
+        return handle_service_error(e, 400)
     except Exception as e:
-        return jsonify({
-            "success": False,
-            "data": None,
-            "mensaje": f"Error interno: {str(e)}",
-        }), 500
+        return handle_service_error(e, 500)
 
 
 @reporte_bp.route("/estadisticas", methods=["GET"])
@@ -176,7 +169,7 @@ def reporte_estadisticas(current_user):
     try:
         _validar_fechas(fecha_inicio, fecha_fin)
     except ValueError as e:
-        return jsonify({"success": False, "data": None, "mensaje": str(e)}), 400
+        return handle_service_error(e, 400)
 
     try:
         resultado = reporte_service.generar_estadisticas(
@@ -202,10 +195,6 @@ def reporte_estadisticas(current_user):
             download_name=nombre_descarga,
         )
     except ValueError as e:
-        return jsonify({"success": False, "data": None, "mensaje": str(e)}), 400
+        return handle_service_error(e, 400)
     except Exception as e:
-        return jsonify({
-            "success": False,
-            "data": None,
-            "mensaje": f"Error interno: {str(e)}",
-        }), 500
+        return handle_service_error(e, 500)

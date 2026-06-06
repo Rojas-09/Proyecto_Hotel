@@ -1,6 +1,7 @@
 from flask import Blueprint, jsonify, request
 
 import app.services.habitacion_service as habitacion_service
+from app.utils.error_helper import handle_service_error
 from app.utils.jwt_helper import rol_requerido, token_required
 
 habitacion_bp = Blueprint(
@@ -26,13 +27,9 @@ def listar():
             "mensaje": "Habitaciones obtenidas correctamente."
         }), 200
     except ValueError as e:
-        return jsonify({"success": False, "mensaje": str(e)}), 400
+        return handle_service_error(e, 400)
     except Exception as e:
-        return jsonify({
-            "success": False,
-            "mensaje": "Error interno del servidor.",
-            "detalle": str(e)
-        }), 500
+        return handle_service_error(e, 500)
 
 
 @habitacion_bp.route("/disponibles", methods=["GET"])
@@ -58,13 +55,9 @@ def disponibles():
             "mensaje": f"{len(habitaciones)} habitacion(es) disponible(s) encontrada(s)."
         }), 200
     except ValueError as e:
-        return jsonify({"success": False, "mensaje": str(e)}), 400
+        return handle_service_error(e, 400)
     except Exception as e:
-        return jsonify({
-            "success": False,
-            "mensaje": "Error interno del servidor.",
-            "detalle": str(e)
-        }), 500
+        return handle_service_error(e, 500)
 
 
 @habitacion_bp.route("/<int:habitacion_id>", methods=["GET"])
@@ -77,13 +70,9 @@ def obtener(habitacion_id):
             "mensaje": "Habitacion encontrada."
         }), 200
     except LookupError as e:
-        return jsonify({"success": False, "mensaje": str(e)}), 404
+        return handle_service_error(e, 404)
     except Exception as e:
-        return jsonify({
-            "success": False,
-            "mensaje": "Error interno del servidor.",
-            "detalle": str(e)
-        }), 500
+        return handle_service_error(e, 500)
 
 
 @habitacion_bp.route("/", methods=["POST"])
@@ -105,13 +94,9 @@ def crear(current_user):
             "mensaje": f"Habitacion {habitacion['numero']} creada correctamente."
         }), 201
     except ValueError as e:
-        return jsonify({"success": False, "mensaje": str(e)}), 400
+        return handle_service_error(e, 400)
     except Exception as e:
-        return jsonify({
-            "success": False,
-            "mensaje": "Error interno del servidor.",
-            "detalle": str(e)
-        }), 500
+        return handle_service_error(e, 500)
 
 
 @habitacion_bp.route("/<int:habitacion_id>", methods=["PUT"])
@@ -133,15 +118,11 @@ def actualizar(current_user, habitacion_id):
             "mensaje": f"Habitacion {habitacion['numero']} actualizada correctamente."
         }), 200
     except LookupError as e:
-        return jsonify({"success": False, "mensaje": str(e)}), 404
+        return handle_service_error(e, 404)
     except ValueError as e:
-        return jsonify({"success": False, "mensaje": str(e)}), 400
+        return handle_service_error(e, 400)
     except Exception as e:
-        return jsonify({
-            "success": False,
-            "mensaje": "Error interno del servidor.",
-            "detalle": str(e)
-        }), 500
+        return handle_service_error(e, 500)
 
 
 @habitacion_bp.route("/<int:habitacion_id>", methods=["DELETE"])
@@ -156,12 +137,8 @@ def eliminar(current_user, habitacion_id):
             "mensaje": resultado["mensaje"]
         }), 200
     except LookupError as e:
-        return jsonify({"success": False, "mensaje": str(e)}), 404
+        return handle_service_error(e, 404)
     except ValueError as e:
-        return jsonify({"success": False, "mensaje": str(e)}), 400
+        return handle_service_error(e, 400)
     except Exception as e:
-        return jsonify({
-            "success": False,
-            "mensaje": "Error interno del servidor.",
-            "detalle": str(e)
-        }), 500
+        return handle_service_error(e, 500)

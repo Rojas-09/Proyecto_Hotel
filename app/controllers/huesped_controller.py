@@ -9,6 +9,7 @@ PUT  /api/v1/huespedes/<id>         → Actualizar [admin, recepcionista]
 from flask import Blueprint, jsonify, request
 
 import app.services.huesped_service as huesped_service
+from app.utils.error_helper import handle_service_error
 from app.utils.jwt_helper import token_required, rol_requerido
 
 huesped_bp = Blueprint("huespedes", __name__, url_prefix="/api/v1/huespedes")
@@ -28,11 +29,7 @@ def obtener_todos(current_user):
             "message": "Huéspedes obtenidos correctamente."
         }), 200
     except Exception as e:
-        return jsonify({
-            "success": False,
-            "message": "Error interno del servidor.",
-            "detail": str(e)
-        }), 500
+        return handle_service_error(e, 500)
 
 
 @huesped_bp.route("/<int:huesped_id>", methods=["GET"])
@@ -48,16 +45,9 @@ def obtener_por_id(current_user, huesped_id):
             "message": "Huésped obtenido correctamente."
         }), 200
     except LookupError as e:
-        return jsonify({
-            "success": False,
-            "message": str(e)
-        }), 404
+        return handle_service_error(e, 404)
     except Exception as e:
-        return jsonify({
-            "success": False,
-            "message": "Error interno del servidor.",
-            "detail": str(e)
-        }), 500
+        return handle_service_error(e, 500)
 
 
 @huesped_bp.route("/buscar", methods=["GET"])
@@ -81,16 +71,9 @@ def buscar(current_user):
             "message": "Búsqueda realizada correctamente."
         }), 200
     except ValueError as e:
-        return jsonify({
-            "success": False,
-            "message": str(e)
-        }), 400
+        return handle_service_error(e, 400)
     except Exception as e:
-        return jsonify({
-            "success": False,
-            "message": "Error interno del servidor.",
-            "detail": str(e)
-        }), 500
+        return handle_service_error(e, 500)
 
 
 @huesped_bp.route("/<int:huesped_id>", methods=["PUT"])
@@ -113,13 +96,6 @@ def actualizar(current_user, huesped_id):
             "message": "Huésped actualizado correctamente."
         }), 200
     except LookupError as e:
-        return jsonify({
-            "success": False,
-            "message": str(e)
-        }), 404
+        return handle_service_error(e, 404)
     except Exception as e:
-        return jsonify({
-            "success": False,
-            "message": "Error interno del servidor.",
-            "detail": str(e)
-        }), 500
+        return handle_service_error(e, 500)

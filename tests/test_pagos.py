@@ -257,7 +257,7 @@ class TestConfirmarPagoManual:
             pago = procesar_garantia(r.id, "Tarjeta")
             assert pago["estado"] == "Aprobado"
 
-            with pytest.raises(ValueError, match="no está pendiente"):
+            with pytest.raises(ValueError, match="Solo pagos en efectivo o transferencia"):
                 confirmar_pago_manual(pago["id"], u_admin)
 
 
