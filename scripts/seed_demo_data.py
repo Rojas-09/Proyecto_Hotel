@@ -243,6 +243,16 @@ def main() -> int:
                 "telefono": "3005550303",
                 "rol": RolEnum.cliente,
                 "password": "Cliente123!",
+                "puntos_fidelizacion": 120,
+            }),
+            "cliente2": _upsert_usuario({
+                "nombre": "Roberto",
+                "apellido": "Mendoza",
+                "email": "roberto.mendoza@hotel.com",
+                "telefono": "3005550404",
+                "rol": RolEnum.cliente,
+                "password": "Cliente123!",
+                "puntos_fidelizacion": 50,
             }),
         }
 
@@ -252,6 +262,12 @@ def main() -> int:
             "documento_id": "CC10293847",
             "tipo_documento": "CC",
             "preferencias": "Habitación silenciosa, cama king y desayuno temprano.",
+        })
+
+        huesped2 = _upsert_huesped(usuarios["cliente2"], {
+            "documento_id": "CC55887733",
+            "tipo_documento": "CC",
+            "preferencias": "Cama twin, piso alto, sin mascotas.",
         })
 
         db.session.flush()
@@ -266,6 +282,24 @@ def main() -> int:
                 "piso": 1,
                 "estado": EstadoHabitacion.disponible,
             }),
+            "102": _upsert_habitacion({
+                "numero": "102",
+                "tipo": TipoHabitacion.simple,
+                "descripcion": "Habitación simple con ventana a la calle.",
+                "precio_noche": "200000",
+                "capacidad": 1,
+                "piso": 1,
+                "estado": EstadoHabitacion.disponible,
+            }),
+            "201": _upsert_habitacion({
+                "numero": "201",
+                "tipo": TipoHabitacion.doble,
+                "descripcion": "Habitación doble con dos camas.",
+                "precio_noche": "240000",
+                "capacidad": 2,
+                "piso": 2,
+                "estado": EstadoHabitacion.disponible,
+            }),
             "202": _upsert_habitacion({
                 "numero": "202",
                 "tipo": TipoHabitacion.doble,
@@ -274,6 +308,15 @@ def main() -> int:
                 "capacidad": 2,
                 "piso": 2,
                 "estado": EstadoHabitacion.disponible,
+            }),
+            "301": _upsert_habitacion({
+                "numero": "301",
+                "tipo": TipoHabitacion.suite,
+                "descripcion": "Suite junior con balcón.",
+                "precio_noche": "380000",
+                "capacidad": 2,
+                "piso": 3,
+                "estado": EstadoHabitacion.ocupada,
             }),
             "303": _upsert_habitacion({
                 "numero": "303",
@@ -292,6 +335,15 @@ def main() -> int:
                 "capacidad": 2,
                 "piso": 4,
                 "estado": EstadoHabitacion.mantenimiento,
+            }),
+            "501": _upsert_habitacion({
+                "numero": "501",
+                "tipo": TipoHabitacion.deluxe,
+                "descripcion": "Suite presidencial con jacuzzi y terraza.",
+                "precio_noche": "780000",
+                "capacidad": 4,
+                "piso": 5,
+                "estado": EstadoHabitacion.disponible,
             }),
         }
 
@@ -358,6 +410,62 @@ def main() -> int:
         })
 
         db.session.flush()
+
+        # Reservas para Roberto (huesped2)
+        reserva_roberto_entrada = hoy - timedelta(days=3)
+        reserva_roberto_salida = hoy
+        reserva_roberto_noches = (reserva_roberto_salida - reserva_roberto_entrada).days
+        reserva_roberto_subtotal = _decimal(habitaciones["301"].precio_noche) * reserva_roberto_noches
+        reserva_roberto_impuestos = (reserva_roberto_subtotal * IVA_RATE).quantize(Decimal("0.01"))
+        reserva_roberto_total = reserva_roberto_subtotal + reserva_roberto_impuestos
+
+        reserva_roberto = _upsert_reserva({
+            "id_huesped": huesped2.id,
+            "id_habitacion": habitaciones["301"].id,
+            "fecha_entrada": reserva_roberto_entrada,
+            "fecha_salida": reserva_roberto_salida,
+            "noches": reserva_roberto_noches,
+            "subtotal": reserva_roberto_subtotal,
+            "impuestos": reserva_roberto_impuestos,
+            "total": reserva_roberto_total,
+            "estado": EstadoReserva.confirmada,
+            "fecha_reserva": ahora - timedelta(days=5),
+        })
+
+        db.session.flush()
+
+        _upsert_pago({
+            "id_reserva": reserva_roberto.id,
+            "tipo": TipoPago.garantia,
+            "monto": (reserva_roberto_total * Decimal("0.50")).quantize(Decimal("0.01")),
+            "metodo": MetodoPago.tarjeta,
+            "estado": EstadoPago.aprobado,
+            "referencia_externa": "demo-garantia-301",
+        })
+
+        _upsert_servicio({
+            "id_reserva": reserva_roberto.id,
+            "tipo": TipoServicio.comedor,
+            "descripcion": "Cena romántica para dos",
+            "recurso": "Restaurante principal",
+            "costo": _decimal("120000.00"),
+            "duracion_minutos": 90,
+            "fecha_hora": ahora - timedelta(days=1, hours=8),
+        })
+
+        _upsert_checkin({
+            "id_reserva": reserva_roberto.id,
+            "fecha_checkin": ahora - timedelta(days=2),
+            "realizado_por": usuarios["recepcionista"].id,
+        })
+
+        _upsert_puntos({
+            "id_huesped": huesped2.id,
+            "id_reserva": reserva_roberto.id,
+            "puntos": reserva_roberto_noches * 10,
+            "concepto": "Estadía en curso - demo",
+            "fecha": ahora - timedelta(days=2),
+        })
 
         _upsert_pago({
             "id_reserva": reserva_pasada.id,
@@ -432,14 +540,20 @@ def main() -> int:
         db.session.commit()
 
         print("Seed demo aplicado correctamente.")
+        print("")
         print("Usuarios cargados:")
-        print(" - admin@hotel.com / Admin123!")
-        print(" - recepcionista@hotel.com / Recep123!")
-        print(" - carolina.gomez@hotel.com / Cliente123!")
+        print(" - admin@hotel.com / Admin123!          → Camila Torres (Admin)")
+        print(" - recepcionista@hotel.com / Recep123!  → Andrés López (Recepcionista)")
+        print(" - carolina.gomez@hotel.com / Cliente123! → Carolina Gómez (Cliente)")
+        print(" - roberto.mendoza@hotel.com / Cliente123! → Roberto Mendoza (Cliente)")
+        print("")
+        print("Habitaciones: 8 (101, 102, 201, 202, 301, 303, 404, 501)")
+        print("")
         print("Reservas demo:")
-        print(f" - Reserva completada: habitación 101, id {reserva_pasada.id}")
-        print(f" - Reserva confirmada: habitación 202, id {reserva_futura.id}")
-        print(f" - Reserva pendiente: habitación 303, id {reserva_pendiente.id}")
+        print(f" - Completada: hab 101, id {reserva_pasada.id} (Carolina)")
+        print(f" - Confirmada: hab 202, id {reserva_futura.id} (Carolina)")
+        print(f" - Pendiente:  hab 303, id {reserva_pendiente.id} (Carolina)")
+        print(f" - En curso:   hab 301, id {reserva_roberto.id} (Roberto)")
         return 0
 
 

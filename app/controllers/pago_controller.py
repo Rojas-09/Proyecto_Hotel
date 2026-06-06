@@ -11,6 +11,7 @@ pago_bp = Blueprint("pago", __name__, url_prefix="/api/v1/pagos")
 
 @pago_bp.route("/garantia/<int:reserva_id>", methods=["POST"])
 @token_required
+@rol_requerido("cliente", "recepcionista", "admin")
 def procesar_garantia(current_user, reserva_id):
     """
     POST /api/v1/pagos/garantia/<reserva_id>
@@ -24,7 +25,7 @@ def procesar_garantia(current_user, reserva_id):
 
     try:
         resultado = pago_service.procesar_garantia(
-            reserva_id, metodo, payment_method_id
+            reserva_id, metodo, payment_method_id, current_user
         )
         return jsonify({
             "success": True, "data": resultado,
@@ -34,6 +35,8 @@ def procesar_garantia(current_user, reserva_id):
         return jsonify({"success": False, "data": None, "mensaje": str(e)}), 404
     except ValueError as e:
         return jsonify({"success": False, "data": None, "mensaje": str(e)}), 400
+    except PermissionError as e:
+        return jsonify({"success": False, "data": None, "mensaje": str(e)}), 403
 
 
 @pago_bp.route("/liquidacion/<int:reserva_id>", methods=["POST"])

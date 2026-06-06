@@ -23,6 +23,7 @@ El proyecto está dividido en dos partes principales:
 ## 🛠 Tecnologías Utilizadas
 
 ### Backend
+
 - **Python 3.12+**
 - **Flask** (Framework web)
 - **SQLAlchemy** (ORM)
@@ -30,6 +31,7 @@ El proyecto está dividido en dos partes principales:
 - **SQLite** (Base de datos por defecto, archivo `hotelbook_dev.db`)
 
 ### Frontend
+
 - **Vue 3** (Composition API, `<script setup>`)
 - **Vite** (Build tool ultra rápida)
 - **Tailwind CSS v4** (Framework de estilos de utilidad utilitaria)
@@ -56,7 +58,8 @@ pip install -r requirements.txt
 # Iniciar la aplicación en modo desarrollo
 python run.py
 ```
-> El backend se levantará en **http://127.0.0.1:5000**
+
+> El backend se levantará en **<http://127.0.0.1:5000>**
 
 ### 2. Levantar el Frontend (Vue 3)
 
@@ -71,7 +74,8 @@ npm install
 # Iniciar el servidor de desarrollo
 npm run dev
 ```
-> El frontend se levantará en **http://localhost:5173**
+
+> El frontend se levantará en **<http://localhost:5173>**
 
 ---
 
@@ -144,12 +148,14 @@ El sistema tiene reglas de negocio estrictas basadas en los requerimientos del h
 ## 🎨 Diseño y UI
 
 El frontend ha sido diseñado con un estilo moderno, profesional y *premium* (Dark Mode), incluyendo:
+
 - Tonos sobrios (`gray-900`, `gray-800`) con un acento dorado (`#D4AF37`) que transmite exclusividad.
 - Micro-animaciones en los botones, tablas y transiciones de estado.
 - Interfaz completamente *Responsive*, adaptable a tablets y computadores de escritorio.
 - Componentes modulares (`BaseButton`, `BaseTable`, `BaseModal`) para una UI consistente.
 
 ### Mockups de Alta Fidelidad
+
 Aquí se presentan los diseños visuales de referencia de la aplicación:
 
 **1. Pantalla de Inicio de Sesión (Login)**
@@ -162,6 +168,7 @@ Aquí se presentan los diseños visuales de referencia de la aplicación:
 ![Mockup Reservas](docs/images/mockup_reservas.png)
 
 ### Prototipos (Wireframes)
+
 Estructura y flujo lógico del sistema previo al diseño final:
 
 **1. Flujo de Usuario Principal (User Flow)**

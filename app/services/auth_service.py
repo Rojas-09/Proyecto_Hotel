@@ -54,18 +54,17 @@ class AuthService:
                     }
                 }, 400
 
-        rol = data.get("rol", "cliente").lower()
-        if rol == "cliente":
-            if not data.get("documento_id", "").strip():
-                return {
-                    "success": False,
-                    "error": {
-                        "code": "VALIDATION_ERROR",
-                        "message": (
-                            "El campo 'documento_id' es requerido para clientes."
-                        ),
-                    }
-                }, 400
+        rol = "cliente"  # Forzado: solo admin puede asignar roles
+        if not data.get("documento_id", "").strip():
+            return {
+                "success": False,
+                "error": {
+                    "code": "VALIDATION_ERROR",
+                    "message": (
+                        "El campo 'documento_id' es requerido para clientes."
+                    ),
+                }
+            }, 400
 
         email = data["email"].strip().lower()
 

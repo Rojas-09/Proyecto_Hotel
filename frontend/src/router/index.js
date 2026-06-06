@@ -10,6 +10,7 @@ import CheckInOutView from '../views/CheckInOutView.vue';
 import FacturacionView from '../views/FacturacionView.vue';
 import ReportesView from '../views/ReportesView.vue';
 import ServiciosView from '../views/ServiciosView.vue';
+import ClienteView from '../views/ClienteView.vue';
 
 const routes = [
   {
@@ -21,7 +22,7 @@ const routes = [
   {
     path: '/',
     component: MainLayout,
-    meta: { requiresAuth: true, roles: ['admin', 'recepcionista', 'gerente'] },
+    meta: { requiresAuth: true, roles: ['admin', 'recepcionista', 'gerente', 'cliente'] },
     children: [
       { path: '', redirect: '/habitaciones' },
       { path: 'habitaciones', name: 'Habitaciones', component: HabitacionesView, meta: { roles: ['admin', 'recepcionista', 'gerente'] } },
@@ -36,6 +37,7 @@ const routes = [
         component: ReportesView,
         meta: { roles: ['gerente', 'admin'] }
       },
+      { path: 'mi-panel', name: 'MiPanel', component: ClienteView, meta: { roles: ['cliente'] } },
     ]
   }
 ];
@@ -47,11 +49,12 @@ const router = createRouter({
 
 router.beforeEach((to, from) => {
   const authStore = useAuthStore();
-  const dashboardRoles = ['admin', 'recepcionista', 'gerente'];
+  const dashboardRoles = ['admin', 'recepcionista', 'gerente', 'cliente'];
   const homeByRole = {
     admin: '/habitaciones',
     recepcionista: '/habitaciones',
     gerente: '/reportes',
+    cliente: '/mi-panel',
   };
 
   // Ruta requiere auth y usuario no autenticado → login
@@ -61,7 +64,7 @@ router.beforeEach((to, from) => {
 
   // Usuario autenticado intenta ir a login
   if (!to.meta.requiresAuth && authStore.isAuthenticated && to.path === '/login' && dashboardRoles.includes(authStore.userRole)) {
-    return '/habitaciones';
+    return homeByRole[authStore.userRole];
   }
 
   const hasUnauthorizedRole = to.matched.some(

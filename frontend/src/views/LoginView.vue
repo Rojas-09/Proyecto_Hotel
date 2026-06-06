@@ -93,7 +93,13 @@ async function handleLogin() {
 
     const { token, usuario } = res.data.data;
     authStore.login(token, usuario);
-    router.push('/habitaciones');
+    const homeByRole = {
+      admin: '/habitaciones',
+      recepcionista: '/habitaciones',
+      gerente: '/reportes',
+      cliente: '/mi-panel',
+    };
+    router.push(homeByRole[usuario.rol] || '/habitaciones');
   } catch (err) {
     if (err.response?.data?.error?.message) {
       errorMsg.value = err.response.data.error.message;

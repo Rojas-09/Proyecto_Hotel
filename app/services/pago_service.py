@@ -7,6 +7,7 @@ from sqlalchemy import select
 from flask import current_app
 
 from app import db
+from app.models.huesped import Huesped
 from app.models.pago import EstadoPago, MetodoPago, Pago, TipoPago
 from app.models.reembolso import EstadoReembolso, Reembolso
 from app.models.reserva import EstadoReserva, Reserva
@@ -17,7 +18,7 @@ from app.utils.fecha_helper import ahora_colombia
 # Públicas
 # ---------------------------------------------------------------------------
 
-def procesar_garantia(reserva_id, metodo_str, payment_method_id=None):
+def procesar_garantia(reserva_id, metodo_str, payment_method_id=None, current_user=None):
     """
     Procesa el pago de garantía (50 % del total) y confirma la reserva.
 
@@ -25,6 +26,21 @@ def procesar_garantia(reserva_id, metodo_str, payment_method_id=None):
       PENDIENTE → [pago 50 %] → CONFIRMADA
     """
     reserva = _obtener_reserva(reserva_id)
+
+    if current_user:
+        rol_actual = (
+            current_user.rol.value
+            if hasattr(current_user.rol, 'value')
+            else current_user.rol
+        )
+        if rol_actual == "cliente":
+            huesped = db.session.execute(
+                select(Huesped).filter_by(id_usuario=current_user.id)
+            ).scalar_one_or_none()
+            if not huesped or reserva.id_huesped != huesped.id:
+                raise PermissionError(
+                    "No tienes permiso para procesar el pago de esta reserva."
+                )
 
     _verificar_sin_garantia(reserva_id)
 

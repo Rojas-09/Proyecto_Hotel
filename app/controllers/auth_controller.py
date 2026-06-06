@@ -22,6 +22,21 @@ auth_bp = Blueprint("auth", __name__)
 @auth_bp.route("/register-admin", methods=["POST"])
 def register_admin():
     """Crea el primer administrador. Solo funciona si no hay admins en la DB."""
+    from flask import current_app
+
+    if not current_app.config.get("ADMIN_BOOTSTRAP_ENABLED", False):
+        return jsonify({
+            "success": False,
+            "error": {"code": "FORBIDDEN", "message": "Endpoint deshabilitado."}
+        }), 403
+
+    secret = current_app.config.get("ADMIN_BOOTSTRAP_SECRET", "")
+    if secret and request.headers.get("X-Bootstrap-Secret") != secret:
+        return jsonify({
+            "success": False,
+            "error": {"code": "UNAUTHORIZED", "message": "No autorizado."}
+        }), 401
+
     data = request.get_json(silent=True)
     if not data:
         return jsonify({

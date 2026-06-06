@@ -7,11 +7,28 @@ POST   /api/v1/huespedes/<huesped_id>/puntos/canjear   → canjear puntos
 """
 
 from flask import Blueprint, jsonify, request
+from sqlalchemy import select
 
+from app import db
+from app.models.huesped import Huesped
 from app.services import puntos_fidelidad_service
 from app.utils.jwt_helper import token_required, rol_requerido
 
 puntos_bp = Blueprint("puntos_fidelidad", __name__)
+
+
+def _verificar_ownership_puntos(current_user, huesped_id):
+    rol_actual = (
+        current_user.rol.value
+        if hasattr(current_user.rol, 'value')
+        else current_user.rol
+    )
+    if rol_actual == "cliente":
+        huesped = db.session.execute(
+            select(Huesped).filter_by(id_usuario=current_user.id)
+        ).scalar_one_or_none()
+        if not huesped or huesped.id != huesped_id:
+            raise PermissionError("No tienes permiso para gestionar estos puntos.")
 
 
 @puntos_bp.route("/<int:huesped_id>/puntos", methods=["GET"])
@@ -104,6 +121,7 @@ def canjear_puntos(current_user, huesped_id):
         }), 400
 
     try:
+        _verificar_ownership_puntos(current_user, huesped_id)
         resultado = puntos_fidelidad_service.canjear(huesped_id, int(opcion_id))
         return jsonify({
             "success": True,
@@ -122,3 +140,9 @@ def canjear_puntos(current_user, huesped_id):
             "data": None,
             "mensaje": str(e)
         }), 400
+    except PermissionError as e:
+        return jsonify({
+            "success": False,
+            "data": None,
+            "mensaje": str(e)
+        }), 403

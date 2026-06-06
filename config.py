@@ -58,6 +58,8 @@ class Config:
     PUNTOS_POR_NOCHE = 10
     GARANTIA_PORCENTAJE = 0.50
     CORS_ORIGINS = os.environ.get("CORS_ORIGINS", "*")
+    ADMIN_BOOTSTRAP_ENABLED = os.environ.get("ADMIN_BOOTSTRAP_ENABLED", "False") == "True"
+    ADMIN_BOOTSTRAP_SECRET = os.environ.get("ADMIN_BOOTSTRAP_SECRET", "")
     PERMANENT_SESSION_LIFETIME = 86400  # 24 horas en segundos
 
 

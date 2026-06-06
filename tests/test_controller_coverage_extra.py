@@ -48,7 +48,7 @@ class TestAuthController:
     def test_register_admin_sin_body(self, client):
         resp = client.post("/api/v1/auth/register-admin",
                            content_type="application/json")
-        assert resp.status_code == 400
+        assert resp.status_code == 403
 
     def test_crear_usuario_sin_body(self, client, app):
         with app.app_context():

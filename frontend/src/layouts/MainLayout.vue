@@ -79,6 +79,7 @@ const sidebarOpen = ref(true);
 const toastRef = ref(null);
 
 const navItems = [
+  { path: '/mi-panel', label: 'Mi Panel', icon: '👤', roles: ['cliente'] },
   { path: '/habitaciones', label: 'Habitaciones', icon: '🛏️', roles: ['admin', 'recepcionista', 'gerente'] },
   { path: '/reservas', label: 'Reservas', icon: '📋', roles: ['admin', 'recepcionista', 'gerente'] },
   { path: '/huespedes', label: 'Huéspedes', icon: '👥', roles: ['admin', 'recepcionista'] },
@@ -93,6 +94,7 @@ const visibleNavItems = computed(() =>
 );
 
 const pageTitles = {
+  '/mi-panel': 'Mi Panel',
   '/habitaciones': 'Habitaciones',
   '/reservas': 'Reservas',
   '/huespedes': 'Huéspedes',
