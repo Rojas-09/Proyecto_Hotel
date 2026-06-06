@@ -12,15 +12,15 @@ load_dotenv()
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 
 
-def _get_secret_key() -> str:
-    """SECRET_KEY: genera aleatorio en dev, error claro en prod."""
-    key = os.environ.get("SECRET_KEY")
+def _get_secret_key(name: str = "SECRET_KEY") -> str:
+    """Clave secreta: lee de env var, genera aleatorio en dev, error en prod."""
+    key = os.environ.get(name)
     if key:
         return key
     if os.environ.get("FLASK_ENV") == "production":
         raise ValueError(
-            "SECRET_KEY no está configurada. "
-            "Establece SECRET_KEY en variables de entorno para producción."
+            f"{name} no está configurada. "
+            f"Establece {name} en variables de entorno para producción."
         )
     return secrets.token_hex(32)
 
@@ -45,6 +45,7 @@ def _get_database_uri() -> str:
 class Config:
     """Configuración base compartida por todos los entornos."""
     SECRET_KEY = _get_secret_key()
+    JWT_SECRET_KEY = _get_secret_key("JWT_SECRET_KEY")
     JWT_EXPIRATION_HOURS = int(os.environ.get("JWT_EXPIRATION_HOURS", 24))
     BCRYPT_LOG_ROUNDS = int(os.environ.get("BCRYPT_LOG_ROUNDS", 12))
     STRIPE_SECRET_KEY = os.environ.get("STRIPE_SECRET_KEY", "")

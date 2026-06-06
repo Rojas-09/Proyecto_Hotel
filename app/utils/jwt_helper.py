@@ -18,11 +18,11 @@ def generar_token(user_id: int, email: str, rol: str) -> str:
         "exp": datetime.now(timezone.utc) + timedelta(hours=expiration_hours),
         "iat": datetime.now(timezone.utc),
     }
-    return jwt.encode(payload, current_app.config["SECRET_KEY"], algorithm="HS256")
+    return jwt.encode(payload, current_app.config["JWT_SECRET_KEY"], algorithm="HS256")
 
 
 def decodificar_token(token: str) -> dict:
-    return jwt.decode(token, current_app.config["SECRET_KEY"], algorithms=["HS256"])
+    return jwt.decode(token, current_app.config["JWT_SECRET_KEY"], algorithms=["HS256"])
 
 
 def token_required(f):
