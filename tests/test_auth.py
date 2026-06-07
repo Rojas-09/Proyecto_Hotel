@@ -95,7 +95,7 @@ class TestRegister:
             "password": "123",
             "documento_id": "11111111"
         })
-        assert res.status_code == 400
+        assert res.status_code == 422
         assert res.get_json()["error"]["code"] == "VALIDATION_ERROR"
 
     def test_registro_campo_faltante(self, client):
@@ -104,7 +104,7 @@ class TestRegister:
             "email": "otro@test.com",
             "documento_id": "22222222"
         })
-        assert res.status_code == 400
+        assert res.status_code == 422
 
     def test_registro_sin_documento_id(self, client):
         res = client.post("/api/v1/auth/register", json={
@@ -118,7 +118,7 @@ class TestRegister:
 
     def test_registro_sin_body(self, client):
         res = client.post("/api/v1/auth/register")
-        assert res.status_code == 400
+        assert res.status_code == 422
 
 
 class TestLogin:
@@ -150,7 +150,7 @@ class TestLogin:
 
     def test_login_sin_body(self, client):
         res = client.post("/api/v1/auth/login")
-        assert res.status_code == 400
+        assert res.status_code == 422
 
 
 class TestMe:

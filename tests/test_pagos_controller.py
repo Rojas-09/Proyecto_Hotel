@@ -486,7 +486,7 @@ class TestPostGarantiaController:
         assert "inválido" in resp.get_json()["mensaje"].lower()
 
     def test_garantia_metodo_ausente(self, client, app):
-        """400 — body sin campo metodo."""
+        """422 — body sin campo metodo."""
         with app.app_context():
             admin = _crear_usuario(RolEnum.admin, "adm_gar2")
             huesped_u = _crear_usuario(RolEnum.cliente, "cli_gar2")
@@ -502,8 +502,8 @@ class TestPostGarantiaController:
             json={},
             headers=_auth(token),
         )
-        assert resp.status_code == 400
-        assert "obligatorio" in resp.get_json()["mensaje"].lower()
+        assert resp.status_code == 422
+        assert "metodo" in str(resp.get_json()["error"]["message"]).lower()
 
     def test_garantia_reserva_ya_confirmada(self, client, app):
         """400 — reserva no está en pendiente."""

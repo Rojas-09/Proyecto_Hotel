@@ -14,6 +14,7 @@ DELETE /api/v1/auth/usuarios/<id> → Soft delete usuario (solo admin)
 from flask import Blueprint, request, jsonify, current_app
 
 from app.limiter import limiter
+from app.schemas.auth_schema import RegisterSchema, LoginSchema
 from app.services.auth_service import AuthService
 from app.utils.error_helper import handle_service_error
 from app.utils.jwt_helper import token_required, rol_requerido
@@ -52,12 +53,13 @@ def register_admin():
 @auth_bp.route("/register", methods=["POST"])
 @limiter.limit("5 per minute")
 def register():
-    data = request.get_json(silent=True)
-    if not data:
+    data = request.get_json(silent=True) or {}
+    errors = RegisterSchema().validate(data)
+    if errors:
         return jsonify({
             "success": False,
-            "error": {"code": "VALIDATION_ERROR", "message": "Body JSON requerido."}
-        }), 400
+            "error": {"code": "VALIDATION_ERROR", "message": errors}
+        }), 422
     result, status = AuthService.registrar(data)
     if status not in (200, 201):
         return jsonify(result), status
@@ -76,12 +78,13 @@ def register():
 @auth_bp.route("/login", methods=["POST"])
 @limiter.limit("10 per minute")
 def login():
-    data = request.get_json(silent=True)
-    if not data:
+    data = request.get_json(silent=True) or {}
+    errors = LoginSchema().validate(data)
+    if errors:
         return jsonify({
             "success": False,
-            "error": {"code": "VALIDATION_ERROR", "message": "Body JSON requerido."}
-        }), 400
+            "error": {"code": "VALIDATION_ERROR", "message": errors}
+        }), 422
     result, status = AuthService.login(data)
     if status != 200:
         return jsonify(result), status

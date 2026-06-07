@@ -1,5 +1,6 @@
 from flask import Blueprint, jsonify, request
 
+from app.schemas.reserva_schema import CrearReservaSchema
 import app.services.reserva_service as reserva_service
 from app.utils.error_helper import handle_service_error
 from app.utils.jwt_helper import token_required, rol_requerido
@@ -11,12 +12,13 @@ reserva_bp = Blueprint("reservas", __name__, url_prefix="/api/v1/reservas")
 @token_required
 @rol_requerido("cliente", "recepcionista", "admin")
 def crear(current_user):
-    datos = request.get_json()
-    if not datos:
+    datos = request.get_json() or {}
+    errors = CrearReservaSchema().validate(datos)
+    if errors:
         return jsonify({
             "success": False,
-            "mensaje": "El cuerpo de la solicitud debe ser JSON."
-        }), 400
+            "error": {"code": "VALIDATION_ERROR", "message": errors}
+        }), 422
 
     try:
         reserva = reserva_service.crear(datos, current_user)

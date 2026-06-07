@@ -3,6 +3,7 @@ Pago Controller - Endpoints REST para pagos y reembolsos (RF-13)
 """
 from flask import Blueprint, jsonify, request
 
+from app.schemas.pago_schema import PagoGarantiaSchema, PagoLiquidacionSchema
 from app.services import pago_service
 from app.utils.error_helper import handle_service_error
 from app.utils.jwt_helper import rol_requerido, token_required
@@ -21,6 +22,13 @@ def procesar_garantia(current_user, reserva_id):
     Roles permitidos: cliente, recepcionista, admin.
     """
     datos = request.get_json() or {}
+    errors = PagoGarantiaSchema().validate(datos)
+    if errors:
+        return jsonify({
+            "success": False,
+            "error": {"code": "VALIDATION_ERROR", "message": errors}
+        }), 422
+
     metodo = datos.get("metodo")
     payment_method_id = datos.get("payment_method_id")
 
@@ -73,6 +81,13 @@ def procesar_liquidacion(current_user, reserva_id):
     Roles permitidos: recepcionista, admin.
     """
     datos = request.get_json() or {}
+    errors = PagoLiquidacionSchema().validate(datos)
+    if errors:
+        return jsonify({
+            "success": False,
+            "error": {"code": "VALIDATION_ERROR", "message": errors}
+        }), 422
+
     metodo = datos.get("metodo")
     payment_method_id = datos.get("payment_method_id")
 
