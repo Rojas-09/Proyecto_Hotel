@@ -4,6 +4,7 @@ Cubre: login → crear reserva → garantía → checkin → servicios →
 liquidación → checkout → puntos → factura → descarga PDF.
 """
 import pytest
+from tests.conftest import _extract_token_from_cookies
 from datetime import date, timedelta
 
 from app import db
@@ -41,7 +42,7 @@ def _login(client, email, password):
     resp = client.post("/api/v1/auth/login", json={
         "email": email, "password": password})
     assert resp.status_code == 200
-    token = resp.get_json()["data"]["token"]
+    token = _extract_token_from_cookies(client)
     return {"Authorization": f"Bearer {token}"}
 
 

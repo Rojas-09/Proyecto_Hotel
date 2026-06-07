@@ -91,8 +91,8 @@ async function handleLogin() {
       password: form.value.password,
     });
 
-    const { token, usuario } = res.data.data;
-    authStore.login(token, usuario);
+    const { usuario } = res.data.data;
+    authStore.login(usuario);
     const homeByRole = {
       admin: '/habitaciones',
       recepcionista: '/habitaciones',

@@ -86,5 +86,11 @@ def cliente_headers(client, cliente):
         "email": "cliente@test.com",
         "password": "password123",
     })
-    token = res.get_json()["data"]["token"]
+    token = _extract_token_from_cookies(client)
     return {"Authorization": f"Bearer {token}"}
+
+
+def _extract_token_from_cookies(client):
+    """Lee el access_token del test client tras un login exitoso."""
+    cookie = client.get_cookie("access_token")
+    return cookie.value if cookie else None

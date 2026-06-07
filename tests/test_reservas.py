@@ -4,6 +4,7 @@ Ejecutar: pytest tests/test_reservas.py -v
 """
 
 import pytest
+from tests.conftest import _extract_token_from_cookies
 from datetime import date, timedelta
 
 from app.models.habitacion import (
@@ -91,7 +92,7 @@ def cliente_user(client, app, request):
         "email": email,
         "password": "Cliente1234"
     })
-    token = resp.get_json()["data"]["token"]
+    token = _extract_token_from_cookies(client)
     return {
         "Authorization": f"Bearer {token}"
     }, huesped_id
@@ -117,7 +118,7 @@ def admin_user(client, app, request):
         "email": email,
         "password": "Admin1234"
     })
-    token = resp.get_json()["data"]["token"]
+    token = _extract_token_from_cookies(client)
     return {"Authorization": f"Bearer {token}"}
 
 

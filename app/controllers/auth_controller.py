@@ -11,7 +11,7 @@ PUT  /api/v1/auth/usuarios/<id>   → Editar usuario (admin/gerente)
 DELETE /api/v1/auth/usuarios/<id> → Soft delete usuario (solo admin)
 """
 
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, current_app
 
 from app.limiter import limiter
 from app.services.auth_service import AuthService
@@ -59,7 +59,18 @@ def register():
             "error": {"code": "VALIDATION_ERROR", "message": "Body JSON requerido."}
         }), 400
     result, status = AuthService.registrar(data)
-    return jsonify(result), status
+    if status not in (200, 201):
+        return jsonify(result), status
+    token = result["data"].pop("token", None)
+    resp = jsonify(result)
+    if token:
+        resp.set_cookie(
+            "access_token", token,
+            httponly=True, samesite="Lax",
+            max_age=2592000, path="/",
+            secure=current_app.config.get("SESSION_COOKIE_SECURE", False),
+        )
+    return resp, status
 
 
 @auth_bp.route("/login", methods=["POST"])
@@ -72,7 +83,25 @@ def login():
             "error": {"code": "VALIDATION_ERROR", "message": "Body JSON requerido."}
         }), 400
     result, status = AuthService.login(data)
-    return jsonify(result), status
+    if status != 200:
+        return jsonify(result), status
+    token = result["data"].pop("token", None)
+    resp = jsonify(result)
+    if token:
+        resp.set_cookie(
+            "access_token", token,
+            httponly=True, samesite="Lax",
+            max_age=2592000, path="/",
+            secure=current_app.config.get("SESSION_COOKIE_SECURE", False),
+        )
+    return resp, status
+
+
+@auth_bp.route("/logout", methods=["POST"])
+def logout():
+    resp = jsonify({"success": True, "mensaje": "Sesión cerrada."})
+    resp.set_cookie("access_token", "", httponly=True, expires=0, path="/")
+    return resp, 200
 
 
 @auth_bp.route("/me", methods=["GET"])

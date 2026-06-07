@@ -33,6 +33,8 @@ def token_required(f):
         auth_header = request.headers.get("Authorization", "")
         if auth_header.startswith("Bearer "):
             token = auth_header.split(" ", 1)[1]
+        if not token:
+            token = request.cookies.get("access_token")
 
         if not token:
             return jsonify({

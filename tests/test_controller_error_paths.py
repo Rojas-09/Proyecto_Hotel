@@ -1,3 +1,4 @@
+from tests.conftest import _extract_token_from_cookies
 from app import db
 from app.models.usuario import Usuario, RolEnum
 from app.models.huesped import Huesped
@@ -29,7 +30,7 @@ def _token_para(client, app, email, rol="admin"):
         "/api/v1/auth/login",
         json={"email": email, "password": "Password123"},
     )
-    return login.get_json()["data"]["token"]
+    return _extract_token_from_cookies(client)
 
 
 def test_habitaciones_listar_error_500(client, monkeypatch):

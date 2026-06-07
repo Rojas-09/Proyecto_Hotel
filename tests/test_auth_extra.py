@@ -1,3 +1,4 @@
+from tests.conftest import _extract_token_from_cookies
 from app import db
 from app.models.usuario import Usuario
 from app.services.auth_service import AuthService
@@ -245,7 +246,7 @@ def test_auth_controller_me_put_body_requerido(client, app):
         "/api/v1/auth/login",
         json={"email": "me@test.com", "password": "Password123"},
     )
-    token = login.get_json()["data"]["token"]
+    token = _extract_token_from_cookies(client)
     resp = client.put(
         "/api/v1/auth/me",
         headers={"Authorization": f"Bearer {token}"},
@@ -263,7 +264,7 @@ def test_auth_controller_usuarios_put_body_requerido(client, app):
         "/api/v1/auth/login",
         json={"email": "admctrl@test.com", "password": "Password123"},
     )
-    token = login.get_json()["data"]["token"]
+    token = _extract_token_from_cookies(client)
     resp = client.put(
         "/api/v1/auth/usuarios/2",
         headers={"Authorization": f"Bearer {token}"},
@@ -281,7 +282,7 @@ def test_auth_controller_listar_usuarios_y_eliminar(client, app):
         "/api/v1/auth/login",
         json={"email": "admlist@test.com", "password": "Password123"},
     )
-    token = login.get_json()["data"]["token"]
+    token = _extract_token_from_cookies(client)
     headers = {"Authorization": f"Bearer {token}"}
 
     resp_list = client.get("/api/v1/auth/usuarios", headers=headers)

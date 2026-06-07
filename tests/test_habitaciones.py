@@ -4,6 +4,7 @@ Ejecutar: pytest tests/test_habitaciones.py -v
 """
 
 import pytest
+from tests.conftest import _extract_token_from_cookies
 
 from app.models.habitacion import EstadoHabitacion, Habitacion, TipoHabitacion
 from app.models.usuario import Usuario, RolEnum
@@ -75,7 +76,7 @@ def admin_headers(client, request, app):
     })
 
     if resp.status_code == 200:
-        token = resp.get_json()["data"]["token"]
+        token = _extract_token_from_cookies(client)
         # Cambiar el rol a admin directamente en la BD para tests
         with app.app_context():
             user = Usuario.query.filter_by(email=email).first()

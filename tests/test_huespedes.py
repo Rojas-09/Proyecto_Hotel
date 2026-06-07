@@ -3,6 +3,7 @@ Tests - Módulo Huéspedes
 Cubre: obtener_todos, obtener_por_id, buscar, actualizar
 """
 
+from tests.conftest import _extract_token_from_cookies
 from app.models.usuario import Usuario, RolEnum
 from app.models.huesped import Huesped
 
@@ -23,7 +24,7 @@ def obtener_token_admin(client, db):
         "email": "admin@huespedes.test",
         "password": "AdminPass123"
     })
-    return res.get_json()["data"]["token"]
+    return _extract_token_from_cookies(client)
 
 
 class TestObtenerTodos:

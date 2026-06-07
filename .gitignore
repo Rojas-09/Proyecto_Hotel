@@ -85,6 +85,8 @@ pytest.ini
 
 # Evidencias generadas (coverage, flake8, etc)
 docs/evidencias/
+docs/*.docx
+docs/*.pdf
 
 # Code graph local (OpenGem)
 .opengem/

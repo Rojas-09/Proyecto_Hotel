@@ -51,7 +51,12 @@ def obtener_token(client, email, password):
         "email": email,
         "password": password
     })
-    return res.get_json()["data"]["token"]
+    set_cookie = res.headers.get("Set-Cookie", "")
+    for part in set_cookie.split(";"):
+        part = part.strip()
+        if part.startswith("access_token="):
+            return part.split("access_token=", 1)[1]
+    return None
 
 
 class TestRegister:
@@ -68,7 +73,7 @@ class TestRegister:
         data = res.get_json()
         assert res.status_code == 201
         assert data["success"] is True
-        assert "token" in data["data"]
+        assert "token" not in data["data"]
         assert data["data"]["usuario"]["rol"] == "cliente"
 
     def test_registro_email_duplicado(self, client, usuario_cliente):
@@ -126,7 +131,7 @@ class TestLogin:
         data = res.get_json()
         assert res.status_code == 200
         assert data["success"] is True
-        assert "token" in data["data"]
+        assert "token" not in data["data"]
 
     def test_login_password_incorrecta(self, client, usuario_cliente):
         res = client.post("/api/v1/auth/login", json={
