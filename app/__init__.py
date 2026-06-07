@@ -28,6 +28,9 @@ def create_app(config_name="development"):
         automatic_options=True,
     )
 
+    from app.limiter import limiter as _limiter
+    _limiter.init_app(app)
+
     # Registrar Blueprints (controladores)
     from app.controllers.auth_controller import auth_bp
     from app.controllers.habitacion_controller import habitacion_bp

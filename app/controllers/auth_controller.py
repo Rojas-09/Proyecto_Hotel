@@ -13,6 +13,7 @@ DELETE /api/v1/auth/usuarios/<id> → Soft delete usuario (solo admin)
 
 from flask import Blueprint, request, jsonify
 
+from app.limiter import limiter
 from app.services.auth_service import AuthService
 from app.utils.error_helper import handle_service_error
 from app.utils.jwt_helper import token_required, rol_requerido
@@ -49,6 +50,7 @@ def register_admin():
 
 
 @auth_bp.route("/register", methods=["POST"])
+@limiter.limit("5 per minute")
 def register():
     data = request.get_json(silent=True)
     if not data:
@@ -61,6 +63,7 @@ def register():
 
 
 @auth_bp.route("/login", methods=["POST"])
+@limiter.limit("10 per minute")
 def login():
     data = request.get_json(silent=True)
     if not data:

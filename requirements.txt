@@ -19,6 +19,7 @@ alembic==1.14.0
 PyJWT==2.10.1
 bcrypt==4.2.1
 python-dotenv==1.0.1
+flask-limiter==3.10.1
 
 # Data Validation & Serialization
 marshmallow==3.23.1
