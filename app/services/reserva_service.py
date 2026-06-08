@@ -300,47 +300,50 @@ def hacer_checkout(reserva_id, realizado_por_id=None):
             "aprobado antes de emitir la factura. (RF-13)"
         )
 
-    reserva.estado = EstadoReserva.completada
-    reserva.habitacion.estado = EstadoHabitacion.disponible
-    reserva.updated_at = ahora_colombia()
-
-    checkin_checkout = db.session.execute(
-        select(CheckInCheckOut).filter_by(id_reserva=reserva.id)
-    ).scalar_one_or_none()
-    if checkin_checkout:
-        checkin_checkout.fecha_checkout = ahora_colombia()
-
-    # Acreditación de puntos de fidelidad (no debe bloquear el checkout)
     try:
-        from app.services import puntos_fidelidad_service
-        puntos_fidelidad_service.acreditar(reserva_id)
-    except Exception:
-        # Nunca bloquear checkout por puntos
-        pass
+        reserva.estado = EstadoReserva.completada
+        reserva.habitacion.estado = EstadoHabitacion.disponible
+        reserva.updated_at = ahora_colombia()
 
-    puntos = reserva.noches * 10
+        checkin_checkout = db.session.execute(
+            select(CheckInCheckOut).filter_by(id_reserva=reserva.id)
+        ).scalar_one_or_none()
+        if checkin_checkout:
+            checkin_checkout.fecha_checkout = ahora_colombia()
 
-    servicios_adicionales_total = Decimal("0")
-    if reserva.servicios_adicionales:
-        servicios_adicionales_total = sum(
-            Decimal(str(s.costo)) for s in reserva.servicios_adicionales
+        # Acreditación de puntos de fidelidad (no debe bloquear el checkout)
+        try:
+            from app.services import puntos_fidelidad_service
+            puntos_fidelidad_service.acreditar(reserva_id)
+        except Exception:
+            pass
+
+        puntos = reserva.noches * 10
+
+        servicios_adicionales_total = Decimal("0")
+        if reserva.servicios_adicionales:
+            servicios_adicionales_total = sum(
+                Decimal(str(s.costo)) for s in reserva.servicios_adicionales
+            )
+
+        factura = Factura(
+            id_reserva=reserva.id,
+            fecha_emision=ahora_colombia(),
+            subtotal=reserva.subtotal,
+            impuestos=reserva.impuestos,
+            servicios_adicionales_total=servicios_adicionales_total,
+            total=(
+                reserva.subtotal +
+                reserva.impuestos +
+                servicios_adicionales_total
+            ),
+            estado=EstadoFactura.pendiente,
         )
-
-    factura = Factura(
-        id_reserva=reserva.id,
-        fecha_emision=ahora_colombia(),
-        subtotal=reserva.subtotal,
-        impuestos=reserva.impuestos,
-        servicios_adicionales_total=servicios_adicionales_total,
-        total=(
-            reserva.subtotal +
-            reserva.impuestos +
-            servicios_adicionales_total
-        ),
-        estado=EstadoFactura.pendiente,
-    )
-    db.session.add(factura)
-    db.session.commit()
+        db.session.add(factura)
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        raise
 
     resultado = reserva.to_dict()
     resultado["puntos_ganados"] = puntos

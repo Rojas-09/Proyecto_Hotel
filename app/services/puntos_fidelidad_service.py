@@ -40,7 +40,7 @@ def acreditar(reserva_id):
         concepto=concepto,
     )
     db.session.add(registro)
-    db.session.commit()
+    db.session.flush()
     return registro.to_dict()
 
 
