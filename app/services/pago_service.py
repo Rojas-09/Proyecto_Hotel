@@ -58,7 +58,7 @@ def procesar_garantia(reserva_id, metodo_str, payment_method_id=None, current_us
 
     referencia_externa = None
     if metodo == MetodoPago.tarjeta:
-        referencia_externa = _cobrar_stripe(monto, payment_method_id, reserva_id)
+        referencia_externa = _cobrar_stripe(monto, payment_method_id, reserva_id, "garantia")
 
     es_manual = metodo in (MetodoPago.efectivo, MetodoPago.transferencia)
 
@@ -124,7 +124,7 @@ def procesar_liquidacion(reserva_id, metodo_str, payment_method_id=None):
     metodo = _validar_metodo(metodo_str)
     referencia_externa = None
     if metodo == MetodoPago.tarjeta and monto > Decimal("0"):
-        referencia_externa = _cobrar_stripe(monto, payment_method_id, reserva_id)
+        referencia_externa = _cobrar_stripe(monto, payment_method_id, reserva_id, "liquidacion")
 
     pago = Pago(
         id_reserva=reserva_id,
@@ -288,7 +288,7 @@ def _validar_metodo(metodo_str):
 # Privadas — Stripe
 # ---------------------------------------------------------------------------
 
-def _cobrar_stripe(monto, payment_method_id, reserva_id):
+def _cobrar_stripe(monto, payment_method_id, reserva_id, tipo_pago="pago"):
     """
     Crea y confirma un PaymentIntent en Stripe.
     En ambiente testing retorna un ID simulado sin llamar la API.
@@ -316,6 +316,7 @@ def _cobrar_stripe(monto, payment_method_id, reserva_id):
             currency="cop",
             payment_method=payment_method_id,
             confirm=True,
+            idempotency_key=f"reserva-{reserva_id}-{tipo_pago}-v1",
             automatic_payment_methods={
                 "enabled": True,
                 "allow_redirects": "never",
@@ -352,6 +353,7 @@ def _reversar_stripe(payment_intent_id, monto):
         stripe.Refund.create(
             payment_intent=payment_intent_id,
             amount=int(monto * 100),
+            idempotency_key=f"refund-{payment_intent_id}-v1",
         )
     except stripe.error.StripeError as e:
         raise ValueError(f"Error procesando reembolso en Stripe: {str(e)}")
