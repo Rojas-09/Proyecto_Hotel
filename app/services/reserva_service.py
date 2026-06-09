@@ -3,6 +3,7 @@ Reserva Service - Lógica de negocio para reservas
 """
 
 import smtplib
+import threading
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import date, datetime
@@ -170,7 +171,12 @@ def confirmar(reserva_id):
     reserva.updated_at = ahora_colombia()
     db.session.commit()
 
-    _enviar_email_confirmacion(reserva)
+    _app = current_app._get_current_object()
+    threading.Thread(
+        target=lambda: _enviar_email_with_context(_app, reserva),
+        daemon=True
+    ).start()
+
     notificacion = db.session.execute(
         select(Notificacion).filter_by(
             id_reserva=reserva.id, tipo="confirmacion_reserva"
@@ -422,6 +428,14 @@ def _validar_reserva_no_solapada(id_habitacion, fecha_entrada, fecha_salida):
             "La habitación ya tiene una reserva en el rango de fechas "
             "seleccionado."
         )
+
+
+def _enviar_email_with_context(app, reserva):
+    with app.app_context():
+        try:
+            _enviar_email_confirmacion(reserva)
+        except Exception:
+            pass
 
 
 def _enviar_email_confirmacion(reserva):
