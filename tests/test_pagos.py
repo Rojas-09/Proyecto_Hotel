@@ -286,11 +286,14 @@ class TestProcesarLiquidacion:
             db.session.add(r)
             db.session.commit()
 
+            r.estado = EstadoReserva.confirmada
+            r.estado = EstadoReserva.ocupada
+            db.session.commit()
+
             garantia = Pago(id_reserva=r.id, monto=Decimal("119000"),
                             metodo=MetodoPago.efectivo, tipo=TipoPago.garantia,
                             estado=EstadoPago.aprobado)
             db.session.add(garantia)
-            r.estado = EstadoReserva.ocupada
             db.session.commit()
 
             resultado = procesar_liquidacion(r.id, "Efectivo")

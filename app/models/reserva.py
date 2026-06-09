@@ -4,6 +4,7 @@ Modelo Reserva - Reservas de habitaciones
 
 import enum
 from sqlalchemy import Numeric
+from sqlalchemy.orm import validates
 
 from app import db
 from app.utils.fecha_helper import ahora_colombia
@@ -15,6 +16,15 @@ class EstadoReserva(enum.Enum):
     ocupada = "Ocupada"
     completada = "Completada"
     cancelada = "Cancelada"
+
+
+TRANSICIONES_VALIDAS = {
+    EstadoReserva.pendiente: [EstadoReserva.confirmada, EstadoReserva.cancelada],
+    EstadoReserva.confirmada: [EstadoReserva.ocupada, EstadoReserva.cancelada],
+    EstadoReserva.ocupada: [EstadoReserva.completada],
+    EstadoReserva.completada: [],
+    EstadoReserva.cancelada: [],
+}
 
 
 class Reserva(db.Model):
@@ -115,3 +125,12 @@ class Reserva(db.Model):
 
     def __repr__(self):
         return f"<Reserva {self.id} - {self.estado.value}>"
+
+    @validates('estado')
+    def validar_transicion(self, key, nuevo_estado):
+        if self.estado and nuevo_estado not in TRANSICIONES_VALIDAS.get(self.estado, []):
+            raise ValueError(
+                f"Transición inválida: {self.estado.value} → {nuevo_estado.value}. "
+                f"Permitidas: {[e.value for e in TRANSICIONES_VALIDAS[self.estado]]}"
+            )
+        return nuevo_estado
