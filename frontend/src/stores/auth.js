@@ -3,7 +3,7 @@ import router from '../router';
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
-    user: JSON.parse(localStorage.getItem('user')) || null,
+    user: null,
   }),
   getters: {
     isAuthenticated: (state) => !!state.user,
