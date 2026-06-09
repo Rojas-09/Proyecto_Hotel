@@ -58,7 +58,6 @@ def _factura_emitida(reserva_id: int) -> bool:
 
 
 def _validar_sin_traslapes_spa(
-    reserva_id: int,
     fecha_hora,
     duracion_minutos: int,
     recurso: str = None,
@@ -66,7 +65,7 @@ def _validar_sin_traslapes_spa(
 ):
     """
     Valida que un servicio de tipo Spa no se traslape con otro del mismo
-    recurso (sala/masajista) en la misma reserva (RF-11).
+    recurso (sala/masajista) a nivel global (RF-11).
 
     Si el servicio no especifica recurso, se omite la validación
     (backward compatibility).
@@ -77,17 +76,20 @@ def _validar_sin_traslapes_spa(
     desde = fecha_hora
     hasta = fecha_hora + timedelta(minutes=duracion_minutos)
 
+    filtros = [
+        ServicioAdicional.tipo == TipoServicio.spa,
+        ServicioAdicional.recurso == recurso,
+        ServicioAdicional.fecha_hora < hasta,
+    ]
+
+    if servicio_id_excluir:
+        filtros.append(ServicioAdicional.id != servicio_id_excluir)
+
     existentes = db.session.execute(
-        select(ServicioAdicional).filter(
-            ServicioAdicional.id_reserva == reserva_id,
-            ServicioAdicional.tipo == TipoServicio.spa,
-            ServicioAdicional.recurso == recurso,
-        )
+        select(ServicioAdicional).filter(*filtros)
     ).scalars().all()
 
     for s in existentes:
-        if servicio_id_excluir and s.id == servicio_id_excluir:
-            continue
         s_desde = s.fecha_hora
         if s_desde.tzinfo is None:
             s_desde = s_desde.replace(tzinfo=COLOMBIA_TZ)
@@ -111,11 +113,12 @@ def agregar(
     costo_raw,
     duracion_minutos: int = None,
     recurso: str = None,
+    fecha_hora=None,
 ) -> dict:
     """
     Agrega un servicio adicional a una reserva en estado Ocupada.
     Si el tipo es Spa, valida que no haya traslapes de horario
-    por recurso (sala/masajista) (RF-11).
+    por recurso (sala/masajista) a nivel global (RF-11).
     """
     reserva = _get_reserva(reserva_id)
 
@@ -142,9 +145,11 @@ def agregar(
     if len(descripcion.strip()) > 255:
         raise ValueError("La descripción no puede superar 255 caracteres.")
 
+    momento = fecha_hora or ahora_colombia()
+
     if tipo == TipoServicio.spa:
         _validar_sin_traslapes_spa(
-            reserva_id, ahora_colombia(), duracion_minutos, recurso
+            momento, duracion_minutos, recurso
         )
 
     servicio = ServicioAdicional(
@@ -153,7 +158,7 @@ def agregar(
         recurso=recurso.strip() if recurso else None,
         descripcion=descripcion.strip(),
         costo=costo,
-        fecha_hora=ahora_colombia(),
+        fecha_hora=momento,
         duracion_minutos=duracion_minutos,
     )
     db.session.add(servicio)

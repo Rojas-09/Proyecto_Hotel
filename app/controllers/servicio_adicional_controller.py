@@ -19,12 +19,19 @@ def agregar_servicio(current_user, reserva_id: int):
     """
     POST /api/v1/reservas/<reserva_id>/servicios
 
-    Body: { tipo, descripcion, costo }
+    Body: { tipo, descripcion, costo, duracion_minutos?, recurso?, fecha_hora? }
     Retorna 201 { servicio: ... }
     """
     data = request.get_json(silent=True) or {}
     try:
         duracion = data.get("duracion_minutos")
+        fecha_hora_str = data.get("fecha_hora")
+        if fecha_hora_str:
+            from datetime import datetime
+            fecha_hora = datetime.fromisoformat(fecha_hora_str)
+        else:
+            fecha_hora = None
+
         servicio = servicio_adicional_service.agregar(
             reserva_id=reserva_id,
             tipo_str=data.get("tipo"),
@@ -32,6 +39,7 @@ def agregar_servicio(current_user, reserva_id: int):
             costo_raw=data.get("costo"),
             duracion_minutos=int(duracion) if duracion is not None else None,
             recurso=data.get("recurso"),
+            fecha_hora=fecha_hora,
         )
         return jsonify({
             "success": True, "data": servicio,
