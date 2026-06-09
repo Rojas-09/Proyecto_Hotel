@@ -13,6 +13,7 @@ from datetime import date, datetime, timedelta
 from decimal import Decimal
 from typing import Optional
 import os
+import secrets
 import sys
 
 
@@ -207,8 +208,8 @@ def _upsert_puntos(data: dict) -> PuntosFidelidad:
 
 def main() -> int:
     env = _normalize_env(os.environ.get("FLASK_ENV"))
-    if env == "production" and os.environ.get("ALLOW_DEMO_SEED") != "1":
-        print("El seed demo está bloqueado en producción. Usa desarrollo/testing.")
+    if env == "production":
+        print("Seed demo no permitido en producción.")
         return 1
 
     app = create_app(env)
@@ -219,6 +220,11 @@ def main() -> int:
         hoy = date.today()
         ahora = datetime.now()
 
+        admin_pw = secrets.token_urlsafe(12)
+        recep_pw = secrets.token_urlsafe(12)
+        cliente1_pw = secrets.token_urlsafe(12)
+        cliente2_pw = secrets.token_urlsafe(12)
+
         usuarios = {
             "admin": _upsert_usuario({
                 "nombre": "Camila",
@@ -226,7 +232,7 @@ def main() -> int:
                 "email": "admin@hotel.com",
                 "telefono": "3005550101",
                 "rol": RolEnum.admin,
-                "password": "Admin123!",
+                "password": admin_pw,
             }),
             "recepcionista": _upsert_usuario({
                 "nombre": "Andrés",
@@ -234,7 +240,7 @@ def main() -> int:
                 "email": "recepcionista@hotel.com",
                 "telefono": "3005550202",
                 "rol": RolEnum.recepcionista,
-                "password": "Recep123!",
+                "password": recep_pw,
             }),
             "cliente": _upsert_usuario({
                 "nombre": "Carolina",
@@ -242,7 +248,7 @@ def main() -> int:
                 "email": "carolina.gomez@hotel.com",
                 "telefono": "3005550303",
                 "rol": RolEnum.cliente,
-                "password": "Cliente123!",
+                "password": cliente1_pw,
                 "puntos_fidelizacion": 120,
             }),
             "cliente2": _upsert_usuario({
@@ -251,7 +257,7 @@ def main() -> int:
                 "email": "roberto.mendoza@hotel.com",
                 "telefono": "3005550404",
                 "rol": RolEnum.cliente,
-                "password": "Cliente123!",
+                "password": cliente2_pw,
                 "puntos_fidelizacion": 50,
             }),
         }
@@ -541,11 +547,11 @@ def main() -> int:
 
         print("Seed demo aplicado correctamente.")
         print("")
-        print("Usuarios cargados:")
-        print(" - admin@hotel.com / Admin123!          → Camila Torres (Admin)")
-        print(" - recepcionista@hotel.com / Recep123!  → Andrés López (Recepcionista)")
-        print(" - carolina.gomez@hotel.com / Cliente123! → Carolina Gómez (Cliente)")
-        print(" - roberto.mendoza@hotel.com / Cliente123! → Roberto Mendoza (Cliente)")
+        print("Usuarios cargados (contraseñas generadas aleatoriamente):")
+        print(f" - admin@hotel.com / {admin_pw}          → Camila Torres (Admin)")
+        print(f" - recepcionista@hotel.com / {recep_pw}  → Andrés López (Recepcionista)")
+        print(f" - carolina.gomez@hotel.com / {cliente1_pw} → Carolina Gómez (Cliente)")
+        print(f" - roberto.mendoza@hotel.com / {cliente2_pw} → Roberto Mendoza (Cliente)")
         print("")
         print("Habitaciones: 8 (101, 102, 201, 202, 301, 303, 404, 501)")
         print("")
