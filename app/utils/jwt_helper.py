@@ -10,12 +10,27 @@ from flask import request, current_app, jsonify
 
 
 def generar_token(user_id: int, email: str, rol: str) -> str:
+    """Genera JWT access_token con expiración en horas (default 24)."""
     expiration_hours = current_app.config.get("JWT_EXPIRATION_HOURS", 24)
     payload = {
         "user_id": user_id,
         "email": email,
         "rol": rol,
+        "token_type": "access",
         "exp": datetime.now(timezone.utc) + timedelta(hours=expiration_hours),
+        "iat": datetime.now(timezone.utc),
+    }
+    return jwt.encode(payload, current_app.config["JWT_SECRET_KEY"], algorithm="HS256")
+
+
+def generar_token_acceso(user_id: int, email: str, rol: str, minutos: int = 15) -> str:
+    """Genera JWT access_token de corta duración para refresh token flow."""
+    payload = {
+        "user_id": user_id,
+        "email": email,
+        "rol": rol,
+        "token_type": "access",
+        "exp": datetime.now(timezone.utc) + timedelta(minutes=minutos),
         "iat": datetime.now(timezone.utc),
     }
     return jwt.encode(payload, current_app.config["JWT_SECRET_KEY"], algorithm="HS256")

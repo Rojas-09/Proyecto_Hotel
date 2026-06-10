@@ -13,6 +13,7 @@ DELETE /api/v1/auth/usuarios/<id> → Soft delete usuario (solo admin)
 
 from flask import Blueprint, request, jsonify, current_app
 
+from app import db
 from app.limiter import limiter
 from app.schemas.auth_schema import RegisterSchema, LoginSchema
 from app.services.auth_service import AuthService
@@ -63,15 +64,8 @@ def register():
     result, status = AuthService.registrar(data)
     if status not in (200, 201):
         return jsonify(result), status
-    token = result["data"].pop("token", None)
     resp = jsonify(result)
-    if token:
-        resp.set_cookie(
-            "access_token", token,
-            httponly=True, samesite="Lax",
-            max_age=2592000, path="/",
-            secure=current_app.config.get("SESSION_COOKIE_SECURE", False),
-        )
+    _set_auth_cookies(resp, result["data"].get("access_token"), result["data"].get("refresh_token"))
     return resp, status
 
 
@@ -88,23 +82,61 @@ def login():
     result, status = AuthService.login(data)
     if status != 200:
         return jsonify(result), status
-    token = result["data"].pop("token", None)
     resp = jsonify(result)
-    if token:
-        resp.set_cookie(
-            "access_token", token,
-            httponly=True, samesite="Lax",
-            max_age=2592000, path="/",
-            secure=current_app.config.get("SESSION_COOKIE_SECURE", False),
-        )
+    _set_auth_cookies(resp, result["data"].get("access_token"), result["data"].get("refresh_token"))
+    return resp, status
+
+
+@auth_bp.route("/refresh", methods=["POST"])
+@limiter.limit("10 per minute")
+def refresh():
+    """
+    POST /api/v1/auth/refresh
+
+    Recibe refresh_token de la cookie, verifica, rota y emite par nuevo.
+    """
+    refresh_token = request.cookies.get("refresh_token")
+    result, status = AuthService.refrescar_token(refresh_token)
+    if status != 200:
+        return jsonify(result), status
+    resp = jsonify(result)
+    _set_auth_cookies(resp, result["data"].get("access_token"), result["data"].get("refresh_token"))
     return resp, status
 
 
 @auth_bp.route("/logout", methods=["POST"])
 def logout():
+    refresh_token = request.cookies.get("refresh_token")
+    if refresh_token:
+        from app.models.refresh_token import RefreshToken
+        rt = RefreshToken.verificar(refresh_token)
+        if rt:
+            rt.revocar()
+            db.session.commit()
+
     resp = jsonify({"success": True, "mensaje": "Sesión cerrada."})
     resp.set_cookie("access_token", "", httponly=True, expires=0, path="/")
+    resp.set_cookie("refresh_token", "", httponly=True, expires=0, path="/")
     return resp, 200
+
+
+def _set_auth_cookies(resp, access_token, refresh_token):
+    """Helper para setear ambas cookies de autenticación."""
+    secure = current_app.config.get("SESSION_COOKIE_SECURE", False)
+    if access_token:
+        resp.set_cookie(
+            "access_token", access_token,
+            httponly=True, samesite="Lax",
+            max_age=900, path="/",  # 15 min
+            secure=secure,
+        )
+    if refresh_token:
+        resp.set_cookie(
+            "refresh_token", refresh_token,
+            httponly=True, samesite="Lax",
+            max_age=604800, path="/",  # 7 días
+            secure=secure,
+        )
 
 
 @auth_bp.route("/me", methods=["GET"])

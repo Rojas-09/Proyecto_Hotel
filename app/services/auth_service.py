@@ -1,13 +1,17 @@
 """
 Auth Service - Lógica de negocio para autenticación
 """
-
+from uuid import uuid4
 from sqlalchemy import select
+
+from flask import current_app
 
 from app import db
 from app.models.usuario import Usuario, RolEnum
 from app.models.huesped import Huesped
-from app.utils.jwt_helper import generar_token
+from app.models.refresh_token import RefreshToken
+from app.utils.fecha_helper import ahora_colombia
+from app.utils.jwt_helper import generar_token, generar_token_acceso
 
 
 class AuthService:
@@ -19,6 +23,23 @@ class AuthService:
             if hasattr(usuario.rol, 'value')
             else usuario.rol
         )
+
+    @staticmethod
+    def _emitir_tokens(usuario) -> dict:
+        """Genera access_token (15 min) + refresh_token (7 días revocable)."""
+        rol = AuthService._rol_normalizado(usuario)
+        access_token = generar_token_acceso(
+            usuario.id, usuario.email, rol,
+            minutos=current_app.config.get("JWT_ACCESS_MINUTOS", 15),
+        )
+        refresh_token_plano, _ = RefreshToken.crear(
+            usuario.id,
+            dias=current_app.config.get("JWT_REFRESH_DIAS", 7),
+        )
+        return {
+            "access_token": access_token,
+            "refresh_token": refresh_token_plano,
+        }
 
     @staticmethod
     def _nivel_rol(rol: str) -> int:
@@ -111,20 +132,31 @@ class AuthService:
 
         db.session.commit()
 
-        token = generar_token(
-            usuario.id,
-            usuario.email,
-            usuario.rol.value if hasattr(usuario.rol, 'value') else usuario.rol
-        )
+        tokens = AuthService._emitir_tokens(usuario)
 
         return {
             "success": True,
             "data": {
                 "usuario": usuario.to_dict(),
-                "token": token,
+                "access_token": tokens["access_token"],
+                "refresh_token": tokens["refresh_token"],
             },
             "message": "Cuenta creada exitosamente.",
         }, 201
+
+    @staticmethod
+    def _revocar_refresh_usuario(id_usuario: int):
+        """Revoca todos los refresh tokens activos de un usuario."""
+        ahora = ahora_colombia()
+        activos = db.session.execute(
+            select(RefreshToken).filter(
+                RefreshToken.id_usuario == id_usuario,
+                RefreshToken.revoked == False,
+                RefreshToken.expires_at > ahora,
+            )
+        ).scalars().all()
+        for rt in activos:
+            rt.revocar()
 
     @staticmethod
     def login(data: dict) -> dict:
@@ -153,19 +185,66 @@ class AuthService:
                 }
             }, 401
 
-        token = generar_token(
-            usuario.id,
-            usuario.email,
-            usuario.rol.value if hasattr(usuario.rol, 'value') else usuario.rol
-        )
+        AuthService._revocar_refresh_usuario(usuario.id)
+        tokens = AuthService._emitir_tokens(usuario)
 
         return {
             "success": True,
             "data": {
                 "usuario": usuario.to_dict(),
-                "token": token,
+                "access_token": tokens["access_token"],
+                "refresh_token": tokens["refresh_token"],
             },
             "message": "Sesión iniciada correctamente.",
+        }, 200
+
+    @staticmethod
+    def refrescar_token(refresh_token_plano: str) -> dict:
+        """
+        Verifica un refresh_token, lo revoca (rotación) y emite un par nuevo.
+        Retorna (dict, status_code).
+        """
+        if not refresh_token_plano:
+            return {
+                "success": False,
+                "error": {
+                    "code": "UNAUTHORIZED",
+                    "message": "Refresh token requerido.",
+                }
+            }, 401
+
+        rt = RefreshToken.verificar(refresh_token_plano)
+        if not rt:
+            return {
+                "success": False,
+                "error": {
+                    "code": "UNAUTHORIZED",
+                    "message": "Refresh token inválido o expirado.",
+                }
+            }, 401
+
+        usuario = db.session.get(Usuario, rt.id_usuario)
+        if not usuario or not usuario.activo:
+            return {
+                "success": False,
+                "error": {
+                    "code": "UNAUTHORIZED",
+                    "message": "Usuario no encontrado o inactivo.",
+                }
+            }, 401
+
+        rt.revocar()
+
+        tokens = AuthService._emitir_tokens(usuario)
+
+        return {
+            "success": True,
+            "data": {
+                "usuario": usuario.to_dict(),
+                "access_token": tokens["access_token"],
+                "refresh_token": tokens["refresh_token"],
+            },
+            "message": "Token refrescado correctamente.",
         }, 200
 
     @staticmethod
@@ -263,17 +342,14 @@ class AuthService:
         db.session.add(usuario)
         db.session.commit()
 
-        token = generar_token(
-            usuario.id,
-            usuario.email,
-            usuario.rol.value if hasattr(usuario.rol, 'value') else usuario.rol
-        )
+        tokens = AuthService._emitir_tokens(usuario)
 
         return {
             "success": True,
             "data": {
                 "usuario": usuario.to_dict(),
-                "token": token,
+                "access_token": tokens["access_token"],
+                "refresh_token": tokens["refresh_token"],
             },
             "message": "Primer administrador creado exitosamente.",
         }, 201

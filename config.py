@@ -46,6 +46,8 @@ class Config:
     """Configuración base compartida por todos los entornos."""
     SECRET_KEY = _get_secret_key()
     JWT_SECRET_KEY = _get_secret_key("JWT_SECRET_KEY")
+    JWT_ACCESS_MINUTOS = int(os.environ.get("JWT_ACCESS_MINUTOS", 15))
+    JWT_REFRESH_DIAS = int(os.environ.get("JWT_REFRESH_DIAS", 7))
     JWT_EXPIRATION_HOURS = int(os.environ.get("JWT_EXPIRATION_HOURS", 24))
     BCRYPT_LOG_ROUNDS = int(os.environ.get("BCRYPT_LOG_ROUNDS", 12))
     STRIPE_SECRET_KEY = os.environ.get("STRIPE_SECRET_KEY", "")

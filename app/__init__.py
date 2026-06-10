@@ -64,6 +64,7 @@ def create_app(config_name="development"):
     from app.models import servicio_adicional  # noqa: F401
     from app.models import notificacion  # noqa: F401
     from app.models import puntos_fidelidad  # noqa: F401
+    from app.models import refresh_token  # noqa: F401
 
     # Crear tablas si no existen (solo en desarrollo)
     if config_name in ("development", "testing"):
