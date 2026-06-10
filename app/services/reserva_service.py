@@ -24,6 +24,9 @@ from app.models.reembolso import EstadoReembolso, Reembolso
 from app.utils.fecha_helper import ahora_colombia
 
 
+TIEMPO_EXPIRA_RESERVA = 30  # minutos, default
+
+
 def crear(datos, current_user):
     """Crea una nueva reserva."""
     _validar_campos_obligatorios(datos)
@@ -62,6 +65,8 @@ def crear(datos, current_user):
     impuestos = subtotal * Decimal(str(current_app.config["IVA_RATE"]))
     total = subtotal + impuestos
 
+    from datetime import timedelta
+
     reserva = Reserva(
         id_huesped=id_huesped,
         id_habitacion=id_habitacion,
@@ -72,6 +77,11 @@ def crear(datos, current_user):
         impuestos=impuestos,
         total=total,
         estado=EstadoReserva.pendiente,
+        expira_en=ahora_colombia() + timedelta(
+            minutes=current_app.config.get(
+                "RESERVA_EXPIRA_MINUTOS", TIEMPO_EXPIRA_RESERVA
+            )
+        ),
     )
 
     db.session.add(reserva)
@@ -436,6 +446,30 @@ def _enviar_email_with_context(app, reserva):
             _enviar_email_confirmacion(reserva)
         except Exception:
             pass
+
+
+def limpiar_expiradas():
+    """
+    Cancela reservas PENDIENTE cuyo expira_en ya venció.
+    Libera la habitación asociada.
+    Retorna el número de reservas expiradas.
+    """
+    ahora = ahora_colombia()
+    expiradas = db.session.execute(
+        select(Reserva).filter(
+            Reserva.estado == EstadoReserva.pendiente,
+            Reserva.expira_en.isnot(None),
+            Reserva.expira_en < ahora,
+        )
+    ).scalars().all()
+
+    for r in expiradas:
+        r.estado = EstadoReserva.cancelada
+        r.motivo_cancelacion = "Auto-expirada por falta de pago de garantía"
+        r.updated_at = ahora
+
+    db.session.commit()
+    return len(expiradas)
 
 
 def _enviar_email_confirmacion(reserva):

@@ -51,6 +51,8 @@ class Pago(db.Model):
         nullable=False
     )
     referencia_externa = db.Column(db.String(100), nullable=True)
+    stripe_payment_intent_id = db.Column(db.String(100), nullable=True)
+    failure_message = db.Column(db.String(500), nullable=True)
     confirmado_por = db.Column(
         db.Integer,
         db.ForeignKey("usuarios.id", name="fk_pago_confirmado_por"),
@@ -84,6 +86,8 @@ class Pago(db.Model):
             "tipo": self.tipo.value,
             "estado": self.estado.value,
             "referencia_externa": self.referencia_externa,
+            "stripe_payment_intent_id": self.stripe_payment_intent_id,
+            "failure_message": self.failure_message,
             "confirmado_por": self.confirmado_por,
             "fecha_confirmacion": (
                 self.fecha_confirmacion.isoformat()

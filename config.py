@@ -62,7 +62,9 @@ class Config:
     ADMIN_BOOTSTRAP_ENABLED = os.environ.get("ADMIN_BOOTSTRAP_ENABLED", "False") == "True"
     ADMIN_BOOTSTRAP_SECRET = os.environ.get("ADMIN_BOOTSTRAP_SECRET", "")
     PERMANENT_SESSION_LIFETIME = 86400  # 24 horas en segundos
+    STRIPE_WEBHOOK_SECRET = os.environ.get("STRIPE_WEBHOOK_SECRET", "")
     STRIPE_MOCK = os.environ.get("STRIPE_MOCK", "False") == "True"
+    RESERVA_EXPIRA_MINUTOS = int(os.environ.get("RESERVA_EXPIRA_MINUTOS", 30))
 
 
 class DevelopmentConfig(Config):

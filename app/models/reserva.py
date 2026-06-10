@@ -53,6 +53,7 @@ class Reserva(db.Model):
         nullable=False,
         default=EstadoReserva.pendiente
     )
+    expira_en = db.Column(db.DateTime, nullable=True)
     motivo_cancelacion = db.Column(db.String(255), nullable=True)
     created_at = db.Column(db.DateTime, default=ahora_colombia, nullable=False)
     updated_at = db.Column(
@@ -100,6 +101,10 @@ class Reserva(db.Model):
             "impuestos": float(self.impuestos),
             "total": float(self.total),
             "estado": self.estado.value,
+            "expira_en": (
+                self.expira_en.isoformat()
+                if self.expira_en else None
+            ),
             "motivo_cancelacion": self.motivo_cancelacion,
             "huesped_nombre": (
                 f"{self.huesped.usuario.nombre} "

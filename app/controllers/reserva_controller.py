@@ -157,6 +157,27 @@ def hacer_checkin(current_user, reserva_id):
         return handle_service_error(e, 500)
 
 
+@reserva_bp.route("/limpiar-expiradas", methods=["POST"])
+@token_required
+@rol_requerido("admin", "recepcionista")
+def limpiar_expiradas(current_user):
+    """
+    POST /api/v1/reservas/limpiar-expiradas
+
+    Cancela reservas pendientes cuyo tiempo de expiración venció.
+    (RF-13 M3).
+    """
+    try:
+        cantidad = reserva_service.limpiar_expiradas()
+        return jsonify({
+            "success": True,
+            "data": {"expiradas": cantidad},
+            "mensaje": f"{cantidad} reserva(s) expirada(s) cancelada(s)."
+        }), 200
+    except Exception as e:
+        return handle_service_error(e, 500)
+
+
 @reserva_bp.route("/<int:reserva_id>/checkout", methods=["PUT"])
 @token_required
 @rol_requerido("admin", "recepcionista")

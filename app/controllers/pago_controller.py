@@ -5,6 +5,7 @@ from flask import Blueprint, jsonify, request
 
 from app.schemas.pago_schema import PagoGarantiaSchema, PagoLiquidacionSchema
 from app.services import pago_service
+from app.services import stripe_webhook_service
 from app.utils.error_helper import handle_service_error
 from app.utils.jwt_helper import rol_requerido, token_required
 
@@ -123,6 +124,25 @@ def obtener_pagos_reserva(current_user, reserva_id):
         }), 200
     except LookupError as e:
         return handle_service_error(e, 404)
+
+
+@pago_bp.route("/webhook", methods=["POST"])
+def stripe_webhook():
+    """
+    POST /api/v1/pagos/webhook
+
+    Recibe eventos asíncronos de Stripe (RF-13 M1).
+    NO requiere autenticación — la verificación es por firma.
+    """
+    payload = request.get_data()
+    sig_header = request.headers.get("Stripe-Signature", "")
+
+    resultado = stripe_webhook_service.procesar_evento(payload, sig_header)
+
+    if not resultado["procesado"]:
+        return jsonify(resultado), 400
+
+    return jsonify(resultado), 200
 
 
 @pago_bp.route("/reembolso/<int:pago_id>", methods=["POST"])

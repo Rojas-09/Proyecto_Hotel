@@ -2,6 +2,7 @@
 Pago Service - Lógica de negocio para pagos y reembolsos (RF-13)
 """
 from decimal import Decimal
+from uuid import uuid4
 from sqlalchemy import select
 
 from flask import current_app
@@ -56,24 +57,38 @@ def procesar_garantia(reserva_id, metodo_str, payment_method_id=None, current_us
         Decimal(str(current_app.config["GARANTIA_PORCENTAJE"]))
     ).quantize(Decimal("0.01"))
 
-    referencia_externa = None
+    stripe_pi_id = None
+    failure_msg = None
     if metodo == MetodoPago.tarjeta:
-        referencia_externa = _cobrar_stripe(monto, payment_method_id, reserva_id, "garantia")
+        try:
+            stripe_pi_id = _cobrar_stripe(monto, payment_method_id, reserva_id, "garantia")
+        except ValueError as e:
+            failure_msg = str(e)
 
     es_manual = metodo in (MetodoPago.efectivo, MetodoPago.transferencia)
+
+    estado_pago = EstadoPago.pendiente if es_manual else (
+        EstadoPago.rechazado if failure_msg else EstadoPago.aprobado
+    )
 
     pago = Pago(
         id_reserva=reserva_id,
         monto=monto,
         metodo=metodo,
         tipo=TipoPago.garantia,
-        estado=EstadoPago.pendiente if es_manual else EstadoPago.aprobado,
-        referencia_externa=referencia_externa,
+        estado=estado_pago,
+        referencia_externa=stripe_pi_id,
+        stripe_payment_intent_id=stripe_pi_id,
+        failure_message=failure_msg,
     )
     db.session.add(pago)
+    db.session.flush()
+
+    if failure_msg:
+        db.session.commit()
+        raise ValueError(failure_msg)
 
     if es_manual:
-        # Pago manual: queda pendiente hasta que recepcionista/admin confirme
         db.session.commit()
         return pago.to_dict()
 
@@ -231,6 +246,10 @@ def _obtener_reserva(reserva_id):
 
 
 def _verificar_sin_garantia(reserva_id):
+    """
+    Verifica que no haya garantía aprobada.
+    Si solo existe una garantía RECHAZADA, permite reintento (RF-13 M2).
+    """
     garantia = db.session.execute(
         select(Pago).filter_by(
             id_reserva=reserva_id,
@@ -291,12 +310,13 @@ def _validar_metodo(metodo_str):
 def _cobrar_stripe(monto, payment_method_id, reserva_id, tipo_pago="pago"):
     """
     Crea y confirma un PaymentIntent en Stripe.
+    Usa idempotency key dinámica con uuid para permitir reintentos (RF-13 M2).
     En ambiente testing retorna un ID simulado sin llamar la API.
     """
     if current_app.config.get("STRIPE_MOCK"):
-        return f"pi_mock_{reserva_id}_{int(monto * 100)}"
+        return f"pi_mock_{reserva_id}_{uuid4().hex[:8]}"
 
-    import stripe  # import tardío: no rompe tests si stripe no está instalado
+    import stripe
 
     stripe.api_key = current_app.config.get("STRIPE_SECRET_KEY")
     if not stripe.api_key:
@@ -312,11 +332,13 @@ def _cobrar_stripe(monto, payment_method_id, reserva_id, tipo_pago="pago"):
 
     try:
         intent = stripe.PaymentIntent.create(
-            amount=int(monto * 100),   # Stripe trabaja en centavos
+            amount=int(monto * 100),
             currency="cop",
             payment_method=payment_method_id,
             confirm=True,
-            idempotency_key=f"reserva-{reserva_id}-{tipo_pago}-v1",
+            idempotency_key=(
+                f"reserva-{reserva_id}-{tipo_pago}-{uuid4().hex}"
+            ),
             automatic_payment_methods={
                 "enabled": True,
                 "allow_redirects": "never",
@@ -327,7 +349,7 @@ def _cobrar_stripe(monto, payment_method_id, reserva_id, tipo_pago="pago"):
     except stripe.error.StripeError as e:
         raise ValueError(f"Error en pasarela de pagos: {str(e)}")
 
-    if intent.status != "succeeded":
+    if intent.status not in ("succeeded", "requires_capture"):
         raise ValueError(
             f"Pago no completado. Estado Stripe: {intent.status}"
         )
