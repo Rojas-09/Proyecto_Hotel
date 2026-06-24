@@ -24,16 +24,19 @@ El proyecto está dividido en dos partes principales:
 
 ### Backend
 
-- **Python 3.12+**
-- **Flask** (Framework web)
-- **SQLAlchemy** (ORM)
-- **PyJWT** (Autenticación por tokens)
-- **SQLite** (Base de datos por defecto, archivo `hotelbook_dev.db`)
+- **Python 3.12+** · Flask 3.1 · SQLAlchemy 2.0 · Flask-CORS 6.0
+- **PyJWT 2.13** (Autenticación por tokens JWT + refresh tokens revocables)
+- **marshmallow 3.26** (Validación y serialización de datos)
+- **Alembic 1.14** (Migraciones de base de datos)
+- **PostgreSQL** (Producción) / **SQLite** (Desarrollo local)
+- **Requests 2.33** · python-dotenv 1.2 · Stripe 15.1
+- **pytest 9.0** · pytest-cov 6.0 (Testing y cobertura)
+- **Black 26.3** · Flake8 7.1 (Calidad de código)
 
 ### Frontend
 
 - **Vue 3** (Composition API, `<script setup>`)
-- **Vite** (Build tool ultra rápida)
+- **Vite 8.1** (Build tool ultra rápida)
 - **Tailwind CSS v4** (Framework de estilos de utilidad utilitaria)
 - **Pinia** (Manejo de estado global para sesión)
 - **Vue Router** (Enrutamiento del lado del cliente)
