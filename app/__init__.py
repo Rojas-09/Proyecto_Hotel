@@ -40,7 +40,8 @@ def create_app(config_name="development"):
     from app.controllers.pago_controller import pago_bp
     from app.controllers.servicio_adicional_controller import servicio_adicional_bp
     from app.controllers.reporte_controller import reporte_bp
-    from app.controllers.puntos_fidelidad_controller import puntos_bp
+    from app.controllers.puntos_fidelidad_controller import puntos_fidelidad_bp
+    from app.controllers.notificacion_controller import notificacion_bp
 
     app.register_blueprint(auth_bp, url_prefix="/api/v1/auth")
     app.register_blueprint(habitacion_bp, url_prefix="/api/v1/habitaciones")
@@ -50,7 +51,8 @@ def create_app(config_name="development"):
     app.register_blueprint(pago_bp, url_prefix="/api/v1/pagos")
     app.register_blueprint(servicio_adicional_bp)
     app.register_blueprint(reporte_bp, url_prefix="/api/v1/reportes")
-    app.register_blueprint(puntos_bp, url_prefix="/api/v1/huespedes")
+    app.register_blueprint(puntos_fidelidad_bp, url_prefix="/api/v1/huespedes")
+    app.register_blueprint(notificacion_bp, url_prefix="/api/v1/notificaciones")
 
     # Importar modelos EN ORDEN para respetar dependencias FK
     from app.models import usuario  # noqa: F401
@@ -64,6 +66,7 @@ def create_app(config_name="development"):
     from app.models import servicio_adicional  # noqa: F401
     from app.models import notificacion  # noqa: F401
     from app.models import puntos_fidelidad  # noqa: F401
+    from app.models import reporte  # noqa: F401
     from app.models import refresh_token  # noqa: F401
 
     # Crear tablas si no existen (solo en desarrollo)

@@ -80,3 +80,40 @@ def buscar(query: str):
     ).scalars().all()
 
     return [h.to_dict() for h in resultados]
+
+
+def crear(id_usuario: int, documento_id: str, tipo_documento: str = "CC", preferencias: str = None):
+    """Crea un huésped vinculado a un usuario existente (walk-in)."""
+    usuario = db.session.get(Usuario, id_usuario)
+    if not usuario:
+        raise LookupError(f"Usuario con id {id_usuario} no encontrado.")
+
+    existente = db.session.execute(
+        select(Huesped).filter_by(id_usuario=id_usuario)
+    ).scalar_one_or_none()
+    if existente:
+        raise ValueError(f"El usuario {id_usuario} ya tiene perfil de huésped.")
+
+    if not documento_id or not documento_id.strip():
+        raise ValueError("El documento_id es obligatorio.")
+
+    huesped = Huesped(
+        id_usuario=id_usuario,
+        documento_id=documento_id.strip(),
+        tipo_documento=tipo_documento.strip().upper() if tipo_documento else "CC",
+        preferencias=preferencias.strip() if preferencias else None,
+    )
+    db.session.add(huesped)
+    db.session.commit()
+    return huesped.to_dict()
+
+
+def eliminar(huesped_id: int):
+    """Soft-delete: marca el huésped como inactivo."""
+    huesped = db.session.get(Huesped, huesped_id)
+    if not huesped:
+        raise LookupError(f"Huésped con id {huesped_id} no encontrado.")
+
+    huesped.activo = False
+    db.session.commit()
+    return {"mensaje": f"Huésped {huesped_id} desactivado correctamente.", "id": huesped_id}

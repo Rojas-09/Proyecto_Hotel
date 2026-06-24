@@ -168,3 +168,86 @@ def solicitar_reembolso(current_user, pago_id):
         return handle_service_error(e, 404)
     except ValueError as e:
         return handle_service_error(e, 400)
+
+
+@pago_bp.route("", methods=["GET"])
+@token_required
+@rol_requerido("admin", "recepcionista")
+def listar_pagos(current_user):
+    """
+    GET /api/v1/pagos
+
+    Lista todos los pagos con filtros opcionales:
+    - estado: pendiente, aprobado, rechazado, reembolsado
+    - tipo: garantia, liquidacion
+    - metodo: tarjeta, efectivo, transferencia
+    - id_reserva
+    Roles permitidos: admin, recepcionista.
+    """
+    filtros = {
+        "estado": request.args.get("estado"),
+        "tipo": request.args.get("tipo"),
+        "metodo": request.args.get("metodo"),
+        "id_reserva": request.args.get("id_reserva"),
+    }
+    filtros = {k: v for k, v in filtros.items() if v is not None}
+
+    try:
+        pagos = pago_service.listar(filtros or None)
+        return jsonify({
+            "success": True,
+            "data": pagos,
+            "total": len(pagos),
+            "mensaje": "Pagos obtenidos correctamente."
+        }), 200
+    except ValueError as e:
+        return handle_service_error(e, 400)
+    except Exception as e:
+        return handle_service_error(e, 500)
+
+
+@pago_bp.route("/<int:pago_id>", methods=["GET"])
+@token_required
+@rol_requerido("admin", "recepcionista")
+def obtener_pago(current_user, pago_id):
+    """
+    GET /api/v1/pagos/<pago_id>
+
+    Obtiene un pago por ID.
+    Roles permitidos: admin, recepcionista.
+    """
+    try:
+        pago = pago_service.obtener_por_id(pago_id)
+        return jsonify({
+            "success": True,
+            "data": pago,
+            "mensaje": "Pago encontrado."
+        }), 200
+    except LookupError as e:
+        return handle_service_error(e, 404)
+
+
+@pago_bp.route("/<int:pago_id>", methods=["DELETE"])
+@token_required
+@rol_requerido("admin")
+def eliminar_pago(current_user, pago_id):
+    """
+    DELETE /api/v1/pagos/<pago_id>
+
+    Anula (soft-delete) un pago.
+    Roles permitidos: admin.
+    """
+    datos = request.get_json(silent=True) or {}
+    motivo = datos.get("motivo", "Anulado por administrador")
+
+    try:
+        resultado = pago_service.anular(pago_id, motivo)
+        return jsonify({
+            "success": True,
+            "data": None,
+            "mensaje": "Pago anulado correctamente."
+        }), 200
+    except LookupError as e:
+        return handle_service_error(e, 404)
+    except ValueError as e:
+        return handle_service_error(e, 400)

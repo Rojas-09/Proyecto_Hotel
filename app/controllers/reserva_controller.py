@@ -198,3 +198,55 @@ def hacer_checkout(current_user, reserva_id):
         return handle_service_error(e, 400)
     except Exception as e:
         return handle_service_error(e, 500)
+
+
+@reserva_bp.route("/<int:reserva_id>", methods=["DELETE"])
+@token_required
+@rol_requerido("admin")
+def eliminar(current_user, reserva_id):
+    """Soft-delete: cancela la reserva (admin)."""
+    datos = request.get_json(silent=True) or {}
+    motivo = datos.get("motivo")
+
+    try:
+        reserva = reserva_service.eliminar(reserva_id, motivo)
+        return jsonify({
+            "success": True,
+            "data": reserva,
+            "mensaje": "Reserva cancelada correctamente."
+        }), 200
+    except LookupError as e:
+        return handle_service_error(e, 404)
+    except ValueError as e:
+        return handle_service_error(e, 400)
+    except Exception as e:
+        return handle_service_error(e, 500)
+
+
+@reserva_bp.route("/<int:reserva_id>", methods=["PATCH"])
+@token_required
+@rol_requerido("admin", "recepcionista", "cliente")
+def actualizar(current_user, reserva_id):
+    """Actualización parcial de una reserva."""
+    datos = request.get_json(silent=True) or {}
+    if not datos:
+        return jsonify({
+            "success": False,
+            "mensaje": "Body JSON requerido."
+        }), 400
+
+    try:
+        reserva = reserva_service.actualizar(reserva_id, datos, current_user)
+        return jsonify({
+            "success": True,
+            "data": reserva,
+            "mensaje": "Reserva actualizada correctamente."
+        }), 200
+    except LookupError as e:
+        return handle_service_error(e, 404)
+    except ValueError as e:
+        return handle_service_error(e, 400)
+    except PermissionError as e:
+        return handle_service_error(e, 403)
+    except Exception as e:
+        return handle_service_error(e, 500)

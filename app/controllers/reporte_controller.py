@@ -61,7 +61,7 @@ def reporte_ocupacion(current_user):
 
     try:
         resultado = reporte_service.generar_ocupacion(
-            fecha_inicio, fecha_fin, formato
+            fecha_inicio, fecha_fin, formato, creado_por=current_user.id
         )
         archivo = resultado["archivo"]
         if not os.path.exists(archivo):
@@ -117,7 +117,7 @@ def reporte_ingresos(current_user):
 
     try:
         resultado = reporte_service.generar_ingresos(
-            fecha_inicio, fecha_fin, formato
+            fecha_inicio, fecha_fin, formato, creado_por=current_user.id
         )
         archivo = resultado["archivo"]
         if not os.path.exists(archivo):
@@ -173,7 +173,7 @@ def reporte_estadisticas(current_user):
 
     try:
         resultado = reporte_service.generar_estadisticas(
-            fecha_inicio, fecha_fin, formato
+            fecha_inicio, fecha_fin, formato, creado_por=current_user.id
         )
         archivo = resultado["archivo"]
         if not os.path.exists(archivo):

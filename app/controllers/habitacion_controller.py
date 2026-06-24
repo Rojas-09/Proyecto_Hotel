@@ -10,7 +10,9 @@ habitacion_bp = Blueprint(
 
 
 @habitacion_bp.route("/", methods=["GET"])
-def listar():
+@token_required
+@rol_requerido("admin", "recepcionista", "gerente")
+def listar(current_user):
     filtros = {
         "tipo": request.args.get("tipo"),
         "estado": request.args.get("estado"),

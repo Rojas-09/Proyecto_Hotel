@@ -15,7 +15,7 @@ from app.services import puntos_fidelidad_service
 from app.utils.error_helper import handle_service_error
 from app.utils.jwt_helper import token_required, rol_requerido
 
-puntos_bp = Blueprint("puntos_fidelidad", __name__)
+puntos_fidelidad_bp = Blueprint("puntos_fidelidad", __name__)
 
 
 def _verificar_ownership_puntos(current_user, huesped_id):
@@ -32,7 +32,7 @@ def _verificar_ownership_puntos(current_user, huesped_id):
             raise PermissionError("No tienes permiso para gestionar estos puntos.")
 
 
-@puntos_bp.route("/<int:huesped_id>/puntos", methods=["GET"])
+@puntos_fidelidad_bp.route("/<int:huesped_id>/puntos", methods=["GET"])
 @token_required
 @rol_requerido("admin", "recepcionista", "gerente")
 def obtener_total(current_user, huesped_id):
@@ -53,7 +53,7 @@ def obtener_total(current_user, huesped_id):
         return handle_service_error(e, 404)
 
 
-@puntos_bp.route("/<int:huesped_id>/puntos/historial", methods=["GET"])
+@puntos_fidelidad_bp.route("/<int:huesped_id>/puntos/historial", methods=["GET"])
 @token_required
 @rol_requerido("admin", "recepcionista", "gerente")
 def listar_historial(current_user, huesped_id):
@@ -74,7 +74,7 @@ def listar_historial(current_user, huesped_id):
         return handle_service_error(e, 404)
 
 
-@puntos_bp.route("/<int:huesped_id>/puntos/canjeos", methods=["GET"])
+@puntos_fidelidad_bp.route("/<int:huesped_id>/puntos/canjeos", methods=["GET"])
 @token_required
 @rol_requerido("admin", "recepcionista", "gerente", "cliente")
 def listar_canjeos(current_user, huesped_id):
@@ -91,7 +91,7 @@ def listar_canjeos(current_user, huesped_id):
     }), 200
 
 
-@puntos_bp.route("/<int:huesped_id>/puntos/canjear", methods=["POST"])
+@puntos_fidelidad_bp.route("/<int:huesped_id>/puntos/canjear", methods=["POST"])
 @token_required
 @rol_requerido("admin", "recepcionista", "cliente")
 def canjear_puntos(current_user, huesped_id):

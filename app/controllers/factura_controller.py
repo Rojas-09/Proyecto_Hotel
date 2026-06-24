@@ -131,3 +131,85 @@ def anular_factura(current_user, factura_id):
         return handle_service_error(e, 404)
     except ValueError as e:
         return handle_service_error(e, 400)
+
+
+@factura_bp.route("", methods=["GET"])
+@token_required
+@rol_requerido("admin", "recepcionista")
+def listar_facturas(current_user):
+    """
+    GET /api/v1/facturas
+
+    Lista todas las facturas con filtros opcionales:
+    - estado: pendiente, emitida, pagada, anulada
+    - id_reserva
+    - fecha_desde, fecha_hasta (YYYY-MM-DD)
+    Roles permitidos: admin, recepcionista.
+    """
+    filtros = {
+        "estado": request.args.get("estado"),
+        "id_reserva": request.args.get("id_reserva"),
+        "fecha_desde": request.args.get("fecha_desde"),
+        "fecha_hasta": request.args.get("fecha_hasta"),
+    }
+    filtros = {k: v for k, v in filtros.items() if v is not None}
+
+    try:
+        facturas = factura_service.listar(filtros or None)
+        return jsonify({
+            "success": True,
+            "data": facturas,
+            "total": len(facturas),
+            "mensaje": "Facturas obtenidas correctamente."
+        }), 200
+    except ValueError as e:
+        return handle_service_error(e, 400)
+    except Exception as e:
+        return handle_service_error(e, 500)
+
+
+@factura_bp.route("/<int:factura_id>", methods=["GET"])
+@token_required
+@rol_requerido("admin", "recepcionista")
+def obtener_factura(current_user, factura_id):
+    """
+    GET /api/v1/facturas/<factura_id>
+
+    Obtiene una factura por ID.
+    Roles permitidos: admin, recepcionista.
+    """
+    try:
+        factura = factura_service.obtener_por_id(factura_id)
+        return jsonify({
+            "success": True,
+            "data": factura,
+            "mensaje": "Factura encontrada."
+        }), 200
+    except LookupError as e:
+        return handle_service_error(e, 404)
+
+
+@factura_bp.route("/<int:factura_id>", methods=["DELETE"])
+@token_required
+@rol_requerido("admin")
+def eliminar_factura(current_user, factura_id):
+    """
+    DELETE /api/v1/facturas/<factura_id>
+
+    Anula (soft-delete) una factura.
+    Roles permitidos: admin.
+    """
+    datos = request.get_json(silent=True) or {}
+    motivo = datos.get("motivo", "Eliminada por administrador")
+
+    try:
+        resultado = factura_service.anular(factura_id, motivo)
+        return jsonify({
+            "success": True,
+            "data": None,
+            "mensaje": "Factura anulada correctamente."
+        }), 200
+    except LookupError as e:
+        return handle_service_error(e, 404)
+    except ValueError as e:
+        return handle_service_error(e, 400)

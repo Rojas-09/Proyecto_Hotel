@@ -15,6 +15,57 @@ from app.utils.jwt_helper import token_required, rol_requerido
 huesped_bp = Blueprint("huespedes", __name__, url_prefix="/api/v1/huespedes")
 
 
+@huesped_bp.route("", methods=["POST"])
+@token_required
+@rol_requerido("admin", "recepcionista")
+def crear(current_user):
+    """Crea un huésped walk-in vinculado a un usuario existente."""
+    datos = request.get_json(silent=True) or {}
+    id_usuario = datos.get("id_usuario")
+    documento_id = datos.get("documento_id")
+    tipo_documento = datos.get("tipo_documento", "CC")
+    preferencias = datos.get("preferencias")
+
+    if not id_usuario or not documento_id:
+        return jsonify({
+            "success": False,
+            "mensaje": "Los campos 'id_usuario' y 'documento_id' son obligatorios."
+        }), 400
+
+    try:
+        huesped = huesped_service.crear(
+            id_usuario=int(id_usuario),
+            documento_id=documento_id,
+            tipo_documento=tipo_documento,
+            preferencias=preferencias,
+        )
+        return jsonify({
+            "success": True,
+            "data": huesped,
+            "mensaje": "Huésped creado correctamente."
+        }), 201
+    except (LookupError, ValueError) as e:
+        return handle_service_error(e, 400)
+
+
+@huesped_bp.route("/<int:huesped_id>", methods=["DELETE"])
+@token_required
+@rol_requerido("admin")
+def eliminar(current_user, huesped_id):
+    """Desactiva (soft-delete) un huésped."""
+    try:
+        resultado = huesped_service.eliminar(huesped_id)
+        return jsonify({
+            "success": True,
+            "data": None,
+            "mensaje": resultado["mensaje"]
+        }), 200
+    except LookupError as e:
+        return handle_service_error(e, 404)
+    except Exception as e:
+        return handle_service_error(e, 500)
+
+
 @huesped_bp.route("/", methods=["GET"])
 @token_required
 @rol_requerido("admin", "recepcionista")

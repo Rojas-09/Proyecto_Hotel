@@ -14,7 +14,7 @@ from flask import current_app
 
 from app import db
 from app.models.reserva import EstadoReserva, Reserva
-from app.models.habitacion import EstadoHabitacion
+from app.models.habitacion import EstadoHabitacion, Habitacion
 from app.models.huesped import Huesped
 from app.models.notificacion import Notificacion
 from app.models.factura import Factura, EstadoFactura
@@ -534,3 +534,135 @@ El equipo de HotelBook Pro
 
     except Exception:
         pass
+
+
+def eliminar(reserva_id, motivo=None):
+    """Soft-delete: cancela la reserva (solo admin, sin validaciones de 24h ni reembolso)."""
+    reserva = db.session.get(Reserva, reserva_id)
+    if not reserva:
+        raise LookupError(f"Reserva con id {reserva_id} no encontrada.")
+
+    if reserva.estado == EstadoReserva.cancelada:
+        raise ValueError("La reserva ya está cancelada.")
+
+    reserva.estado = EstadoReserva.cancelada
+    reserva.motivo_cancelacion = motivo or "Eliminada por administrador"
+    reserva.updated_at = ahora_colombia()
+
+    if reserva.habitacion and reserva.habitacion.estado == EstadoHabitacion.ocupada:
+        reserva.habitacion.estado = EstadoHabitacion.disponible
+
+    db.session.commit()
+    return reserva.to_dict()
+
+
+def actualizar(reserva_id, datos: dict, current_user=None):
+    """Actualiza campos parciales de una reserva (PATCH)."""
+    reserva = db.session.get(Reserva, reserva_id)
+    if not reserva:
+        raise LookupError(f"Reserva con id {reserva_id} no encontrada.")
+
+    if reserva.estado == EstadoReserva.cancelada:
+        raise ValueError("No se puede modificar una reserva cancelada.")
+
+    if reserva.estado == EstadoReserva.completada:
+        raise ValueError("No se puede modificar una reserva completada.")
+
+    # Validar permisos
+    if current_user:
+        rol_value = (
+            current_user.rol.value
+            if hasattr(current_user.rol, 'value')
+            else current_user.rol
+        )
+        if rol_value == "cliente":
+            huesped = db.session.execute(
+                select(Huesped).filter_by(id_usuario=current_user.id)
+            ).scalar_one_or_none()
+            if not huesped or reserva.id_huesped != huesped.id:
+                raise PermissionError(
+                    "No tienes permiso para modificar esta reserva."
+                )
+
+    # Campos editables
+    campos_editables = {
+        "fecha_entrada": date.fromisoformat,
+        "fecha_salida": date.fromisoformat,
+        "id_habitacion": int,
+        "id_huesped": int,
+    }
+
+    nuevos_datos = {}
+    for campo, transform in campos_editables.items():
+        if campo in datos:
+            try:
+                nuevos_datos[campo] = transform(datos[campo])
+            except (ValueError, TypeError) as exc:
+                raise ValueError(f"Valor inválido para '{campo}'.") from exc
+
+    # Validar solapamiento si cambian fechas o habitación
+    if "fecha_entrada" in nuevos_datos or "fecha_salida" in nuevos_datos or "id_habitacion" in nuevos_datos:
+        fecha_entrada = nuevos_datos.get("fecha_entrada", reserva.fecha_entrada)
+        fecha_salida = nuevos_datos.get("fecha_salida", reserva.fecha_salida)
+        id_habitacion = nuevos_datos.get("id_habitacion", reserva.id_habitacion)
+
+        if fecha_entrada >= fecha_salida:
+            raise ValueError("La fecha de entrada debe ser anterior a la de salida.")
+
+        _validar_reserva_no_solapada(
+            id_habitacion, fecha_entrada, fecha_salida,
+            excluir_id=reserva.id
+        )
+
+        # Recalcular totales si cambian fechas
+        if fecha_entrada != reserva.fecha_entrada or fecha_salida != reserva.fecha_salida:
+            habitacion = db.session.get(Habitacion, id_habitacion)
+            if not habitacion:
+                raise LookupError(f"Habitación con id {id_habitacion} no encontrada.")
+
+            noches = (fecha_salida - fecha_entrada).days
+            precio_noche = Decimal(str(habitacion.precio_noche))
+            subtotal = precio_noche * noches
+            impuestos = subtotal * Decimal(str(current_app.config["IVA_RATE"]))
+            total = subtotal + impuestos
+
+            nuevos_datos["noches"] = noches
+            nuevos_datos["subtotal"] = subtotal
+            nuevos_datos["impuestos"] = impuestos
+            nuevos_datos["total"] = total
+
+    # Actualizar habitación si cambió
+    if "id_habitacion" in nuevos_datos:
+        nueva_hab = db.session.get(Habitacion, nuevos_datos["id_habitacion"])
+        if not nueva_hab or not nueva_hab.activo:
+            raise LookupError(f"Habitación con id {nuevos_datos['id_habitacion']} no encontrada.")
+        if nueva_hab.estado != EstadoHabitacion.disponible:
+            raise ValueError(f"La habitación {nueva_hab.numero} no está disponible.")
+
+    # Aplicar cambios
+    for campo, valor in nuevos_datos.items():
+        setattr(reserva, campo, valor)
+
+    reserva.updated_at = ahora_colombia()
+    db.session.commit()
+    return reserva.to_dict()
+
+
+def _validar_reserva_no_solapada(id_habitacion, fecha_entrada, fecha_salida, excluir_id=None):
+    """Valida que no haya reservas solapadas."""
+    query = select(db.func.count()).select_from(Reserva).filter(
+        Reserva.id_habitacion == id_habitacion,
+        Reserva.estado != EstadoReserva.cancelada,
+        Reserva.fecha_entrada < fecha_salida,
+        Reserva.fecha_salida > fecha_entrada,
+    )
+    if excluir_id:
+        query = query.filter(Reserva.id != excluir_id)
+
+    reservas_conflicto = db.session.execute(query).scalar()
+
+    if reservas_conflicto > 0:
+        raise ValueError(
+            "La habitación ya tiene una reserva en el rango de fechas "
+            "seleccionado."
+        )

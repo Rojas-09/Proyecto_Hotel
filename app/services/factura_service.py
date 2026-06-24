@@ -44,6 +44,38 @@ def obtener_por_id(factura_id: int) -> dict:
     return factura.to_dict()
 
 
+def listar(filtros=None):
+    """Lista todas las facturas con filtros opcionales."""
+    query = Factura.query
+
+    if filtros:
+        if filtros.get("estado"):
+            try:
+                estado = EstadoFactura(filtros["estado"])
+                query = query.filter_by(estado=estado)
+            except ValueError:
+                raise ValueError(
+                    f"Estado inválido. Valores permitidos: "
+                    f"{[e.value for e in EstadoFactura]}"
+                )
+
+        if filtros.get("id_reserva"):
+            query = query.filter_by(id_reserva=int(filtros["id_reserva"]))
+
+        if filtros.get("fecha_desde"):
+            from datetime import date
+            fecha = date.fromisoformat(filtros["fecha_desde"])
+            query = query.filter(Factura.fecha_emision >= fecha)
+
+        if filtros.get("fecha_hasta"):
+            from datetime import date
+            fecha = date.fromisoformat(filtros["fecha_hasta"])
+            query = query.filter(Factura.fecha_emision <= fecha)
+
+    facturas = query.order_by(Factura.fecha_emision.desc()).all()
+    return [f.to_dict() for f in facturas]
+
+
 def _generar_pdf_factura(factura: Factura) -> str:
     """Genera el PDF de la factura y retorna la ruta del archivo."""
     static_dir = os.path.join(

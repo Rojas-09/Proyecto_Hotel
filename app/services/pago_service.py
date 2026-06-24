@@ -379,3 +379,75 @@ def _reversar_stripe(payment_intent_id, monto):
         )
     except stripe.error.StripeError as e:
         raise ValueError(f"Error procesando reembolso en Stripe: {str(e)}")
+
+
+def listar(filtros=None):
+    """Lista todos los pagos con filtros opcionales."""
+    query = Pago.query
+
+    if filtros:
+        if filtros.get("estado"):
+            try:
+                estado = EstadoPago(filtros["estado"])
+                query = query.filter_by(estado=estado)
+            except ValueError:
+                raise ValueError(
+                    f"Estado inválido. Valores permitidos: "
+                    f"{[e.value for e in EstadoPago]}"
+                )
+
+        if filtros.get("tipo"):
+            try:
+                tipo = TipoPago(filtros["tipo"])
+                query = query.filter_by(tipo=tipo)
+            except ValueError:
+                raise ValueError(
+                    f"Tipo inválido. Valores permitidos: "
+                    f"{[e.value for e in TipoPago]}"
+                )
+
+        if filtros.get("metodo"):
+            try:
+                metodo = MetodoPago(filtros["metodo"])
+                query = query.filter_by(metodo=metodo)
+            except ValueError:
+                raise ValueError(
+                    f"Método inválido. Valores permitidos: "
+                    f"{[e.value for e in MetodoPago]}"
+                )
+
+        if filtros.get("id_reserva"):
+            query = query.filter_by(id_reserva=int(filtros["id_reserva"]))
+
+    pagos = query.order_by(Pago.fecha.desc()).all()
+    return [p.to_dict() for p in pagos]
+
+
+def obtener_por_id(pago_id: int) -> dict:
+    """Obtiene un pago por su ID."""
+    pago = db.session.get(Pago, pago_id)
+    if not pago:
+        raise LookupError(f"Pago con ID {pago_id} no encontrado.")
+    return pago.to_dict()
+
+
+def anular(pago_id: int, motivo: str = None) -> dict:
+    """Anula un pago (soft-delete para admin)."""
+    pago = db.session.get(Pago, pago_id)
+    if not pago:
+        raise LookupError(f"Pago con ID {pago_id} no encontrado.")
+
+    if pago.estado == EstadoPago.reembolsado:
+        raise ValueError("No se puede anular un pago ya reembolsado.")
+
+    if pago.estado == EstadoPago.anulado:
+        raise ValueError("El pago ya está anulado.")
+
+    if pago.estado == EstadoPago.rechazado:
+        raise ValueError("El pago ya está rechazado.")
+
+    pago.estado = EstadoPago.anulado
+    if motivo:
+        pago.failure_message = motivo
+    db.session.commit()
+    return pago.to_dict()

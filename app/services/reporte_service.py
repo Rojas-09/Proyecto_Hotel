@@ -171,7 +171,7 @@ def _generar_pdf(datos: list, nombre_archivo: str, titulo: str) -> str:
 # Reporte de Ocupación
 # ---------------------------------------------------------------------------
 
-def generar_ocupacion(fecha_inicio: str, fecha_fin: str, formato: str = "xlsx") -> dict:
+def generar_ocupacion(fecha_inicio: str, fecha_fin: str, formato: str = "xlsx", creado_por: int = None) -> dict:
     """
     Genera reporte de ocupación de habitaciones.
     Incluye: habitaciones ocupadas vs disponibles,
@@ -254,6 +254,24 @@ def generar_ocupacion(fecha_inicio: str, fecha_fin: str, formato: str = "xlsx") 
             ["Tipo de Habitación", "Habitaciones", "Reservas", "Ocupación (%)"],
         )
 
+    reporte_registrado = None
+    if creado_por:
+        reporte_registrado = registrar_generado(
+            tipo="ocupacion",
+            formato=formato,
+            fecha_inicio=fecha_inicio,
+            fecha_fin=fecha_fin,
+            archivo_path=ruta,
+            archivo_nombre=nombre_archivo,
+            creado_por=creado_por,
+            resumen={
+                "total_habitaciones": total_habitaciones,
+                "total_reservas": total_reservas,
+                "ocupacion_general": ocupacion_general,
+                "dias_promedio": dias_promedio,
+            },
+        )
+
     return {
         "tipo": "ocupacion",
         "archivo": ruta,
@@ -266,6 +284,7 @@ def generar_ocupacion(fecha_inicio: str, fecha_fin: str, formato: str = "xlsx") 
             "ocupacion_general": ocupacion_general,
             "dias_promedio": dias_promedio,
         },
+        "historial": reporte_registrado,
     }
 
 
@@ -273,7 +292,7 @@ def generar_ocupacion(fecha_inicio: str, fecha_fin: str, formato: str = "xlsx") 
 # Reporte de Ingresos
 # ---------------------------------------------------------------------------
 
-def generar_ingresos(fecha_inicio: str, fecha_fin: str, formato: str = "xlsx") -> dict:
+def generar_ingresos(fecha_inicio: str, fecha_fin: str, formato: str = "xlsx", creado_por: int = None) -> dict:
     """
     Genera reporte de ingresos por período.
     Incluye: total ingresos, desglose subtotal/IVA/servicios,
@@ -369,6 +388,24 @@ def generar_ingresos(fecha_inicio: str, fecha_fin: str, formato: str = "xlsx") -
             ["Tipo de Habitación", "Reservas", "Servicios Adicionales ($)", "Ingresos ($)"],
         )
 
+    reporte_registrado = None
+    if creado_por:
+        reporte_registrado = registrar_generado(
+            tipo="ingresos",
+            formato=formato,
+            fecha_inicio=fecha_inicio,
+            fecha_fin=fecha_fin,
+            archivo_path=ruta,
+            archivo_nombre=nombre_archivo,
+            creado_por=creado_por,
+            resumen={
+                "total_ingresos": round(total_ingresos, 2),
+                "subtotal": float(round(subtotal_total, 2)),
+                "iva": float(round(iva_total, 2)),
+                "transacciones": len(pagos_aprobados),
+            },
+        )
+
     return {
         "tipo": "ingresos",
         "archivo": ruta,
@@ -377,10 +414,11 @@ def generar_ingresos(fecha_inicio: str, fecha_fin: str, formato: str = "xlsx") -
         "fecha_fin": fecha_fin,
         "resumen": {
             "total_ingresos": round(total_ingresos, 2),
-            "subtotal": round(subtotal_total, 2),
-            "iva": round(iva_total, 2),
+            "subtotal": float(round(subtotal_total, 2)),
+            "iva": float(round(iva_total, 2)),
             "transacciones": len(pagos_aprobados),
         },
+        "historial": reporte_registrado,
     }
 
 
@@ -388,7 +426,7 @@ def generar_ingresos(fecha_inicio: str, fecha_fin: str, formato: str = "xlsx") -
 # Reporte de Estadísticas
 # ---------------------------------------------------------------------------
 
-def generar_estadisticas(fecha_inicio: str, fecha_fin: str, formato: str = "xlsx") -> dict:
+def generar_estadisticas(fecha_inicio: str, fecha_fin: str, formato: str = "xlsx", creado_por: int = None) -> dict:
     """
     Genera reporte de estadísticas generales.
     Incluye: reservas por estado, top 5 habitaciones más reservadas,
@@ -500,6 +538,22 @@ def generar_estadisticas(fecha_inicio: str, fecha_fin: str, formato: str = "xlsx
             ["Concepto", "Detalle 1", "Detalle 2", "Valor"],
         )
 
+    reporte_registrado = None
+    if creado_por:
+        reporte_registrado = registrar_generado(
+            tipo="estadisticas",
+            formato=formato,
+            fecha_inicio=fecha_inicio,
+            fecha_fin=fecha_fin,
+            archivo_path=ruta,
+            archivo_nombre=nombre_archivo,
+            creado_por=creado_por,
+            resumen={
+                "total_reservas": len(reservas_periodo),
+                "reservas_por_estado": reservas_por_estado,
+            },
+        )
+
     return {
         "tipo": "estadisticas",
         "archivo": ruta,
@@ -510,4 +564,57 @@ def generar_estadisticas(fecha_inicio: str, fecha_fin: str, formato: str = "xlsx
             "total_reservas": len(reservas_periodo),
             "reservas_por_estado": reservas_por_estado,
         },
+        "historial": reporte_registrado,
     }
+
+
+def registrar_generado(tipo: str, formato: str, fecha_inicio: str, fecha_fin: str,
+                       archivo_path: str, archivo_nombre: str, creado_por: int,
+                       resumen: dict = None) -> dict:
+    """Registra un reporte generado en el historial."""
+    from app.models.reporte import ReporteGenerado
+    from datetime import date
+
+    reporte = ReporteGenerado(
+        tipo=tipo,
+        formato=formato,
+        fecha_inicio=date.fromisoformat(fecha_inicio),
+        fecha_fin=date.fromisoformat(fecha_fin),
+        archivo_path=archivo_path,
+        archivo_nombre=archivo_nombre,
+        creado_por=creado_por,
+        resumen=resumen,
+    )
+    db.session.add(reporte)
+    db.session.flush()
+    return reporte.to_dict()
+
+
+def listar_historial(filtros=None):
+    """Lista el historial de reportes generados con filtros opcionales."""
+    from app.models.reporte import ReporteGenerado
+
+    query = ReporteGenerado.query
+
+    if filtros:
+        if filtros.get("tipo"):
+            query = query.filter_by(tipo=filtros["tipo"])
+
+        if filtros.get("formato"):
+            query = query.filter_by(formato=filtros["formato"])
+
+        if filtros.get("creado_por"):
+            query = query.filter_by(creado_por=int(filtros["creado_por"]))
+
+        if filtros.get("fecha_desde"):
+            from datetime import date
+            fecha = date.fromisoformat(filtros["fecha_desde"])
+            query = query.filter(ReporteGenerado.created_at >= fecha)
+
+        if filtros.get("fecha_hasta"):
+            from datetime import date
+            fecha = date.fromisoformat(filtros["fecha_hasta"])
+            query = query.filter(ReporteGenerado.created_at <= fecha)
+
+    reportes = query.order_by(ReporteGenerado.created_at.desc()).all()
+    return [r.to_dict() for r in reportes]
