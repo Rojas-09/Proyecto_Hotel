@@ -91,3 +91,6 @@ docs/*.pdf
 # Code graph local (OpenGem)
 .opengem/
 opengem-out/
+
+# AI agent skill lock
+skills-lock.json
