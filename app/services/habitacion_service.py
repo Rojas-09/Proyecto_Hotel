@@ -8,17 +8,15 @@ from app.utils.fecha_helper import ahora_colombia
 
 
 def obtener_todas(filtros=None):
-    habitaciones = db.session.execute(
-        select(Habitacion).filter_by(activo=True)
-    ).scalars().all()
+    habitaciones = (
+        db.session.execute(select(Habitacion).filter_by(activo=True)).scalars().all()
+    )
 
     if filtros:
         if filtros.get("tipo"):
             try:
                 tipo = TipoHabitacion(filtros["tipo"])
-                habitaciones = [
-                    h for h in habitaciones if h.tipo == tipo
-                ]
+                habitaciones = [h for h in habitaciones if h.tipo == tipo]
             except ValueError:
                 raise ValueError(
                     f"Tipo de habitacion invalido. "
@@ -27,18 +25,14 @@ def obtener_todas(filtros=None):
         if filtros.get("estado"):
             try:
                 estado = EstadoHabitacion(filtros["estado"])
-                habitaciones = [
-                    h for h in habitaciones if h.estado == estado
-                ]
+                habitaciones = [h for h in habitaciones if h.estado == estado]
             except ValueError:
                 raise ValueError(
                     f"Estado invalido. "
                     f"Valores permitidos: {[e.value for e in EstadoHabitacion]}"
                 )
         if filtros.get("piso"):
-            habitaciones = [
-                h for h in habitaciones if h.piso == int(filtros["piso"])
-            ]
+            habitaciones = [h for h in habitaciones if h.piso == int(filtros["piso"])]
 
     return [h.to_dict() for h in habitaciones]
 
@@ -59,8 +53,7 @@ def crear(datos):
 
     existing = db.session.execute(
         select(Habitacion).filter(
-            func.lower(func.trim(Habitacion.numero))
-            == numero_normalizado.lower()
+            func.lower(func.trim(Habitacion.numero)) == numero_normalizado.lower()
         )
     ).scalar_one_or_none()
     if existing:
@@ -102,8 +95,7 @@ def actualizar(habitacion_id, datos):
         numero_normalizado = str(datos["numero"]).strip()
         existing = db.session.execute(
             select(Habitacion).filter(
-                func.lower(func.trim(Habitacion.numero))
-                == numero_normalizado.lower()
+                func.lower(func.trim(Habitacion.numero)) == numero_normalizado.lower()
             )
         ).scalar_one_or_none()
         if existing:
@@ -169,31 +161,28 @@ def buscar_disponibles(fecha_entrada_str, fecha_salida_str, tipo=None):
         fecha_entrada = datetime.strptime(fecha_entrada_str, "%Y-%m-%d").date()
         fecha_salida = datetime.strptime(fecha_salida_str, "%Y-%m-%d").date()
     except (ValueError, TypeError):
-        raise ValueError(
-            "Formato de fecha invalido. Use YYYY-MM-DD."
-        )
+        raise ValueError("Formato de fecha invalido. Use YYYY-MM-DD.")
 
     if fecha_entrada < date.today():
         raise ValueError("La fecha de entrada no puede ser en el pasado.")
 
     if fecha_entrada >= fecha_salida:
-        raise ValueError(
-            "La fecha de entrada debe ser anterior a la fecha de salida."
-        )
+        raise ValueError("La fecha de entrada debe ser anterior a la fecha de salida.")
 
-    habitaciones = db.session.execute(
-        select(Habitacion).filter_by(
-            activo=True,
-            estado=EstadoHabitacion.disponible
+    habitaciones = (
+        db.session.execute(
+            select(Habitacion).filter_by(
+                activo=True, estado=EstadoHabitacion.disponible
+            )
         )
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
 
     if tipo:
         try:
             tipo_enum = TipoHabitacion(tipo)
-            habitaciones = [
-                h for h in habitaciones if h.tipo == tipo_enum
-            ]
+            habitaciones = [h for h in habitaciones if h.tipo == tipo_enum]
         except ValueError:
             raise ValueError(
                 f"Tipo invalido. Valores permitidos: "
@@ -217,9 +206,7 @@ def _validar_datos_obligatorios(datos):
     requeridos = ["numero", "tipo", "precio_noche", "capacidad"]
     faltantes = [c for c in requeridos if c not in datos or datos[c] == ""]
     if faltantes:
-        raise ValueError(
-            f"Campos obligatorios faltantes: {', '.join(faltantes)}"
-        )
+        raise ValueError(f"Campos obligatorios faltantes: {', '.join(faltantes)}")
 
     if float(datos["precio_noche"]) <= 0:
         raise ValueError("El precio por noche debe ser mayor a 0.")

@@ -27,9 +27,14 @@ def _huesped(usuario):
 
 
 def _habitacion(numero="101", tipo=TipoHabitacion.doble):
-    h = Habitacion(numero=numero, tipo=tipo, precio_noche=200000,
-                   capacidad=2, piso=1,
-                   estado=EstadoHabitacion.disponible)
+    h = Habitacion(
+        numero=numero,
+        tipo=tipo,
+        precio_noche=200000,
+        capacidad=2,
+        piso=1,
+        estado=EstadoHabitacion.disponible,
+    )
     db.session.add(h)
     db.session.flush()
     return h
@@ -37,6 +42,7 @@ def _habitacion(numero="101", tipo=TipoHabitacion.doble):
 
 def _reserva_completada(huesped, habitacion):
     from app.utils.fecha_helper import ahora_colombia
+
     r = Reserva(
         id_huesped=huesped.id,
         id_habitacion=habitacion.id,
@@ -119,10 +125,14 @@ class TestHacerCheckinErrores:
             h = _huesped(u)
             hab = _habitacion()
             r = Reserva(
-                id_huesped=h.id, id_habitacion=hab.id,
+                id_huesped=h.id,
+                id_habitacion=hab.id,
                 fecha_entrada=date.today() + timedelta(days=5),
                 fecha_salida=date.today() + timedelta(days=7),
-                noches=2, subtotal=400000, impuestos=76000, total=476000,
+                noches=2,
+                subtotal=400000,
+                impuestos=76000,
+                total=476000,
                 estado=EstadoReserva.pendiente,
             )
             db.session.add(r)
@@ -147,10 +157,14 @@ class TestHacerCheckoutErrores:
             h = _huesped(u)
             hab = _habitacion()
             r = Reserva(
-                id_huesped=h.id, id_habitacion=hab.id,
+                id_huesped=h.id,
+                id_habitacion=hab.id,
                 fecha_entrada=date.today() - timedelta(days=3),
                 fecha_salida=date.today() - timedelta(days=1),
-                noches=2, subtotal=400000, impuestos=76000, total=476000,
+                noches=2,
+                subtotal=400000,
+                impuestos=76000,
+                total=476000,
                 estado=EstadoReserva.ocupada,
             )
             db.session.add(r)
@@ -175,10 +189,14 @@ class TestCancelarErrores:
             h = _huesped(u)
             hab = _habitacion()
             r = Reserva(
-                id_huesped=h.id, id_habitacion=hab.id,
+                id_huesped=h.id,
+                id_habitacion=hab.id,
                 fecha_entrada=date.today() + timedelta(hours=12),
                 fecha_salida=date.today() + timedelta(days=2),
-                noches=2, subtotal=400000, impuestos=76000, total=476000,
+                noches=2,
+                subtotal=400000,
+                impuestos=76000,
+                total=476000,
                 estado=EstadoReserva.pendiente,
             )
             db.session.add(r)
@@ -193,10 +211,14 @@ class TestCancelarErrores:
             h = _huesped(u)
             hab = _habitacion()
             r = Reserva(
-                id_huesped=h.id, id_habitacion=hab.id,
+                id_huesped=h.id,
+                id_habitacion=hab.id,
                 fecha_entrada=date.today() + timedelta(days=10),
                 fecha_salida=date.today() + timedelta(days=12),
-                noches=2, subtotal=400000, impuestos=76000, total=476000,
+                noches=2,
+                subtotal=400000,
+                impuestos=76000,
+                total=476000,
                 estado=EstadoReserva.cancelada,
             )
             db.session.add(r)
@@ -232,10 +254,14 @@ class TestHelpers:
         with app.app_context():
             hab = _habitacion()
             r = Reserva(
-                id_huesped=1, id_habitacion=hab.id,
+                id_huesped=1,
+                id_habitacion=hab.id,
                 fecha_entrada=date.today() + timedelta(days=5),
                 fecha_salida=date.today() + timedelta(days=7),
-                noches=2, subtotal=400000, impuestos=76000, total=476000,
+                noches=2,
+                subtotal=400000,
+                impuestos=76000,
+                total=476000,
                 estado=EstadoReserva.confirmada,
             )
             db.session.add(r)
@@ -254,6 +280,7 @@ class TestEnviarEmailSMTPError:
     def test_smtp_falla(self, app):
         """466-467: except Exception: pass."""
         from unittest.mock import patch as mock_patch
+
         with app.app_context():
             u = _usuario(RolEnum.cliente, "mailerr")
             h = _huesped(u)

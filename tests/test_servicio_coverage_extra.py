@@ -30,8 +30,14 @@ def _huesped(usuario):
 
 
 def _habitacion():
-    h = Habitacion(numero="999", tipo=TipoHabitacion.simple, precio_noche=150000,
-                   capacidad=2, piso=1, estado=EstadoHabitacion.disponible)
+    h = Habitacion(
+        numero="999",
+        tipo=TipoHabitacion.simple,
+        precio_noche=150000,
+        capacidad=2,
+        piso=1,
+        estado=EstadoHabitacion.disponible,
+    )
     db.session.add(h)
     db.session.flush()
     return h
@@ -57,10 +63,14 @@ class TestAgregarErrores:
             h = _huesped(u)
             hab = _habitacion()
             r = Reserva(
-                id_huesped=h.id, id_habitacion=hab.id,
+                id_huesped=h.id,
+                id_habitacion=hab.id,
                 fecha_entrada=date.today() - timedelta(days=2),
                 fecha_salida=date.today(),
-                noches=2, subtotal=300000, impuestos=57000, total=357000,
+                noches=2,
+                subtotal=300000,
+                impuestos=57000,
+                total=357000,
                 estado=EstadoReserva.ocupada,
             )
             db.session.add(r)
@@ -89,17 +99,23 @@ class TestEliminarErrores:
             h = _huesped(u)
             hab = _habitacion()
             r = Reserva(
-                id_huesped=h.id, id_habitacion=hab.id,
+                id_huesped=h.id,
+                id_habitacion=hab.id,
                 fecha_entrada=date.today() - timedelta(days=5),
                 fecha_salida=date.today() - timedelta(days=3),
-                noches=2, subtotal=300000, impuestos=57000, total=357000,
+                noches=2,
+                subtotal=300000,
+                impuestos=57000,
+                total=357000,
                 estado=EstadoReserva.completada,
             )
             db.session.add(r)
             db.session.flush()
             s = ServicioAdicional(
-                id_reserva=r.id, tipo=TipoServicio.comedor,
-                descripcion="Test", costo=Decimal("50000"),
+                id_reserva=r.id,
+                tipo=TipoServicio.comedor,
+                descripcion="Test",
+                costo=Decimal("50000"),
             )
             db.session.add(s)
             db.session.commit()
@@ -117,17 +133,23 @@ class TestActualizarErrores:
             h = _huesped(u)
             hab = _habitacion()
             r = Reserva(
-                id_huesped=h.id, id_habitacion=hab.id,
+                id_huesped=h.id,
+                id_habitacion=hab.id,
                 fecha_entrada=date.today() - timedelta(days=2),
                 fecha_salida=date.today(),
-                noches=2, subtotal=300000, impuestos=57000, total=357000,
+                noches=2,
+                subtotal=300000,
+                impuestos=57000,
+                total=357000,
                 estado=EstadoReserva.ocupada,
             )
             db.session.add(r)
             db.session.flush()
             s = ServicioAdicional(
-                id_reserva=r.id, tipo=TipoServicio.spa,
-                descripcion="Un servicio", costo=Decimal("80000"),
+                id_reserva=r.id,
+                tipo=TipoServicio.spa,
+                descripcion="Un servicio",
+                costo=Decimal("80000"),
             )
             db.session.add(s)
             db.session.commit()
@@ -141,17 +163,23 @@ class TestActualizarErrores:
             h = _huesped(u)
             hab = _habitacion()
             r = Reserva(
-                id_huesped=h.id, id_habitacion=hab.id,
+                id_huesped=h.id,
+                id_habitacion=hab.id,
                 fecha_entrada=date.today() - timedelta(days=2),
                 fecha_salida=date.today(),
-                noches=2, subtotal=300000, impuestos=57000, total=357000,
+                noches=2,
+                subtotal=300000,
+                impuestos=57000,
+                total=357000,
                 estado=EstadoReserva.ocupada,
             )
             db.session.add(r)
             db.session.flush()
             s = ServicioAdicional(
-                id_reserva=r.id, tipo=TipoServicio.comedor,
-                descripcion="Original", costo=Decimal("30000"),
+                id_reserva=r.id,
+                tipo=TipoServicio.comedor,
+                descripcion="Original",
+                costo=Decimal("30000"),
             )
             db.session.add(s)
             db.session.commit()
@@ -165,22 +193,31 @@ class TestActualizarErrores:
             h = _huesped(u)
             hab = _habitacion()
             r = Reserva(
-                id_huesped=h.id, id_habitacion=hab.id,
+                id_huesped=h.id,
+                id_habitacion=hab.id,
                 fecha_entrada=date.today() - timedelta(days=2),
                 fecha_salida=date.today(),
-                noches=2, subtotal=300000, impuestos=57000, total=357000,
+                noches=2,
+                subtotal=300000,
+                impuestos=57000,
+                total=357000,
                 estado=EstadoReserva.ocupada,
             )
             db.session.add(r)
             db.session.flush()
             s = ServicioAdicional(
-                id_reserva=r.id, tipo=TipoServicio.comedor,
-                descripcion="Comida", costo=Decimal("40000"),
+                id_reserva=r.id,
+                tipo=TipoServicio.comedor,
+                descripcion="Comida",
+                costo=Decimal("40000"),
             )
             db.session.add(s)
             f = Factura(
-                id_reserva=r.id, subtotal=300000, impuestos=57000,
-                servicios_adicionales_total=40000, total=397000,
+                id_reserva=r.id,
+                subtotal=300000,
+                impuestos=57000,
+                servicios_adicionales_total=40000,
+                total=397000,
                 estado=EstadoFactura.emitida,
             )
             db.session.add(f)

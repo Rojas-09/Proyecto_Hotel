@@ -1,6 +1,7 @@
 """
 Auth Service - Lógica de negocio para autenticación
 """
+
 from sqlalchemy import select
 
 from flask import current_app
@@ -17,18 +18,16 @@ class AuthService:
 
     @staticmethod
     def _rol_normalizado(usuario) -> str:
-        return (
-            usuario.rol.value
-            if hasattr(usuario.rol, 'value')
-            else usuario.rol
-        )
+        return usuario.rol.value if hasattr(usuario.rol, "value") else usuario.rol
 
     @staticmethod
     def _emitir_tokens(usuario) -> dict:
         """Genera access_token (15 min) + refresh_token (7 días revocable)."""
         rol = AuthService._rol_normalizado(usuario)
         access_token = generar_token_acceso(
-            usuario.id, usuario.email, rol,
+            usuario.id,
+            usuario.email,
+            rol,
             minutos=current_app.config.get("JWT_ACCESS_MINUTOS", 15),
         )
         refresh_token_plano, _ = RefreshToken.crear(
@@ -71,7 +70,7 @@ class AuthService:
                     "error": {
                         "code": "VALIDATION_ERROR",
                         "message": f"El campo '{campo}' es requerido.",
-                    }
+                    },
                 }, 400
 
         rol = "cliente"  # Forzado: solo admin puede asignar roles
@@ -80,10 +79,8 @@ class AuthService:
                 "success": False,
                 "error": {
                     "code": "VALIDATION_ERROR",
-                    "message": (
-                        "El campo 'documento_id' es requerido para clientes."
-                    ),
-                }
+                    "message": ("El campo 'documento_id' es requerido para clientes."),
+                },
             }, 400
 
         email = data["email"].strip().lower()
@@ -96,7 +93,7 @@ class AuthService:
                 "error": {
                     "code": "CONFLICT",
                     "message": "Ya existe una cuenta con ese correo electrónico.",
-                }
+                },
             }, 409
 
         if len(data["password"]) < 8:
@@ -105,7 +102,7 @@ class AuthService:
                 "error": {
                     "code": "VALIDATION_ERROR",
                     "message": "La contraseña debe tener al menos 8 caracteres.",
-                }
+                },
             }, 400
 
         usuario = Usuario(
@@ -147,13 +144,17 @@ class AuthService:
     def _revocar_refresh_usuario(id_usuario: int):
         """Revoca todos los refresh tokens activos de un usuario."""
         ahora = ahora_colombia()
-        activos = db.session.execute(
-            select(RefreshToken).filter(
-                RefreshToken.id_usuario == id_usuario,
-                RefreshToken.revoked.is_(False),
-                RefreshToken.expires_at > ahora,
+        activos = (
+            db.session.execute(
+                select(RefreshToken).filter(
+                    RefreshToken.id_usuario == id_usuario,
+                    RefreshToken.revoked.is_(False),
+                    RefreshToken.expires_at > ahora,
+                )
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
         for rt in activos:
             rt.revocar()
 
@@ -168,7 +169,7 @@ class AuthService:
                 "error": {
                     "code": "VALIDATION_ERROR",
                     "message": "Email y contraseña son requeridos.",
-                }
+                },
             }, 400
 
         usuario = db.session.execute(
@@ -181,7 +182,7 @@ class AuthService:
                 "error": {
                     "code": "UNAUTHORIZED",
                     "message": "Credenciales incorrectas.",
-                }
+                },
             }, 401
 
         AuthService._revocar_refresh_usuario(usuario.id)
@@ -209,7 +210,7 @@ class AuthService:
                 "error": {
                     "code": "UNAUTHORIZED",
                     "message": "Refresh token requerido.",
-                }
+                },
             }, 401
 
         rt = RefreshToken.verificar(refresh_token_plano)
@@ -219,7 +220,7 @@ class AuthService:
                 "error": {
                     "code": "UNAUTHORIZED",
                     "message": "Refresh token inválido o expirado.",
-                }
+                },
             }, 401
 
         usuario = db.session.get(Usuario, rt.id_usuario)
@@ -229,7 +230,7 @@ class AuthService:
                 "error": {
                     "code": "UNAUTHORIZED",
                     "message": "Usuario no encontrado o inactivo.",
-                }
+                },
             }, 401
 
         rt.revocar()
@@ -257,7 +258,7 @@ class AuthService:
                 "error": {
                     "code": "VALIDATION_ERROR",
                     "message": f"Rol inválido. Opciones: {', '.join(roles_validos)}",
-                }
+                },
             }, 400
 
         if rol == "cliente":
@@ -269,7 +270,7 @@ class AuthService:
                         "message": (
                             "El campo 'documento_id' es requerido para clientes."
                         ),
-                    }
+                    },
                 }, 400
             return AuthService.registrar(data)
 
@@ -286,7 +287,7 @@ class AuthService:
         return {
             "success": True,
             "data": {"usuario": usuario.to_dict()},
-            "mensaje": f"Usuario {rol} creado correctamente."
+            "mensaje": f"Usuario {rol} creado correctamente.",
         }, 201
 
     @staticmethod
@@ -304,7 +305,7 @@ class AuthService:
                         "Ya existe un administrador. "
                         "Usa el endpoint /usuarios con token de admin."
                     ),
-                }
+                },
             }, 403
 
         campos = ["nombre", "apellido", "email", "password"]
@@ -315,7 +316,7 @@ class AuthService:
                     "error": {
                         "code": "VALIDATION_ERROR",
                         "message": f"El campo '{campo}' es requerido.",
-                    }
+                    },
                 }, 400
 
         if len(data["password"]) < 8:
@@ -324,7 +325,7 @@ class AuthService:
                 "error": {
                     "code": "VALIDATION_ERROR",
                     "message": "La contraseña debe tener al menos 8 caracteres.",
-                }
+                },
             }, 400
 
         email = data["email"].strip().lower()
@@ -362,7 +363,7 @@ class AuthService:
                 "error": {
                     "code": "VALIDATION_ERROR",
                     "message": "No se puede cambiar el email.",
-                }
+                },
             }, 400
 
         if "rol" in data:
@@ -371,7 +372,7 @@ class AuthService:
                 "error": {
                     "code": "FORBIDDEN",
                     "message": "No puedes cambiar tu propio rol.",
-                }
+                },
             }, 400
 
         if "password" in data:
@@ -381,7 +382,7 @@ class AuthService:
                     "error": {
                         "code": "VALIDATION_ERROR",
                         "message": "La contraseña debe tener al menos 8 caracteres.",
-                    }
+                    },
                 }, 400
             current_user.password = data["password"]
 
@@ -397,7 +398,7 @@ class AuthService:
                 "error": {
                     "code": "FORBIDDEN",
                     "message": "No puedes cambiar tu propio estado.",
-                }
+                },
             }, 400
 
         db.session.commit()
@@ -421,7 +422,7 @@ class AuthService:
                 "error": {
                     "code": "FORBIDDEN",
                     "message": "No puedes desactivarte a ti mismo.",
-                }
+                },
             }, 403
 
         usuario = db.session.get(Usuario, usuario_id)
@@ -431,7 +432,7 @@ class AuthService:
                 "error": {
                     "code": "NOT_FOUND",
                     "message": f"Usuario con id {usuario_id} no encontrado.",
-                }
+                },
             }, 404
 
         rol_actual = AuthService._rol_normalizado(current_user)
@@ -442,7 +443,7 @@ class AuthService:
                 "error": {
                     "code": "FORBIDDEN",
                     "message": "No tienes permiso para editar este usuario.",
-                }
+                },
             }, 403
 
         # El email solo puede cambiarlo el admin
@@ -453,7 +454,7 @@ class AuthService:
                     "error": {
                         "code": "FORBIDDEN",
                         "message": "Solo el admin puede cambiar el email.",
-                    }
+                    },
                 }, 403
             nuevo_email = data["email"].strip().lower()
             if db.session.execute(
@@ -467,7 +468,7 @@ class AuthService:
                     "error": {
                         "code": "CONFLICT",
                         "message": "El email ya está en uso.",
-                    }
+                    },
                 }, 409
             usuario.email = nuevo_email
 
@@ -485,7 +486,7 @@ class AuthService:
                     "error": {
                         "code": "FORBIDDEN",
                         "message": "Solo el admin puede activar o desactivar usuarios.",
-                    }
+                    },
                 }, 403
             usuario.activo = data["activo"]
 
@@ -497,7 +498,7 @@ class AuthService:
                     "error": {
                         "code": "VALIDATION_ERROR",
                         "message": f"Rol inválido. Opciones: {', '.join(roles_validos)}",
-                    }
+                    },
                 }, 400
             if usuario.id == current_user.id:
                 return {
@@ -505,7 +506,7 @@ class AuthService:
                     "error": {
                         "code": "FORBIDDEN",
                         "message": "No puedes cambiar tu propio rol.",
-                    }
+                    },
                 }, 403
             if rol_actual == "gerente" and data["rol"] == "admin":
                 return {
@@ -513,7 +514,7 @@ class AuthService:
                     "error": {
                         "code": "FORBIDDEN",
                         "message": "Como gerente no puedes asignar rol admin.",
-                    }
+                    },
                 }, 403
             if rol_actual == "recepcionista" and data["rol"] in ("admin", "gerente"):
                 return {
@@ -521,7 +522,7 @@ class AuthService:
                     "error": {
                         "code": "FORBIDDEN",
                         "message": "Como recepcionista no puedes asignar roles superiores.",
-                    }
+                    },
                 }, 403
             usuario.rol = data["rol"]
 
@@ -532,7 +533,7 @@ class AuthService:
                     "error": {
                         "code": "VALIDATION_ERROR",
                         "message": "La contraseña debe tener al menos 8 caracteres.",
-                    }
+                    },
                 }, 400
             usuario.password = data["password"]
 
@@ -546,9 +547,11 @@ class AuthService:
 
     @staticmethod
     def listar_usuarios() -> list:
-        usuarios = db.session.execute(
-            select(Usuario).order_by(Usuario.created_at.desc())
-        ).scalars().all()
+        usuarios = (
+            db.session.execute(select(Usuario).order_by(Usuario.created_at.desc()))
+            .scalars()
+            .all()
+        )
         return [u.to_dict() for u in usuarios]
 
     @staticmethod

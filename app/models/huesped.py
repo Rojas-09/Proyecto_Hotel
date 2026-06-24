@@ -14,7 +14,7 @@ class Huesped(db.Model):
         db.Integer,
         db.ForeignKey("usuarios.id", name="fk_huesped_usuario"),
         unique=True,
-        nullable=False
+        nullable=False,
     )
     documento_id = db.Column(db.String(20), nullable=False)
     tipo_documento = db.Column(db.String(20), nullable=False, default="CC")
@@ -22,19 +22,14 @@ class Huesped(db.Model):
     activo = db.Column(db.Boolean, default=True, nullable=False)
     created_at = db.Column(db.DateTime, default=ahora_colombia, nullable=False)
     updated_at = db.Column(
-        db.DateTime,
-        default=ahora_colombia,
-        onupdate=ahora_colombia,
-        nullable=False
+        db.DateTime, default=ahora_colombia, onupdate=ahora_colombia, nullable=False
     )
 
     # Relationships
     usuario = db.relationship("Usuario", back_populates="huesped")
     reservas = db.relationship("Reserva", back_populates="huesped")
     puntos_fidelidad = db.relationship(
-        "PuntosFidelidad",
-        back_populates="huesped",
-        cascade="all, delete-orphan"
+        "PuntosFidelidad", back_populates="huesped", cascade="all, delete-orphan"
     )
 
     def to_dict(self) -> dict:

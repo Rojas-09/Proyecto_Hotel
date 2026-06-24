@@ -1,6 +1,7 @@
 """
 Pago Controller - Endpoints REST para pagos y reembolsos (RF-13)
 """
+
 from flask import Blueprint, jsonify, request
 
 from app.schemas.pago_schema import PagoGarantiaSchema, PagoLiquidacionSchema
@@ -25,10 +26,15 @@ def procesar_garantia(current_user, reserva_id):
     datos = request.get_json() or {}
     errors = PagoGarantiaSchema().validate(datos)
     if errors:
-        return jsonify({
-            "success": False,
-            "error": {"code": "VALIDATION_ERROR", "message": errors}
-        }), 422
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "error": {"code": "VALIDATION_ERROR", "message": errors},
+                }
+            ),
+            422,
+        )
 
     metodo = datos.get("metodo")
     payment_method_id = datos.get("payment_method_id")
@@ -37,10 +43,16 @@ def procesar_garantia(current_user, reserva_id):
         resultado = pago_service.procesar_garantia(
             reserva_id, metodo, payment_method_id, current_user
         )
-        return jsonify({
-            "success": True, "data": resultado,
-            "mensaje": "Garantía procesada correctamente."
-        }), 201
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "data": resultado,
+                    "mensaje": "Garantía procesada correctamente.",
+                }
+            ),
+            201,
+        )
     except LookupError as e:
         return handle_service_error(e, 404)
     except ValueError as e:
@@ -61,10 +73,16 @@ def confirmar_pago_manual(current_user, pago_id):
     """
     try:
         resultado = pago_service.confirmar_pago_manual(pago_id, current_user)
-        return jsonify({
-            "success": True, "data": resultado,
-            "mensaje": "Pago confirmado correctamente."
-        }), 200
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "data": resultado,
+                    "mensaje": "Pago confirmado correctamente.",
+                }
+            ),
+            200,
+        )
     except LookupError as e:
         return handle_service_error(e, 404)
     except ValueError as e:
@@ -84,10 +102,15 @@ def procesar_liquidacion(current_user, reserva_id):
     datos = request.get_json() or {}
     errors = PagoLiquidacionSchema().validate(datos)
     if errors:
-        return jsonify({
-            "success": False,
-            "error": {"code": "VALIDATION_ERROR", "message": errors}
-        }), 422
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "error": {"code": "VALIDATION_ERROR", "message": errors},
+                }
+            ),
+            422,
+        )
 
     metodo = datos.get("metodo")
     payment_method_id = datos.get("payment_method_id")
@@ -96,10 +119,16 @@ def procesar_liquidacion(current_user, reserva_id):
         resultado = pago_service.procesar_liquidacion(
             reserva_id, metodo, payment_method_id
         )
-        return jsonify({
-            "success": True, "data": resultado,
-            "mensaje": "Liquidación procesada correctamente."
-        }), 201
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "data": resultado,
+                    "mensaje": "Liquidación procesada correctamente.",
+                }
+            ),
+            201,
+        )
     except LookupError as e:
         return handle_service_error(e, 404)
     except ValueError as e:
@@ -118,10 +147,17 @@ def obtener_pagos_reserva(current_user, reserva_id):
     """
     try:
         pagos = pago_service.obtener_pagos_reserva(reserva_id)
-        return jsonify({
-            "success": True, "data": pagos, "total": len(pagos),
-            "mensaje": "Pagos obtenidos correctamente."
-        }), 200
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "data": pagos,
+                    "total": len(pagos),
+                    "mensaje": "Pagos obtenidos correctamente.",
+                }
+            ),
+            200,
+        )
     except LookupError as e:
         return handle_service_error(e, 404)
 
@@ -160,10 +196,16 @@ def solicitar_reembolso(current_user, pago_id):
 
     try:
         resultado = pago_service.solicitar_reembolso(pago_id, motivo)
-        return jsonify({
-            "success": True, "data": resultado,
-            "mensaje": "Reembolso solicitado correctamente."
-        }), 201
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "data": resultado,
+                    "mensaje": "Reembolso solicitado correctamente.",
+                }
+            ),
+            201,
+        )
     except LookupError as e:
         return handle_service_error(e, 404)
     except ValueError as e:
@@ -194,12 +236,17 @@ def listar_pagos(current_user):
 
     try:
         pagos = pago_service.listar(filtros or None)
-        return jsonify({
-            "success": True,
-            "data": pagos,
-            "total": len(pagos),
-            "mensaje": "Pagos obtenidos correctamente."
-        }), 200
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "data": pagos,
+                    "total": len(pagos),
+                    "mensaje": "Pagos obtenidos correctamente.",
+                }
+            ),
+            200,
+        )
     except ValueError as e:
         return handle_service_error(e, 400)
     except Exception as e:
@@ -218,11 +265,10 @@ def obtener_pago(current_user, pago_id):
     """
     try:
         pago = pago_service.obtener_por_id(pago_id)
-        return jsonify({
-            "success": True,
-            "data": pago,
-            "mensaje": "Pago encontrado."
-        }), 200
+        return (
+            jsonify({"success": True, "data": pago, "mensaje": "Pago encontrado."}),
+            200,
+        )
     except LookupError as e:
         return handle_service_error(e, 404)
 
@@ -242,11 +288,16 @@ def eliminar_pago(current_user, pago_id):
 
     try:
         pago_service.anular(pago_id, motivo)
-        return jsonify({
-            "success": True,
-            "data": None,
-            "mensaje": "Pago anulado correctamente."
-        }), 200
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "data": None,
+                    "mensaje": "Pago anulado correctamente.",
+                }
+            ),
+            200,
+        )
     except LookupError as e:
         return handle_service_error(e, 404)
     except ValueError as e:

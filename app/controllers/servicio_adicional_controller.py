@@ -1,6 +1,7 @@
 """
 Controlador ServicioAdicional — RF-10 (Comedor) y RF-11 (Spa)
 """
+
 from flask import Blueprint, jsonify, request
 
 from app.services import servicio_adicional_service
@@ -28,6 +29,7 @@ def agregar_servicio(current_user, reserva_id: int):
         fecha_hora_str = data.get("fecha_hora")
         if fecha_hora_str:
             from datetime import datetime
+
             fecha_hora = datetime.fromisoformat(fecha_hora_str)
         else:
             fecha_hora = None
@@ -41,10 +43,16 @@ def agregar_servicio(current_user, reserva_id: int):
             recurso=data.get("recurso"),
             fecha_hora=fecha_hora,
         )
-        return jsonify({
-            "success": True, "data": servicio,
-            "mensaje": "Servicio agregado correctamente."
-        }), 201
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "data": servicio,
+                    "mensaje": "Servicio agregado correctamente.",
+                }
+            ),
+            201,
+        )
     except LookupError as e:
         return handle_service_error(e, 404)
     except ValueError as e:
@@ -62,31 +70,38 @@ def listar_servicios(current_user, reserva_id: int):
     """Retorna 200 { servicios: [...], subtotal: N, total: N }"""
     try:
         resultado = servicio_adicional_service.listar(reserva_id)
-        return jsonify({
-            "success": True, "data": resultado,
-            "mensaje": "Servicios listados correctamente."
-        }), 200
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "data": resultado,
+                    "mensaje": "Servicios listados correctamente.",
+                }
+            ),
+            200,
+        )
     except LookupError as e:
         return handle_service_error(e, 404)
 
 
-@servicio_adicional_bp.route(
-    "/api/v1/servicios/<int:servicio_id>", methods=["GET"]
-)
+@servicio_adicional_bp.route("/api/v1/servicios/<int:servicio_id>", methods=["GET"])
 @token_required
 @rol_requerido("recepcionista", "admin")
 def obtener_servicio(current_user, servicio_id: int):
     """Retorna 200 { servicio: ... }"""
     try:
         servicio = servicio_adicional_service.obtener(servicio_id)
-        return jsonify({"success": True, "data": servicio, "mensaje": "Servicio encontrado."}), 200
+        return (
+            jsonify(
+                {"success": True, "data": servicio, "mensaje": "Servicio encontrado."}
+            ),
+            200,
+        )
     except LookupError as e:
         return handle_service_error(e, 404)
 
 
-@servicio_adicional_bp.route(
-    "/api/v1/servicios/<int:servicio_id>", methods=["PUT"]
-)
+@servicio_adicional_bp.route("/api/v1/servicios/<int:servicio_id>", methods=["PUT"])
 @token_required
 @rol_requerido("recepcionista", "admin")
 def actualizar_servicio(current_user, servicio_id: int):
@@ -103,29 +118,39 @@ def actualizar_servicio(current_user, servicio_id: int):
             descripcion=data.get("descripcion"),
             costo_raw=data.get("costo"),
         )
-        return jsonify({
-            "success": True, "data": servicio,
-            "mensaje": "Servicio actualizado correctamente."
-        }), 200
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "data": servicio,
+                    "mensaje": "Servicio actualizado correctamente.",
+                }
+            ),
+            200,
+        )
     except LookupError as e:
         return handle_service_error(e, 404)
     except ValueError as e:
         return handle_service_error(e, 400)
 
 
-@servicio_adicional_bp.route(
-    "/api/v1/servicios/<int:servicio_id>", methods=["DELETE"]
-)
+@servicio_adicional_bp.route("/api/v1/servicios/<int:servicio_id>", methods=["DELETE"])
 @token_required
 @rol_requerido("admin")
 def eliminar_servicio(current_user, servicio_id: int):
     """Retorna 200 { mensaje: ..., servicio: ... }"""
     try:
         servicio = servicio_adicional_service.eliminar(servicio_id)
-        return jsonify({
-            "success": True, "data": servicio,
-            "mensaje": "Servicio eliminado correctamente."
-        }), 200
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "data": servicio,
+                    "mensaje": "Servicio eliminado correctamente.",
+                }
+            ),
+            200,
+        )
     except LookupError as e:
         return handle_service_error(e, 404)
     except ValueError as e:

@@ -10,8 +10,8 @@ from app.models.usuario import Usuario, RolEnum
 from app.models.reporte import ReporteGenerado
 from app.services import reporte_service
 
-
 # -- helpers --------------------------------------------------------------
+
 
 def _crear_admin(app, seed: str) -> Usuario:
     u = Usuario(
@@ -42,6 +42,7 @@ def _crear_reporte(admin: Usuario, **kw) -> ReporteGenerado:
 
 
 # -- TestReporteGeneradoModel ---------------------------------------------
+
 
 class TestReporteGeneradoModel:
     def test_crear_registro(self, app):
@@ -89,6 +90,7 @@ class TestReporteGeneradoModel:
 
 
 # -- TestListarHistorial --------------------------------------------------
+
 
 class TestListarHistorial:
     def test_listar_todos(self, app):
@@ -144,9 +146,7 @@ class TestListarHistorial:
             db.session.commit()
             r = _crear_reporte(admin, tipo="vacio")
             db.session.commit()
-            resultados = reporte_service.listar_historial(
-                {"fecha_hasta": "2025-01-01"}
-            )
+            resultados = reporte_service.listar_historial({"fecha_hasta": "2025-01-01"})
             assert len(resultados) == 0
 
     def test_filtrar_por_formato(self, app):

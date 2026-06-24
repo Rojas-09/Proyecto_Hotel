@@ -1,6 +1,7 @@
 """
 Pago Service - Lógica de negocio para pagos y reembolsos (RF-13)
 """
+
 from decimal import Decimal
 from uuid import uuid4
 from sqlalchemy import select
@@ -14,12 +15,14 @@ from app.models.reembolso import EstadoReembolso, Reembolso
 from app.models.reserva import EstadoReserva, Reserva
 from app.utils.fecha_helper import ahora_colombia
 
-
 # ---------------------------------------------------------------------------
 # Públicas
 # ---------------------------------------------------------------------------
 
-def procesar_garantia(reserva_id, metodo_str, payment_method_id=None, current_user=None):
+
+def procesar_garantia(
+    reserva_id, metodo_str, payment_method_id=None, current_user=None
+):
     """
     Procesa el pago de garantía (50 % del total) y confirma la reserva.
 
@@ -31,7 +34,7 @@ def procesar_garantia(reserva_id, metodo_str, payment_method_id=None, current_us
     if current_user:
         rol_actual = (
             current_user.rol.value
-            if hasattr(current_user.rol, 'value')
+            if hasattr(current_user.rol, "value")
             else current_user.rol
         )
         if rol_actual == "cliente":
@@ -53,22 +56,26 @@ def procesar_garantia(reserva_id, metodo_str, payment_method_id=None, current_us
 
     metodo = _validar_metodo(metodo_str)
     monto = (
-        Decimal(str(reserva.total)) *
-        Decimal(str(current_app.config["GARANTIA_PORCENTAJE"]))
+        Decimal(str(reserva.total))
+        * Decimal(str(current_app.config["GARANTIA_PORCENTAJE"]))
     ).quantize(Decimal("0.01"))
 
     stripe_pi_id = None
     failure_msg = None
     if metodo == MetodoPago.tarjeta:
         try:
-            stripe_pi_id = _cobrar_stripe(monto, payment_method_id, reserva_id, "garantia")
+            stripe_pi_id = _cobrar_stripe(
+                monto, payment_method_id, reserva_id, "garantia"
+            )
         except ValueError as e:
             failure_msg = str(e)
 
     es_manual = metodo in (MetodoPago.efectivo, MetodoPago.transferencia)
 
-    estado_pago = EstadoPago.pendiente if es_manual else (
-        EstadoPago.rechazado if failure_msg else EstadoPago.aprobado
+    estado_pago = (
+        EstadoPago.pendiente
+        if es_manual
+        else (EstadoPago.rechazado if failure_msg else EstadoPago.aprobado)
     )
 
     pago = Pago(
@@ -124,22 +131,20 @@ def procesar_liquidacion(reserva_id, metodo_str, payment_method_id=None):
         )
     ).scalar_one_or_none()
     if liquidacion_existente:
-        raise ValueError(
-            "Esta reserva ya tiene un pago de liquidación aprobado."
-        )
+        raise ValueError("Esta reserva ya tiene un pago de liquidación aprobado.")
 
     servicios_total = _calcular_total_servicios(reserva)
     total_final = Decimal(str(reserva.total)) + servicios_total
-    monto = (total_final - Decimal(str(garantia.monto))).quantize(
-        Decimal("0.01")
-    )
+    monto = (total_final - Decimal(str(garantia.monto))).quantize(Decimal("0.01"))
     if monto < Decimal("0"):
         monto = Decimal("0")
 
     metodo = _validar_metodo(metodo_str)
     referencia_externa = None
     if metodo == MetodoPago.tarjeta and monto > Decimal("0"):
-        referencia_externa = _cobrar_stripe(monto, payment_method_id, reserva_id, "liquidacion")
+        referencia_externa = _cobrar_stripe(
+            monto, payment_method_id, reserva_id, "liquidacion"
+        )
 
     pago = Pago(
         id_reserva=reserva_id,
@@ -156,10 +161,12 @@ def procesar_liquidacion(reserva_id, metodo_str, payment_method_id=None):
 
 def obtener_pagos_reserva(reserva_id):
     """Retorna todos los pagos de una reserva."""
-    _obtener_reserva(reserva_id)   # lanza LookupError si no existe
-    pagos = db.session.execute(
-        select(Pago).filter_by(id_reserva=reserva_id)
-    ).scalars().all()
+    _obtener_reserva(reserva_id)  # lanza LookupError si no existe
+    pagos = (
+        db.session.execute(select(Pago).filter_by(id_reserva=reserva_id))
+        .scalars()
+        .all()
+    )
     return [p.to_dict() for p in pagos]
 
 
@@ -238,6 +245,7 @@ def confirmar_pago_manual(pago_id, current_user):
 # Privadas — validaciones y helpers
 # ---------------------------------------------------------------------------
 
+
 def _obtener_reserva(reserva_id):
     reserva = db.session.get(Reserva, reserva_id)
     if not reserva:
@@ -258,9 +266,7 @@ def _verificar_sin_garantia(reserva_id):
         )
     ).scalar_one_or_none()
     if garantia:
-        raise ValueError(
-            "Esta reserva ya tiene un pago de garantía aprobado."
-        )
+        raise ValueError("Esta reserva ya tiene un pago de garantía aprobado.")
 
 
 def _obtener_garantia_aprobada(reserva_id):
@@ -282,9 +288,7 @@ def _obtener_garantia_aprobada(reserva_id):
 def _calcular_total_servicios(reserva):
     if not reserva.servicios_adicionales:
         return Decimal("0")
-    return sum(
-        Decimal(str(s.costo)) for s in reserva.servicios_adicionales
-    )
+    return sum(Decimal(str(s.costo)) for s in reserva.servicios_adicionales)
 
 
 def _validar_metodo(metodo_str):
@@ -307,6 +311,7 @@ def _validar_metodo(metodo_str):
 # Privadas — Stripe
 # ---------------------------------------------------------------------------
 
+
 def _cobrar_stripe(monto, payment_method_id, reserva_id, tipo_pago="pago"):
     """
     Crea y confirma un PaymentIntent en Stripe.
@@ -326,9 +331,7 @@ def _cobrar_stripe(monto, payment_method_id, reserva_id, tipo_pago="pago"):
         )
 
     if not payment_method_id:
-        raise ValueError(
-            "Se requiere 'payment_method_id' para pagos con tarjeta."
-        )
+        raise ValueError("Se requiere 'payment_method_id' para pagos con tarjeta.")
 
     try:
         intent = stripe.PaymentIntent.create(
@@ -336,9 +339,7 @@ def _cobrar_stripe(monto, payment_method_id, reserva_id, tipo_pago="pago"):
             currency="cop",
             payment_method=payment_method_id,
             confirm=True,
-            idempotency_key=(
-                f"reserva-{reserva_id}-{tipo_pago}-{uuid4().hex}"
-            ),
+            idempotency_key=(f"reserva-{reserva_id}-{tipo_pago}-{uuid4().hex}"),
             automatic_payment_methods={
                 "enabled": True,
                 "allow_redirects": "never",
@@ -350,9 +351,7 @@ def _cobrar_stripe(monto, payment_method_id, reserva_id, tipo_pago="pago"):
         raise ValueError(f"Error en pasarela de pagos: {str(e)}")
 
     if intent.status not in ("succeeded", "requires_capture"):
-        raise ValueError(
-            f"Pago no completado. Estado Stripe: {intent.status}"
-        )
+        raise ValueError(f"Pago no completado. Estado Stripe: {intent.status}")
 
     return intent.id
 

@@ -9,6 +9,7 @@ Cubre:
   - reserva_service.py líneas 96-475:
       filtros de búsqueda y envío de email (SMTP mockeado)
 """
+
 from decimal import Decimal
 from unittest.mock import MagicMock, patch
 
@@ -22,16 +23,16 @@ from app.models.reserva import EstadoReserva, Reserva
 from app.models.usuario import RolEnum, Usuario
 from app.utils.fecha_helper import ahora_colombia  # noqa: F401 (used in conftest.py)
 
-
 # ---------------------------------------------------------------------------
 # Helpers reutilizables
 # ---------------------------------------------------------------------------
+
 
 def _usuario(rol: RolEnum, tag: str) -> Usuario:
     u = Usuario(
         nombre="U",  # noqa: F541
         apellido=f"{tag}",
-        email=f"{tag}_{id(tag)}@h.com",   # noqa: F541 (unique key)
+        email=f"{tag}_{id(tag)}@h.com",  # noqa: F541 (unique key)
         rol=rol,
     )  # noqa: F541
     u.password = "pass"
@@ -53,6 +54,7 @@ def _huesped(usuario: Usuario) -> Huesped:
 
 def _habitacion(precio: str = "200000.00") -> Habitacion:
     import random
+
     n = str(random.randint(8000, 9999))
     hab = Habitacion(
         numero=n,
@@ -66,9 +68,11 @@ def _habitacion(precio: str = "200000.00") -> Habitacion:
     return hab
 
 
-def _reserva(huesped, hab, estado=EstadoReserva.pendiente,
-             total="200000.00") -> Reserva:
+def _reserva(
+    huesped, hab, estado=EstadoReserva.pendiente, total="200000.00"
+) -> Reserva:
     from datetime import date, timedelta
+
     hoy = date.today()
     entrada = hoy + timedelta(days=5)
     salida = hoy + timedelta(days=7)
@@ -94,9 +98,7 @@ def _reserva(huesped, hab, estado=EstadoReserva.pendiente,
 def _garantia(reserva: Reserva) -> Pago:
     p = Pago(
         id_reserva=reserva.id,
-        monto=(Decimal(str(reserva.total)) * Decimal("0.50")).quantize(
-            Decimal("0.01")
-        ),
+        monto=(Decimal(str(reserva.total)) * Decimal("0.50")).quantize(Decimal("0.01")),
         metodo=MetodoPago.tarjeta,
         tipo=TipoPago.garantia,
         estado=EstadoPago.aprobado,
@@ -110,6 +112,7 @@ def _garantia(reserva: Reserva) -> Pago:
 # ---------------------------------------------------------------------------
 # TestStripeCobrarReal — cubre pago_service.py líneas 232-267
 # ---------------------------------------------------------------------------
+
 
 class TestStripeCobrarReal:
     """
@@ -140,6 +143,7 @@ class TestStripeCobrarReal:
 
             with patch("stripe.PaymentIntent.create", return_value=intent_mock):
                 from app.services.pago_service import _cobrar_stripe
+
                 result = _cobrar_stripe(Decimal("100000.00"), "pm_test_abc", 1)
 
             assert result == "pi_test_ok_123"
@@ -156,6 +160,7 @@ class TestStripeCobrarReal:
             app.config["STRIPE_SECRET_KEY"] = ""
 
             from app.services.pago_service import _cobrar_stripe
+
             with pytest.raises(ValueError, match="STRIPE_SECRET_KEY"):
                 _cobrar_stripe(Decimal("100000.00"), "pm_test", 1)
 
@@ -171,6 +176,7 @@ class TestStripeCobrarReal:
             self._set_mock_off(app)
 
             from app.services.pago_service import _cobrar_stripe
+
             with pytest.raises(ValueError, match="payment_method_id"):
                 _cobrar_stripe(Decimal("100000.00"), None, 1)
 
@@ -186,6 +192,7 @@ class TestStripeCobrarReal:
             self._set_mock_off(app)
 
             import stripe as stripe_lib
+
             err = stripe_lib.error.CardError(
                 "Your card was declined.",
                 "number",
@@ -194,6 +201,7 @@ class TestStripeCobrarReal:
 
             with patch("stripe.PaymentIntent.create", side_effect=err):
                 from app.services.pago_service import _cobrar_stripe
+
                 with pytest.raises(ValueError, match="Tarjeta rechazada"):
                     _cobrar_stripe(Decimal("100000.00"), "pm_bad", 1)
 
@@ -209,10 +217,12 @@ class TestStripeCobrarReal:
             self._set_mock_off(app)
 
             import stripe as stripe_lib
+
             stripe_err = stripe_lib.error.StripeError("Connection timeout")
 
             with patch("stripe.PaymentIntent.create", side_effect=stripe_err):
                 from app.services.pago_service import _cobrar_stripe
+
                 with pytest.raises(ValueError, match="pasarela de pagos"):
                     _cobrar_stripe(Decimal("100000.00"), "pm_x", 1)
 
@@ -233,6 +243,7 @@ class TestStripeCobrarReal:
 
             with patch("stripe.PaymentIntent.create", return_value=intent_mock):
                 from app.services.pago_service import _cobrar_stripe
+
                 with pytest.raises(ValueError, match="no completado"):
                     _cobrar_stripe(Decimal("100000.00"), "pm_3d", 1)
 
@@ -242,6 +253,7 @@ class TestStripeCobrarReal:
 # ---------------------------------------------------------------------------
 # TestStripeReversarReal — cubre pago_service.py líneas 275-290
 # ---------------------------------------------------------------------------
+
 
 class TestStripeReversarReal:
     """Prueba _reversar_stripe con STRIPE_MOCK=False."""
@@ -255,6 +267,7 @@ class TestStripeReversarReal:
             refund_mock = MagicMock()
             with patch("stripe.Refund.create", return_value=refund_mock):
                 from app.services.pago_service import _reversar_stripe
+
                 _reversar_stripe("pi_real_001", Decimal("100000.00"))  # no debe lanzar
 
             app.config["STRIPE_MOCK"] = True
@@ -266,10 +279,12 @@ class TestStripeReversarReal:
             app.config["STRIPE_SECRET_KEY"] = "sk_test_fake"
 
             import stripe as stripe_lib
+
             err = stripe_lib.error.StripeError("Network error")
 
             with patch("stripe.Refund.create", side_effect=err):
                 from app.services.pago_service import _reversar_stripe
+
                 with pytest.raises(ValueError):
                     _reversar_stripe("pi_real_001", Decimal("50000.00"))
 
@@ -291,6 +306,7 @@ class TestStripeReversarReal:
 
             with patch("stripe.Refund.create", return_value=MagicMock()):
                 from app.services import pago_service
+
                 result = pago_service.solicitar_reembolso(pid, "Reembolso real")
 
             assert result["estado"] == "Procesado"
@@ -300,6 +316,7 @@ class TestStripeReversarReal:
 # ---------------------------------------------------------------------------
 # TestReservaServiceFiltros — cubre reserva_service.py líneas de filtrado
 # ---------------------------------------------------------------------------
+
 
 class TestReservaServiceFiltros:
     """
@@ -318,6 +335,7 @@ class TestReservaServiceFiltros:
             db.session.commit()
 
             from app.services import reserva_service
+
             resultado = reserva_service.obtener_todas()
             assert len(resultado) >= 2
 
@@ -332,6 +350,7 @@ class TestReservaServiceFiltros:
             db.session.commit()
 
             from app.services import reserva_service
+
             pendientes = reserva_service.obtener_todas({"estado": "Pendiente"})
             for r in pendientes:
                 assert r["estado"].lower() == "pendiente"
@@ -350,6 +369,7 @@ class TestReservaServiceFiltros:
             hid = h1.id
 
             from app.services import reserva_service
+
             resultado = reserva_service.obtener_todas({"id_huesped": hid})
             assert all(r["id_huesped"] == hid for r in resultado)
 
@@ -364,6 +384,7 @@ class TestReservaServiceFiltros:
             rid = r.id
 
             from app.services import reserva_service
+
             resultado = reserva_service.obtener_por_id(rid, u)
             assert resultado["id"] == rid
 
@@ -371,6 +392,7 @@ class TestReservaServiceFiltros:
         """obtener_por_id() lanza LookupError para id inexistente."""
         with app.app_context():
             from app.services import reserva_service
+
             with pytest.raises(LookupError):
                 reserva_service.obtener_por_id(99999, None)
 
@@ -378,6 +400,7 @@ class TestReservaServiceFiltros:
 # ---------------------------------------------------------------------------
 # TestReservaServiceEmail — cubre líneas SMTP de reserva_service.py
 # ---------------------------------------------------------------------------
+
 
 class TestReservaServiceEmail:
     """
@@ -396,12 +419,11 @@ class TestReservaServiceEmail:
             rid = r.id
 
             with patch("smtplib.SMTP") as mock_smtp:
-                mock_smtp.return_value.__enter__ = MagicMock(
-                    return_value=MagicMock()
-                )
+                mock_smtp.return_value.__enter__ = MagicMock(return_value=MagicMock())
                 mock_smtp.return_value.__exit__ = MagicMock(return_value=False)
 
                 from app.services import reserva_service
+
                 resultado = reserva_service.confirmar(rid)
                 assert resultado["estado"].lower() == "confirmada"
 
@@ -417,6 +439,7 @@ class TestReservaServiceEmail:
 
             with patch("smtplib.SMTP"):
                 from app.services import reserva_service
+
                 resultado = reserva_service.cancelar(rid, motivo="Test cancelación")
 
             assert resultado["estado"].lower() == "cancelada"
@@ -440,8 +463,10 @@ class TestReservaServiceEmail:
             rid = r.id
 
             from app.models.reembolso import Reembolso
+
             with patch("smtplib.SMTP"):
                 from app.services import reserva_service
+
                 reserva_service.cancelar(rid, motivo="Cancelación con garantía")
 
             reembolso = Reembolso.query.filter_by(id_pago=pago.id).first()
@@ -451,6 +476,7 @@ class TestReservaServiceEmail:
         """obtener_todas() filtra por fecha_entrada."""
         with app.app_context():
             from datetime import date, timedelta
+
             u = _usuario(RolEnum.cliente, "cli_fecha1")
             h = _huesped(u)
             hab = _habitacion()
@@ -458,8 +484,9 @@ class TestReservaServiceEmail:
             db.session.commit()
 
             from app.services import reserva_service
+
             hoy = date.today()
-            resultado = reserva_service.obtener_todas({
-                "fecha_entrada": str(hoy + timedelta(days=5))
-            })
+            resultado = reserva_service.obtener_todas(
+                {"fecha_entrada": str(hoy + timedelta(days=5))}
+            )
             assert isinstance(resultado, list)

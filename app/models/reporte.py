@@ -19,15 +19,12 @@ class ReporteGenerado(db.Model):
     creado_por = db.Column(
         db.Integer,
         db.ForeignKey("usuarios.id", name="fk_reporte_usuario"),
-        nullable=False
+        nullable=False,
     )
     resumen = db.Column(db.JSON, nullable=True)
     created_at = db.Column(db.DateTime, default=ahora_colombia, nullable=False)
     updated_at = db.Column(
-        db.DateTime,
-        default=ahora_colombia,
-        onupdate=ahora_colombia,
-        nullable=False
+        db.DateTime, default=ahora_colombia, onupdate=ahora_colombia, nullable=False
     )
 
     # Relationships
@@ -38,7 +35,9 @@ class ReporteGenerado(db.Model):
             "id": self.id,
             "tipo": self.tipo,
             "formato": self.formato,
-            "fecha_inicio": self.fecha_inicio.isoformat() if self.fecha_inicio else None,
+            "fecha_inicio": (
+                self.fecha_inicio.isoformat() if self.fecha_inicio else None
+            ),
             "fecha_fin": self.fecha_fin.isoformat() if self.fecha_fin else None,
             "archivo_path": self.archivo_path,
             "archivo_nombre": self.archivo_nombre,

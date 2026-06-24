@@ -23,21 +23,15 @@ class Reembolso(db.Model):
         db.Integer,
         db.ForeignKey("pagos.id", name="fk_reembolso_pago"),
         unique=True,
-        nullable=False
+        nullable=False,
     )
     fecha = db.Column(db.DateTime, default=ahora_colombia, nullable=False)
     monto = db.Column(Numeric(10, 2), nullable=False)
     motivo = db.Column(db.String(255), nullable=False)
-    estado = db.Column(
-        db.Enum(EstadoReembolso, native_enum=False),
-        nullable=False
-    )
+    estado = db.Column(db.Enum(EstadoReembolso, native_enum=False), nullable=False)
     created_at = db.Column(db.DateTime, default=ahora_colombia, nullable=False)
     updated_at = db.Column(
-        db.DateTime,
-        default=ahora_colombia,
-        onupdate=ahora_colombia,
-        nullable=False
+        db.DateTime, default=ahora_colombia, onupdate=ahora_colombia, nullable=False
     )
 
     # Relationships
@@ -56,7 +50,4 @@ class Reembolso(db.Model):
         }
 
     def __repr__(self):
-        return (
-            f"<Reembolso {self.id} - {self.estado.value} "
-            f"({self.motivo[:30]})>"
-        )
+        return f"<Reembolso {self.id} - {self.estado.value} " f"({self.motivo[:30]})>"

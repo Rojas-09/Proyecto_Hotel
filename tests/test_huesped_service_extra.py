@@ -29,7 +29,9 @@ def test_huesped_obtener_errores_y_buscar(app):
             huesped_service.buscar("")
 
         # crear datos y buscar exitoso
-        u = Usuario(nombre="Bus", apellido="Test", email="bus@test", rol=RolEnum.cliente)
+        u = Usuario(
+            nombre="Bus", apellido="Test", email="bus@test", rol=RolEnum.cliente
+        )
         u.password = "Pass1234"
         db.session.add(u)
         db.session.flush()

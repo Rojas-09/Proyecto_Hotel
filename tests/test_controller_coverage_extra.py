@@ -1,6 +1,7 @@
 """
 Tests para caminos de error en controllers con cobertura <90%.
 """
+
 from datetime import date, timedelta
 
 from app import db
@@ -14,13 +15,13 @@ from app.models.servicio_adicional import ServicioAdicional, TipoServicio
 def _hdr(user):
     """Genera header de autorización. Llama ANTES de db.session.commit()."""
     from app.utils.jwt_helper import generar_token
+
     tok = generar_token(user.id, user.rol.value, user.email)
     return {"Authorization": f"Bearer {tok}"}
 
 
 def _u(rol, tag):
-    u = Usuario(nombre="U", apellido=tag,
-                email=f"{tag}_{id(tag)}@h.com", rol=rol)
+    u = Usuario(nombre="U", apellido=tag, email=f"{tag}_{id(tag)}@h.com", rol=rol)
     u.password = "p"
     db.session.add(u)
     db.session.flush()
@@ -35,8 +36,14 @@ def _h(u):
 
 
 def _hab(n="C999"):
-    h = Habitacion(numero=n, tipo=TipoHabitacion.doble, precio_noche=100000,
-                   capacidad=2, piso=1, estado=EstadoHabitacion.disponible)
+    h = Habitacion(
+        numero=n,
+        tipo=TipoHabitacion.doble,
+        precio_noche=100000,
+        capacidad=2,
+        piso=1,
+        estado=EstadoHabitacion.disponible,
+    )
     db.session.add(h)
     db.session.flush()
     return h
@@ -46,8 +53,9 @@ class TestAuthController:
     """Cubre auth_controller.py: 30, 77, 95-96, 109-110, 147, 168-181, 191-201."""
 
     def test_register_admin_sin_body(self, client):
-        resp = client.post("/api/v1/auth/register-admin",
-                           content_type="application/json")
+        resp = client.post(
+            "/api/v1/auth/register-admin", content_type="application/json"
+        )
         assert resp.status_code == 403
 
     def test_crear_usuario_sin_body(self, client, app):
@@ -55,8 +63,9 @@ class TestAuthController:
             u = _u(RolEnum.admin, "auc1")
             h = _hdr(u)
             db.session.commit()
-        resp = client.post("/api/v1/auth/usuarios", headers=h,
-                           content_type="application/json")
+        resp = client.post(
+            "/api/v1/auth/usuarios", headers=h, content_type="application/json"
+        )
         assert resp.status_code == 400
 
     def test_editar_mi_perfil(self, client, app):
@@ -74,8 +83,9 @@ class TestAuthController:
             ha = _hdr(a)
             tid = t.id
             db.session.commit()
-        resp = client.put(f"/api/v1/auth/usuarios/{tid}",
-                          json={"nombre": "Y"}, headers=ha)
+        resp = client.put(
+            f"/api/v1/auth/usuarios/{tid}", json={"nombre": "Y"}, headers=ha
+        )
         assert resp.status_code == 200
 
     def test_eliminar_usuario_permiso(self, client, app):
@@ -132,8 +142,9 @@ class TestHuespedController:
             _h(u)
             h = _hdr(u)
             db.session.commit()
-        resp = client.put("/api/v1/huespedes/1", headers=h,
-                          content_type="application/json")
+        resp = client.put(
+            "/api/v1/huespedes/1", headers=h, content_type="application/json"
+        )
         assert resp.status_code == 400
 
     def test_actualizar_lookuperror(self, client, app):
@@ -141,8 +152,7 @@ class TestHuespedController:
             u = _u(RolEnum.admin, "hal1")
             h = _hdr(u)
             db.session.commit()
-        resp = client.put("/api/v1/huespedes/99999",
-                          json={"nombre": "X"}, headers=h)
+        resp = client.put("/api/v1/huespedes/99999", json={"nombre": "X"}, headers=h)
         assert resp.status_code == 404
 
 
@@ -156,17 +166,23 @@ class TestServicioAdicionalController:
             h = _h(cli)
             hab = _hab(f"S{tag_extra}")
             r = Reserva(
-                id_huesped=h.id, id_habitacion=hab.id,
+                id_huesped=h.id,
+                id_habitacion=hab.id,
                 fecha_entrada=date.today() - timedelta(days=5),
                 fecha_salida=date.today() - timedelta(days=3),
-                noches=2, subtotal=200000, impuestos=38000, total=238000,
+                noches=2,
+                subtotal=200000,
+                impuestos=38000,
+                total=238000,
                 estado=EstadoReserva.completada,
             )
             db.session.add(r)
             db.session.flush()
             s = ServicioAdicional(
-                id_reserva=r.id, tipo=TipoServicio.comedor,
-                descripcion="X", costo=10000,
+                id_reserva=r.id,
+                tipo=TipoServicio.comedor,
+                descripcion="X",
+                costo=10000,
             )
             db.session.add(s)
             db.session.flush()
@@ -184,10 +200,14 @@ class TestServicioAdicionalController:
             h = _h(cli)
             hab = _hab("S400")
             r = Reserva(
-                id_huesped=h.id, id_habitacion=hab.id,
+                id_huesped=h.id,
+                id_habitacion=hab.id,
                 fecha_entrada=date.today() - timedelta(days=5),
                 fecha_salida=date.today() - timedelta(days=3),
-                noches=2, subtotal=200000, impuestos=38000, total=238000,
+                noches=2,
+                subtotal=200000,
+                impuestos=38000,
+                total=238000,
                 estado=EstadoReserva.completada,
             )
             db.session.add(r)
@@ -195,9 +215,11 @@ class TestServicioAdicionalController:
             hdr = _hdr(admin)
             rid = r.id
             db.session.commit()
-        resp = client.post(f"/api/v1/reservas/{rid}/servicios",
-                           json={"tipo": "comedor", "descripcion": "X",
-                                 "costo": 10000}, headers=hdr)
+        resp = client.post(
+            f"/api/v1/reservas/{rid}/servicios",
+            json={"tipo": "comedor", "descripcion": "X", "costo": 10000},
+            headers=hdr,
+        )
         assert resp.status_code == 400
 
     def test_listar_404(self, client, app):
@@ -221,8 +243,9 @@ class TestServicioAdicionalController:
             u = _u(RolEnum.admin, "sa41")
             h = _hdr(u)
             db.session.commit()
-        resp = client.put("/api/v1/servicios/99999",
-                          json={"descripcion": "X"}, headers=h)
+        resp = client.put(
+            "/api/v1/servicios/99999", json={"descripcion": "X"}, headers=h
+        )
         assert resp.status_code == 404
 
     def test_eliminar_400(self, client, app):
@@ -251,7 +274,8 @@ class TestReporteController:
             db.session.commit()
         resp = client.get(
             "/api/v1/reportes/ocupacion?fecha_inicio=invalida&fecha_fin=invalida",
-            headers=h)
+            headers=h,
+        )
         assert resp.status_code == 400
 
     def test_ingresos_fechas_invalidas(self, client, app):
@@ -260,8 +284,8 @@ class TestReporteController:
             h = _hdr(u)
             db.session.commit()
         resp = client.get(
-            "/api/v1/reportes/ingresos?fecha_inicio=mal&fecha_fin=mal",
-            headers=h)
+            "/api/v1/reportes/ingresos?fecha_inicio=mal&fecha_fin=mal", headers=h
+        )
         assert resp.status_code == 400
 
 

@@ -57,6 +57,7 @@ def _formatear_numero(valor) -> float:
 # Helpers de generación de archivos
 # ---------------------------------------------------------------------------
 
+
 def _generar_xlsx(datos: list, nombre_archivo: str, encabezados: list) -> str:
     """
     Genera un archivo xlsx con datos y encabezados dados.
@@ -70,7 +71,9 @@ def _generar_xlsx(datos: list, nombre_archivo: str, encabezados: list) -> str:
     ws.title = nombre_archivo.replace(".xlsx", "")[:31]
 
     header_font = Font(name="Calibri", bold=True, color="FFFFFF", size=11)
-    header_fill = PatternFill(start_color="2C3E50", end_color="2C3E50", fill_type="solid")
+    header_fill = PatternFill(
+        start_color="2C3E50", end_color="2C3E50", fill_type="solid"
+    )
     header_align = Alignment(horizontal="center", vertical="center", wrap_text=True)
 
     border = Border(
@@ -99,9 +102,7 @@ def _generar_xlsx(datos: list, nombre_archivo: str, encabezados: list) -> str:
             len(str(ws.cell(row=r, column=col_idx).value or ""))
             for r in range(1, len(datos) + 2)
         )
-        ws.column_dimensions[get_column_letter(col_idx)].width = min(
-            max_length + 3, 40
-        )
+        ws.column_dimensions[get_column_letter(col_idx)].width = min(max_length + 3, 40)
 
     wb.save(ruta)
     return ruta
@@ -140,7 +141,9 @@ def _generar_pdf(datos: list, nombre_archivo: str, titulo: str) -> str:
     elements.append(Spacer(1, 4 * mm))
 
     if not datos:
-        elements.append(Paragraph("No hay datos disponibles para este reporte.", styles["Normal"]))
+        elements.append(
+            Paragraph("No hay datos disponibles para este reporte.", styles["Normal"])
+        )
     else:
         encabezados = datos[0]
         filas = datos[1:]
@@ -150,17 +153,21 @@ def _generar_pdf(datos: list, nombre_archivo: str, titulo: str) -> str:
         col_width = (210 * mm - 30 * mm) / col_count
 
         tabla = Table(table_data, colWidths=[col_width] * col_count)
-        tabla.setStyle(TableStyle([
-            ("FONTSIZE", (0, 0), (-1, -1), 9),
-            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#2C3E50")),
-            ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
-            ("ALIGN", (0, 0), (-1, -1), "CENTER"),
-            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-            ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
-            ("TOPPADDING", (0, 0), (-1, -1), 5),
-        ]))
+        tabla.setStyle(
+            TableStyle(
+                [
+                    ("FONTSIZE", (0, 0), (-1, -1), 9),
+                    ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                    ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#2C3E50")),
+                    ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+                    ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                    ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                    ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+                    ("TOPPADDING", (0, 0), (-1, -1), 5),
+                ]
+            )
+        )
         elements.append(tabla)
 
     doc.build(elements)
@@ -171,9 +178,9 @@ def _generar_pdf(datos: list, nombre_archivo: str, titulo: str) -> str:
 # Reporte de Ocupación
 # ---------------------------------------------------------------------------
 
+
 def generar_ocupacion(
-    fecha_inicio: str, fecha_fin: str, formato: str = "xlsx",
-    creado_por: int = None
+    fecha_inicio: str, fecha_fin: str, formato: str = "xlsx", creado_por: int = None
 ) -> dict:
     """
     Genera reporte de ocupación de habitaciones.
@@ -186,13 +193,17 @@ def generar_ocupacion(
     if inicio > fin:
         raise ValueError("La fecha de inicio debe ser anterior a la fecha de fin.")
 
-    reservas_periodo = db.session.execute(
-        select(Reserva).filter(
-            Reserva.fecha_entrada >= inicio,
-            Reserva.fecha_entrada <= fin,
-            Reserva.estado.in_([EstadoReserva.ocupada, EstadoReserva.completada]),
+    reservas_periodo = (
+        db.session.execute(
+            select(Reserva).filter(
+                Reserva.fecha_entrada >= inicio,
+                Reserva.fecha_entrada <= fin,
+                Reserva.estado.in_([EstadoReserva.ocupada, EstadoReserva.completada]),
+            )
         )
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
 
     total_habitaciones = db.session.execute(
         select(func.count()).select_from(Habitacion).filter_by(activo=True)
@@ -203,10 +214,13 @@ def generar_ocupacion(
     for tipo in TipoHabitacion:
         reservas_tipo = [r for r in reservas_periodo if r.habitacion.tipo == tipo]
         total_tipo = db.session.execute(
-            select(func.count()).select_from(Habitacion)
+            select(func.count())
+            .select_from(Habitacion)
             .filter_by(tipo=tipo, activo=True)
         ).scalar()
-        ocupacion_tipo = (len(reservas_tipo) / total_tipo * 100) if total_tipo > 0 else 0
+        ocupacion_tipo = (
+            (len(reservas_tipo) / total_tipo * 100) if total_tipo > 0 else 0
+        )
         reservas_por_tipo[tipo.value] = {
             "reservas": len(reservas_tipo),
             "habitaciones_total": total_tipo,
@@ -218,20 +232,22 @@ def generar_ocupacion(
 
     ocupacion_general = (
         round(total_reservas / total_habitaciones * 100, 2)
-        if total_habitaciones > 0 else 0
+        if total_habitaciones > 0
+        else 0
     )
 
     datos_xlsx = [
-        ["Tipo de Habitación", "Habitaciones", "Reservas",
-         "Ocupación (%)"],
+        ["Tipo de Habitación", "Habitaciones", "Reservas", "Ocupación (%)"],
     ]
     for tipo, info in reservas_por_tipo.items():
-        datos_xlsx.append([
-            tipo,
-            info["habitaciones_total"],
-            info["reservas"],
-            info["porcentaje_ocupacion"],
-        ])
+        datos_xlsx.append(
+            [
+                tipo,
+                info["habitaciones_total"],
+                info["reservas"],
+                info["porcentaje_ocupacion"],
+            ]
+        )
     datos_xlsx.append(["", "", "", ""])
     datos_xlsx.append(["RESUMEN", "", "", ""])
     datos_xlsx.append(["Total habitaciones activas", total_habitaciones, "", ""])
@@ -245,10 +261,14 @@ def generar_ocupacion(
             ["Tipo", "Habitaciones", "Reservas", "Ocupación (%)"],
         ]
         for tipo, info in reservas_por_tipo.items():
-            datos_pdf.append([
-                tipo, info["habitaciones_total"],
-                info["reservas"], info["porcentaje_ocupacion"],
-            ])
+            datos_pdf.append(
+                [
+                    tipo,
+                    info["habitaciones_total"],
+                    info["reservas"],
+                    info["porcentaje_ocupacion"],
+                ]
+            )
         ruta = _generar_pdf(datos_pdf, nombre_archivo, "Reporte de Ocupación")
     else:
         ruta = _generar_xlsx(
@@ -295,9 +315,9 @@ def generar_ocupacion(
 # Reporte de Ingresos
 # ---------------------------------------------------------------------------
 
+
 def generar_ingresos(
-    fecha_inicio: str, fecha_fin: str, formato: str = "xlsx",
-    creado_por: int = None
+    fecha_inicio: str, fecha_fin: str, formato: str = "xlsx", creado_por: int = None
 ) -> dict:
     """
     Genera reporte de ingresos por período.
@@ -310,13 +330,17 @@ def generar_ingresos(
     if inicio > fin:
         raise ValueError("La fecha de inicio debe ser anterior a la fecha de fin.")
 
-    pagos_aprobados = db.session.execute(
-        select(Pago).filter(
-            Pago.fecha >= datetime.combine(inicio, datetime.min.time()),
-            Pago.fecha <= datetime.combine(fin, datetime.max.time()),
-            Pago.estado == EstadoPago.aprobado,
+    pagos_aprobados = (
+        db.session.execute(
+            select(Pago).filter(
+                Pago.fecha >= datetime.combine(inicio, datetime.min.time()),
+                Pago.fecha <= datetime.combine(fin, datetime.max.time()),
+                Pago.estado == EstadoPago.aprobado,
+            )
         )
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
 
     total_ingresos = sum(_formatear_numero(p.monto) for p in pagos_aprobados)
 
@@ -324,25 +348,29 @@ def generar_ingresos(
     subtotal_total = Decimal("0.00")
     iva_total = Decimal("0.00")
     for tipo in TipoHabitacion:
-        reservas_tipo = db.session.execute(
-            select(Reserva).filter(
-                Reserva.fecha_entrada >= inicio,
-                Reserva.fecha_entrada <= fin,
-                Reserva.habitacion.has(tipo=tipo),
-                Reserva.estado.in_([
-                    EstadoReserva.ocupada,
-                    EstadoReserva.completada,
-                    EstadoReserva.confirmada,
-                ]),
+        reservas_tipo = (
+            db.session.execute(
+                select(Reserva).filter(
+                    Reserva.fecha_entrada >= inicio,
+                    Reserva.fecha_entrada <= fin,
+                    Reserva.habitacion.has(tipo=tipo),
+                    Reserva.estado.in_(
+                        [
+                            EstadoReserva.ocupada,
+                            EstadoReserva.completada,
+                            EstadoReserva.confirmada,
+                        ]
+                    ),
+                )
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
 
         total_tipo = Decimal("0.00")
         servicios_tipo = Decimal("0.00")
         for r in reservas_tipo:
-            pagos_reserva = [
-                p for p in pagos_aprobados if p.id_reserva == r.id
-            ]
+            pagos_reserva = [p for p in pagos_aprobados if p.id_reserva == r.id]
             total_tipo += sum(Decimal(str(p.monto)) for p in pagos_reserva)
             servicios_tipo += sum(
                 Decimal(str(s.costo)) for s in r.servicios_adicionales
@@ -358,16 +386,17 @@ def generar_ingresos(
         }
 
     datos_xlsx = [
-        ["Tipo de Habitación", "Reservas", "Servicios Adicionales ($)",
-         "Ingresos ($)"],
+        ["Tipo de Habitación", "Reservas", "Servicios Adicionales ($)", "Ingresos ($)"],
     ]
     for tipo, info in ingresos_por_tipo.items():
-        datos_xlsx.append([
-            tipo,
-            info["reservas"],
-            info["servicios"],
-            info["ingresos"],
-        ])
+        datos_xlsx.append(
+            [
+                tipo,
+                info["reservas"],
+                info["servicios"],
+                info["ingresos"],
+            ]
+        )
     datos_xlsx.append(["", "", "", ""])
     datos_xlsx.append(["RESUMEN", "", "", ""])
     datos_xlsx.append(["Total ingresos", "", "", round(total_ingresos, 2)])
@@ -381,9 +410,14 @@ def generar_ingresos(
             ["Tipo", "Reservas", "Servicios ($)", "Ingresos ($)"],
         ]
         for tipo, info in ingresos_por_tipo.items():
-            datos_pdf.append([
-                tipo, info["reservas"], info["servicios"], info["ingresos"],
-            ])
+            datos_pdf.append(
+                [
+                    tipo,
+                    info["reservas"],
+                    info["servicios"],
+                    info["ingresos"],
+                ]
+            )
         datos_pdf.append(["", "", "", ""])
         datos_pdf.append(["TOTAL", len(pagos_aprobados), "", round(total_ingresos, 2)])
         ruta = _generar_pdf(datos_pdf, nombre_archivo, "Reporte de Ingresos")
@@ -391,7 +425,12 @@ def generar_ingresos(
         ruta = _generar_xlsx(
             datos_xlsx,
             nombre_archivo,
-            ["Tipo de Habitación", "Reservas", "Servicios Adicionales ($)", "Ingresos ($)"],
+            [
+                "Tipo de Habitación",
+                "Reservas",
+                "Servicios Adicionales ($)",
+                "Ingresos ($)",
+            ],
         )
 
     reporte_registrado = None
@@ -432,9 +471,9 @@ def generar_ingresos(
 # Reporte de Estadísticas
 # ---------------------------------------------------------------------------
 
+
 def generar_estadisticas(
-    fecha_inicio: str, fecha_fin: str, formato: str = "xlsx",
-    creado_por: int = None
+    fecha_inicio: str, fecha_fin: str, formato: str = "xlsx", creado_por: int = None
 ) -> dict:
     """
     Genera reporte de estadísticas generales.
@@ -447,12 +486,16 @@ def generar_estadisticas(
     if inicio > fin:
         raise ValueError("La fecha de inicio debe ser anterior a la fecha de fin.")
 
-    reservas_periodo = db.session.execute(
-        select(Reserva).filter(
-            Reserva.fecha_entrada >= inicio,
-            Reserva.fecha_entrada <= fin,
+    reservas_periodo = (
+        db.session.execute(
+            select(Reserva).filter(
+                Reserva.fecha_entrada >= inicio,
+                Reserva.fecha_entrada <= fin,
+            )
         )
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
 
     reservas_por_estado = {}
     for estado in EstadoReserva:
@@ -514,7 +557,8 @@ def generar_estadisticas(
         huesped_obj = db.session.get(Huesped, h.huesped_id)
         nombre = (
             f"{huesped_obj.usuario.nombre} {huesped_obj.usuario.apellido}"
-            if huesped_obj and huesped_obj.usuario else "N/A"
+            if huesped_obj and huesped_obj.usuario
+            else "N/A"
         )
         datos_xlsx.append([h.documento_id, h.tipo_documento, nombre, h.total])
 
@@ -536,7 +580,8 @@ def generar_estadisticas(
             huesped_obj = db.session.get(Huesped, h.huesped_id)
             nombre = (
                 f"{huesped_obj.usuario.nombre} {huesped_obj.usuario.apellido}"
-                if huesped_obj and huesped_obj.usuario else "N/A"
+                if huesped_obj and huesped_obj.usuario
+                else "N/A"
             )
             datos_pdf.append([h.documento_id, nombre, str(h.total), ""])
         ruta = _generar_pdf(datos_pdf, nombre_archivo, "Reporte de Estadísticas")
@@ -577,9 +622,16 @@ def generar_estadisticas(
     }
 
 
-def registrar_generado(tipo: str, formato: str, fecha_inicio: str, fecha_fin: str,
-                       archivo_path: str, archivo_nombre: str, creado_por: int,
-                       resumen: dict = None) -> dict:
+def registrar_generado(
+    tipo: str,
+    formato: str,
+    fecha_inicio: str,
+    fecha_fin: str,
+    archivo_path: str,
+    archivo_nombre: str,
+    creado_por: int,
+    resumen: dict = None,
+) -> dict:
     """Registra un reporte generado en el historial."""
     from app.models.reporte import ReporteGenerado
     from datetime import date
@@ -617,11 +669,13 @@ def listar_historial(filtros=None):
 
         if filtros.get("fecha_desde"):
             from datetime import date
+
             fecha = date.fromisoformat(filtros["fecha_desde"])
             query = query.filter(ReporteGenerado.created_at >= fecha)
 
         if filtros.get("fecha_hasta"):
             from datetime import date
+
             fecha = date.fromisoformat(filtros["fecha_hasta"])
             query = query.filter(ReporteGenerado.created_at <= fecha)
 

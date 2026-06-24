@@ -25,9 +25,7 @@ def acreditar(reserva_id):
         select(PuntosFidelidad).filter_by(id_reserva=reserva_id)
     ).scalar_one_or_none()
     if existente:
-        raise ValueError(
-            f"Ya se acreditaron puntos para la reserva {reserva_id}."
-        )
+        raise ValueError(f"Ya se acreditaron puntos para la reserva {reserva_id}.")
 
     noches = (reserva.fecha_salida - reserva.fecha_entrada).days
     puntos = noches * 10
@@ -50,9 +48,11 @@ def obtener_total(huesped_id):
     if not huesped:
         raise LookupError(f"Huésped con id {huesped_id} no encontrado.")
 
-    total = db.session.query(db.func.coalesce(
-        db.func.sum(PuntosFidelidad.puntos), 0
-    )).filter(PuntosFidelidad.id_huesped == huesped_id).scalar()
+    total = (
+        db.session.query(db.func.coalesce(db.func.sum(PuntosFidelidad.puntos), 0))
+        .filter(PuntosFidelidad.id_huesped == huesped_id)
+        .scalar()
+    )
     return int(total)
 
 
@@ -62,15 +62,24 @@ def listar_historial(huesped_id):
     if not huesped:
         raise LookupError(f"Huésped con id {huesped_id} no encontrado.")
 
-    registros = db.session.execute(
-        select(PuntosFidelidad).filter_by(id_huesped=huesped_id)
-        .order_by(PuntosFidelidad.fecha.desc())
-    ).scalars().all()
+    registros = (
+        db.session.execute(
+            select(PuntosFidelidad)
+            .filter_by(id_huesped=huesped_id)
+            .order_by(PuntosFidelidad.fecha.desc())
+        )
+        .scalars()
+        .all()
+    )
     return [r.to_dict() for r in registros]
 
 
 CANJES_DISPONIBLES = [
-    {"id": 1, "nombre": "10% de descuento en próxima reserva", "puntos_requeridos": 100},
+    {
+        "id": 1,
+        "nombre": "10% de descuento en próxima reserva",
+        "puntos_requeridos": 100,
+    },
     {"id": 2, "nombre": " upgrade de habitación (Suite)", "puntos_requeridos": 250},
     {"id": 3, "nombre": "1 noche gratis", "puntos_requeridos": 500},
     {"id": 4, "nombre": "Cena romántica en el Comedor", "puntos_requeridos": 150},

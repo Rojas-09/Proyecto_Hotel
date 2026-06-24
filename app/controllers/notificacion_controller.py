@@ -35,11 +35,19 @@ def listar_notificaciones(current_user):
 
     try:
         notificaciones = notificacion_service.listar(filtros or None)
-        return jsonify({
-            "success": True,
-            "data": {"notificaciones": notificaciones, "total": len(notificaciones)},
-            "mensaje": "Notificaciones obtenidas correctamente."
-        }), 200
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "data": {
+                        "notificaciones": notificaciones,
+                        "total": len(notificaciones),
+                    },
+                    "mensaje": "Notificaciones obtenidas correctamente.",
+                }
+            ),
+            200,
+        )
     except ValueError as e:
         return handle_service_error(e, 400)
     except Exception as e:
@@ -52,19 +60,28 @@ def listar_notificaciones(current_user):
 def buscar_notificaciones(current_user):
     q = request.args.get("q", "").strip()
     if not q:
-        return jsonify({
-            "success": False,
-            "data": None,
-            "mensaje": "Parámetro 'q' requerido."
-        }), 400
+        return (
+            jsonify(
+                {"success": False, "data": None, "mensaje": "Parámetro 'q' requerido."}
+            ),
+            400,
+        )
 
     try:
         notificaciones = notificacion_service.buscar(q)
-        return jsonify({
-            "success": True,
-            "data": {"notificaciones": notificaciones, "total": len(notificaciones)},
-            "mensaje": "Búsqueda realizada correctamente."
-        }), 200
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "data": {
+                        "notificaciones": notificaciones,
+                        "total": len(notificaciones),
+                    },
+                    "mensaje": "Búsqueda realizada correctamente.",
+                }
+            ),
+            200,
+        )
     except ValueError as e:
         return handle_service_error(e, 400)
     except Exception as e:
@@ -77,11 +94,16 @@ def buscar_notificaciones(current_user):
 def obtener_notificacion(current_user, id):
     try:
         notificacion = notificacion_service.obtener(id)
-        return jsonify({
-            "success": True,
-            "data": notificacion,
-            "mensaje": "Notificación obtenida correctamente."
-        }), 200
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "data": notificacion,
+                    "mensaje": "Notificación obtenida correctamente.",
+                }
+            ),
+            200,
+        )
     except LookupError as e:
         return handle_service_error(e, 404)
 
@@ -92,11 +114,19 @@ def obtener_notificacion(current_user, id):
 def listar_por_reserva(current_user, reserva_id):
     try:
         notificaciones = notificacion_service.listar_por_reserva(reserva_id)
-        return jsonify({
-            "success": True,
-            "data": {"notificaciones": notificaciones, "total": len(notificaciones)},
-            "mensaje": "Notificaciones obtenidas correctamente."
-        }), 200
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "data": {
+                        "notificaciones": notificaciones,
+                        "total": len(notificaciones),
+                    },
+                    "mensaje": "Notificaciones obtenidas correctamente.",
+                }
+            ),
+            200,
+        )
     except LookupError as e:
         return handle_service_error(e, 404)
 
@@ -111,21 +141,31 @@ def crear_notificacion(current_user):
     mensaje = data.get("mensaje")
 
     if not all([id_reserva, tipo, mensaje]):
-        return jsonify({
-            "success": False,
-            "data": None,
-            "mensaje": "Los campos 'id_reserva', 'tipo' y 'mensaje' son obligatorios."
-        }), 400
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "data": None,
+                    "mensaje": "Los campos 'id_reserva', 'tipo' y 'mensaje' son obligatorios.",
+                }
+            ),
+            400,
+        )
 
     try:
         notificacion = notificacion_service.crear(
             id_reserva=int(id_reserva), tipo=tipo, mensaje=mensaje
         )
-        return jsonify({
-            "success": True,
-            "data": notificacion,
-            "mensaje": "Notificación creada exitosamente."
-        }), 201
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "data": notificacion,
+                    "mensaje": "Notificación creada exitosamente.",
+                }
+            ),
+            201,
+        )
     except (LookupError, ValueError) as e:
         return handle_service_error(e, 400)
 
@@ -138,19 +178,29 @@ def actualizar_notificacion(current_user, id):
 
     campos_validos = {"mensaje", "tipo", "enviado"}
     if not campos_validos.intersection(data.keys()):
-        return jsonify({
-            "success": False,
-            "data": None,
-            "mensaje": "Debe enviar al menos un campo válido: mensaje, tipo, enviado."
-        }), 400
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "data": None,
+                    "mensaje": "Debe enviar al menos un campo válido: mensaje, tipo, enviado.",
+                }
+            ),
+            400,
+        )
 
     try:
         notificacion = notificacion_service.actualizar(id, **data)
-        return jsonify({
-            "success": True,
-            "data": notificacion,
-            "mensaje": "Notificación actualizada correctamente."
-        }), 200
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "data": notificacion,
+                    "mensaje": "Notificación actualizada correctamente.",
+                }
+            ),
+            200,
+        )
     except LookupError as e:
         return handle_service_error(e, 404)
     except ValueError as e:
@@ -164,10 +214,15 @@ def eliminar_notificacion(current_user, id):
     try:
         notificacion_service.eliminar(id)
         db.session.commit()
-        return jsonify({
-            "success": True,
-            "data": None,
-            "mensaje": "Notificación eliminada correctamente."
-        }), 200
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "data": None,
+                    "mensaje": "Notificación eliminada correctamente.",
+                }
+            ),
+            200,
+        )
     except LookupError as e:
         return handle_service_error(e, 404)

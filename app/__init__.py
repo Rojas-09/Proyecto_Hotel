@@ -15,6 +15,7 @@ def create_app(config_name="development"):
 
     # Cargar configuración según entorno
     from config import config
+
     app.config.from_object(config[config_name])
 
     # Inicializar extensiones
@@ -29,6 +30,7 @@ def create_app(config_name="development"):
     )
 
     from app.limiter import limiter as _limiter
+
     _limiter.init_app(app)
 
     # Registrar Blueprints (controladores)

@@ -1,6 +1,7 @@
 """
 Modelo RefreshToken — Tokens de refresco revocables (RF-13 M2)
 """
+
 import hashlib
 import uuid
 from datetime import timedelta

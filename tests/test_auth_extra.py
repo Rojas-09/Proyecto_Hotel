@@ -29,48 +29,56 @@ def test_crear_primer_admin_exitoso(app):
 def test_crear_primer_admin_falla_si_ya_existe_admin(app):
     with app.app_context():
         _crear_usuario("A", "B", "admin@test.com", "admin", "Admin1234")
-        result, status = AuthService.crear_primer_admin({
-            "nombre": "Otro",
-            "apellido": "Admin",
-            "email": "otro@test.com",
-            "password": "Admin1234",
-        })
+        result, status = AuthService.crear_primer_admin(
+            {
+                "nombre": "Otro",
+                "apellido": "Admin",
+                "email": "otro@test.com",
+                "password": "Admin1234",
+            }
+        )
         assert status == 403
         assert result["error"]["code"] == "FORBIDDEN"
 
 
 def test_crear_primer_admin_valida_campos_requeridos(app):
     with app.app_context():
-        result, status = AuthService.crear_primer_admin({
-            "nombre": "SinApellido",
-            "email": "x@test.com",
-            "password": "Admin1234",
-        })
+        result, status = AuthService.crear_primer_admin(
+            {
+                "nombre": "SinApellido",
+                "email": "x@test.com",
+                "password": "Admin1234",
+            }
+        )
         assert status == 400
         assert result["error"]["code"] == "VALIDATION_ERROR"
 
 
 def test_crear_primer_admin_password_corta(app):
     with app.app_context():
-        result, status = AuthService.crear_primer_admin({
-            "nombre": "N",
-            "apellido": "A",
-            "email": "x2@test.com",
-            "password": "123",
-        })
+        result, status = AuthService.crear_primer_admin(
+            {
+                "nombre": "N",
+                "apellido": "A",
+                "email": "x2@test.com",
+                "password": "123",
+            }
+        )
         assert status == 400
         assert result["error"]["code"] == "VALIDATION_ERROR"
 
 
 def test_crear_usuario_admin_rol_invalido(app):
     with app.app_context():
-        result, status = AuthService.crear_usuario_admin({
-            "nombre": "X",
-            "apellido": "Y",
-            "email": "xy@test.com",
-            "password": "Password123",
-            "rol": "superadmin",
-        })
+        result, status = AuthService.crear_usuario_admin(
+            {
+                "nombre": "X",
+                "apellido": "Y",
+                "email": "xy@test.com",
+                "password": "Password123",
+                "rol": "superadmin",
+            }
+        )
         assert status == 400
         assert result["error"]["code"] == "VALIDATION_ERROR"
 
@@ -101,7 +109,9 @@ def test_editar_mi_perfil_rechaza_password_corta(app):
 
 def test_editar_mi_perfil_rechaza_cambiar_activo(app):
     with app.app_context():
-        user = _crear_usuario("Ana", "Cuatro", "ana4@test.com", "cliente", "Password123")
+        user = _crear_usuario(
+            "Ana", "Cuatro", "ana4@test.com", "cliente", "Password123"
+        )
         result, status = AuthService.editar_mi_perfil(user, {"activo": False})
         assert status == 400
         assert result["error"]["code"] == "FORBIDDEN"
@@ -110,12 +120,15 @@ def test_editar_mi_perfil_rechaza_cambiar_activo(app):
 def test_editar_mi_perfil_actualiza_campos(app):
     with app.app_context():
         user = _crear_usuario("Ana", "Cinco", "ana5@test.com", "cliente", "Password123")
-        result, status = AuthService.editar_mi_perfil(user, {
-            "nombre": "Ana Maria",
-            "apellido": "Cinco Dos",
-            "telefono": " 3001234567 ",
-            "password": "NuevaPass123",
-        })
+        result, status = AuthService.editar_mi_perfil(
+            user,
+            {
+                "nombre": "Ana Maria",
+                "apellido": "Cinco Dos",
+                "telefono": " 3001234567 ",
+                "password": "NuevaPass123",
+            },
+        )
         assert status == 200
         assert result["success"] is True
         assert user.nombre == "Ana Maria"
@@ -142,7 +155,9 @@ def test_editar_usuario_cliente_sin_permiso(app):
 
 def test_editar_usuario_gerente_no_puede_editar_admin(app):
     with app.app_context():
-        gerente = _crear_usuario("Ger", "Uno", "ger1@test.com", "gerente", "Password123")
+        gerente = _crear_usuario(
+            "Ger", "Uno", "ger1@test.com", "gerente", "Password123"
+        )
         admin = _crear_usuario("Adm", "Uno", "adm1@test.com", "admin", "Password123")
         result, status = AuthService.editar_usuario(admin.id, gerente, {"nombre": "No"})
         assert status == 403
@@ -159,34 +174,50 @@ def test_editar_usuario_no_puede_desactivarse_a_si_mismo(app):
 
 def test_editar_usuario_no_puede_cambiar_su_rol(app):
     with app.app_context():
-        gerente = _crear_usuario("Ger", "Self", "gerself@test.com", "gerente", "Password123")
-        result, status = AuthService.editar_usuario(gerente.id, gerente, {"rol": "admin"})
+        gerente = _crear_usuario(
+            "Ger", "Self", "gerself@test.com", "gerente", "Password123"
+        )
+        result, status = AuthService.editar_usuario(
+            gerente.id, gerente, {"rol": "admin"}
+        )
         assert status == 403
         assert result["error"]["code"] == "FORBIDDEN"
 
 
 def test_editar_usuario_solo_admin_cambia_email(app):
     with app.app_context():
-        gerente = _crear_usuario("Ger", "Dos", "ger2@test.com", "gerente", "Password123")
-        recep = _crear_usuario("Rec", "Dos", "rec2@test.com", "recepcionista", "Password123")
-        result, status = AuthService.editar_usuario(recep.id, gerente, {"email": "nuevo@test.com"})
+        gerente = _crear_usuario(
+            "Ger", "Dos", "ger2@test.com", "gerente", "Password123"
+        )
+        recep = _crear_usuario(
+            "Rec", "Dos", "rec2@test.com", "recepcionista", "Password123"
+        )
+        result, status = AuthService.editar_usuario(
+            recep.id, gerente, {"email": "nuevo@test.com"}
+        )
         assert status == 403
         assert result["error"]["code"] == "FORBIDDEN"
 
 
 def test_editar_usuario_email_conflicto(app):
     with app.app_context():
-        admin = _crear_usuario("Admin", "Dos", "admin2@test.com", "admin", "Password123")
+        admin = _crear_usuario(
+            "Admin", "Dos", "admin2@test.com", "admin", "Password123"
+        )
         u1 = _crear_usuario("U1", "A", "u1@test.com", "cliente", "Password123")
         _crear_usuario("U2", "B", "u2@test.com", "cliente", "Password123")
-        result, status = AuthService.editar_usuario(u1.id, admin, {"email": "u2@test.com"})
+        result, status = AuthService.editar_usuario(
+            u1.id, admin, {"email": "u2@test.com"}
+        )
         assert status == 409
         assert result["error"]["code"] == "CONFLICT"
 
 
 def test_editar_usuario_rol_invalido(app):
     with app.app_context():
-        admin = _crear_usuario("Admin", "Tres", "admin3@test.com", "admin", "Password123")
+        admin = _crear_usuario(
+            "Admin", "Tres", "admin3@test.com", "admin", "Password123"
+        )
         u1 = _crear_usuario("U3", "A", "u3@test.com", "cliente", "Password123")
         result, status = AuthService.editar_usuario(u1.id, admin, {"rol": "super"})
         assert status == 400
@@ -195,8 +226,12 @@ def test_editar_usuario_rol_invalido(app):
 
 def test_editar_usuario_gerente_no_asigna_rol_admin(app):
     with app.app_context():
-        gerente = _crear_usuario("Ger", "Tres", "ger3@test.com", "gerente", "Password123")
-        recep = _crear_usuario("Rec", "Tres", "rec3@test.com", "recepcionista", "Password123")
+        gerente = _crear_usuario(
+            "Ger", "Tres", "ger3@test.com", "gerente", "Password123"
+        )
+        recep = _crear_usuario(
+            "Rec", "Tres", "rec3@test.com", "recepcionista", "Password123"
+        )
         result, status = AuthService.editar_usuario(recep.id, gerente, {"rol": "admin"})
         assert status == 403
         assert result["error"]["code"] == "FORBIDDEN"
@@ -204,35 +239,53 @@ def test_editar_usuario_gerente_no_asigna_rol_admin(app):
 
 def test_editar_usuario_solo_admin_activa_desactiva(app):
     with app.app_context():
-        gerente = _crear_usuario("Ger", "Cuatro", "ger4@test.com", "gerente", "Password123")
-        recep = _crear_usuario("Rec", "Cuatro", "rec4@test.com", "recepcionista", "Password123")
-        result, status = AuthService.editar_usuario(recep.id, gerente, {"activo": False})
+        gerente = _crear_usuario(
+            "Ger", "Cuatro", "ger4@test.com", "gerente", "Password123"
+        )
+        recep = _crear_usuario(
+            "Rec", "Cuatro", "rec4@test.com", "recepcionista", "Password123"
+        )
+        result, status = AuthService.editar_usuario(
+            recep.id, gerente, {"activo": False}
+        )
         assert status == 403
         assert result["error"]["code"] == "FORBIDDEN"
 
 
 def test_editar_usuario_password_corta(app):
     with app.app_context():
-        admin = _crear_usuario("Admin", "Cuatro", "admin4@test.com", "admin", "Password123")
-        recep = _crear_usuario("Rec", "Cinco", "rec5@test.com", "recepcionista", "Password123")
-        result, status = AuthService.editar_usuario(recep.id, admin, {"password": "123"})
+        admin = _crear_usuario(
+            "Admin", "Cuatro", "admin4@test.com", "admin", "Password123"
+        )
+        recep = _crear_usuario(
+            "Rec", "Cinco", "rec5@test.com", "recepcionista", "Password123"
+        )
+        result, status = AuthService.editar_usuario(
+            recep.id, admin, {"password": "123"}
+        )
         assert status == 400
         assert result["error"]["code"] == "VALIDATION_ERROR"
 
 
 def test_editar_usuario_admin_exitoso(app):
     with app.app_context():
-        admin = _crear_usuario("Admin", "Cinco", "admin5@test.com", "admin", "Password123")
+        admin = _crear_usuario(
+            "Admin", "Cinco", "admin5@test.com", "admin", "Password123"
+        )
         user = _crear_usuario("U5", "A", "u5@test.com", "cliente", "Password123")
-        result, status = AuthService.editar_usuario(user.id, admin, {
-            "nombre": "Nuevo",
-            "apellido": "Nombre",
-            "telefono": " 3110000000 ",
-            "email": "u5new@test.com",
-            "rol": "recepcionista",
-            "activo": True,
-            "password": "Password999",
-        })
+        result, status = AuthService.editar_usuario(
+            user.id,
+            admin,
+            {
+                "nombre": "Nuevo",
+                "apellido": "Nombre",
+                "telefono": " 3110000000 ",
+                "email": "u5new@test.com",
+                "rol": "recepcionista",
+                "activo": True,
+                "password": "Password999",
+            },
+        )
         assert status == 200
         assert result["success"] is True
         assert user.email == "u5new@test.com"
@@ -256,8 +309,12 @@ def test_auth_controller_me_put_body_requerido(client, app):
 
 def test_auth_controller_usuarios_put_body_requerido(client, app):
     with app.app_context():
-        admin = _crear_usuario("Adm", "Ctrl", "admctrl@test.com", "admin", "Password123")
-        target = _crear_usuario("Tar", "Get", "target@test.com", "cliente", "Password123")
+        admin = _crear_usuario(
+            "Adm", "Ctrl", "admctrl@test.com", "admin", "Password123"
+        )
+        target = _crear_usuario(
+            "Tar", "Get", "target@test.com", "cliente", "Password123"
+        )
         _ = target.id
         _ = admin.id
     login = client.post(
@@ -274,8 +331,12 @@ def test_auth_controller_usuarios_put_body_requerido(client, app):
 
 def test_auth_controller_listar_usuarios_y_eliminar(client, app):
     with app.app_context():
-        admin = _crear_usuario("Adm", "List", "admlist@test.com", "admin", "Password123")
-        user = _crear_usuario("Usr", "List", "usrlist@test.com", "cliente", "Password123")
+        admin = _crear_usuario(
+            "Adm", "List", "admlist@test.com", "admin", "Password123"
+        )
+        user = _crear_usuario(
+            "Usr", "List", "usrlist@test.com", "cliente", "Password123"
+        )
         user_id = user.id
         admin_id = admin.id
     login = client.post(

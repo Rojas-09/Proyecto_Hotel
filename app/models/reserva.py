@@ -34,12 +34,12 @@ class Reserva(db.Model):
     id_huesped = db.Column(
         db.Integer,
         db.ForeignKey("huespedes.id", name="fk_reserva_huesped"),
-        nullable=False
+        nullable=False,
     )
     id_habitacion = db.Column(
         db.Integer,
         db.ForeignKey("habitaciones.id", name="fk_reserva_habitacion"),
-        nullable=False
+        nullable=False,
     )
     fecha_reserva = db.Column(db.DateTime, default=ahora_colombia, nullable=False)
     fecha_entrada = db.Column(db.Date, nullable=False)
@@ -51,41 +51,29 @@ class Reserva(db.Model):
     estado = db.Column(
         db.Enum(EstadoReserva, native_enum=False),
         nullable=False,
-        default=EstadoReserva.pendiente
+        default=EstadoReserva.pendiente,
     )
     expira_en = db.Column(db.DateTime, nullable=True)
     motivo_cancelacion = db.Column(db.String(255), nullable=True)
     created_at = db.Column(db.DateTime, default=ahora_colombia, nullable=False)
     updated_at = db.Column(
-        db.DateTime,
-        default=ahora_colombia,
-        onupdate=ahora_colombia,
-        nullable=False
+        db.DateTime, default=ahora_colombia, onupdate=ahora_colombia, nullable=False
     )
 
     # Relationships
     huesped = db.relationship("Huesped", back_populates="reservas")
     habitacion = db.relationship("Habitacion", back_populates="reservas")
     checkin_checkout = db.relationship(
-        "CheckInCheckOut",
-        back_populates="reserva",
-        uselist=False
+        "CheckInCheckOut", back_populates="reserva", uselist=False
     )
     pagos = db.relationship("Pago", back_populates="reserva")
-    factura = db.relationship(
-        "Factura",
-        back_populates="reserva",
-        uselist=False
-    )
+    factura = db.relationship("Factura", back_populates="reserva", uselist=False)
     notificaciones = db.relationship("Notificacion", back_populates="reserva")
     servicios_adicionales = db.relationship(
-        "ServicioAdicional",
-        back_populates="reserva"
+        "ServicioAdicional", back_populates="reserva"
     )
     puntos_fidelidad = db.relationship(
-        "PuntosFidelidad",
-        back_populates="reserva",
-        uselist=False
+        "PuntosFidelidad", back_populates="reserva", uselist=False
     )
 
     def to_dict(self) -> dict:
@@ -101,26 +89,20 @@ class Reserva(db.Model):
             "impuestos": float(self.impuestos),
             "total": float(self.total),
             "estado": self.estado.value,
-            "expira_en": (
-                self.expira_en.isoformat()
-                if self.expira_en else None
-            ),
+            "expira_en": (self.expira_en.isoformat() if self.expira_en else None),
             "motivo_cancelacion": self.motivo_cancelacion,
             "huesped_nombre": (
-                f"{self.huesped.usuario.nombre} "
-                f"{self.huesped.usuario.apellido}"
-                if self.huesped and self.huesped.usuario else None
+                f"{self.huesped.usuario.nombre} " f"{self.huesped.usuario.apellido}"
+                if self.huesped and self.huesped.usuario
+                else None
             ),
             "huesped_email": (
                 self.huesped.usuario.email
-                if self.huesped and self.huesped.usuario else None
+                if self.huesped and self.huesped.usuario
+                else None
             ),
-            "huesped_documento": (
-                self.huesped.documento_id if self.huesped else None
-            ),
-            "habitacion_numero": (
-                self.habitacion.numero if self.habitacion else None
-            ),
+            "huesped_documento": (self.huesped.documento_id if self.huesped else None),
+            "habitacion_numero": (self.habitacion.numero if self.habitacion else None),
             "habitacion_tipo": (
                 self.habitacion.tipo.value if self.habitacion else None
             ),
@@ -131,9 +113,11 @@ class Reserva(db.Model):
     def __repr__(self):
         return f"<Reserva {self.id} - {self.estado.value}>"
 
-    @validates('estado')
+    @validates("estado")
     def validar_transicion(self, key, nuevo_estado):
-        if self.estado and nuevo_estado not in TRANSICIONES_VALIDAS.get(self.estado, []):
+        if self.estado and nuevo_estado not in TRANSICIONES_VALIDAS.get(
+            self.estado, []
+        ):
             raise ValueError(
                 f"Transición inválida: {self.estado.value} → {nuevo_estado.value}. "
                 f"Permitidas: {[e.value for e in TRANSICIONES_VALIDAS[self.estado]]}"

@@ -4,9 +4,7 @@ import app.services.habitacion_service as habitacion_service
 from app.utils.error_helper import handle_service_error
 from app.utils.jwt_helper import rol_requerido, token_required
 
-habitacion_bp = Blueprint(
-    "habitaciones", __name__, url_prefix="/api/v1/habitaciones"
-)
+habitacion_bp = Blueprint("habitaciones", __name__, url_prefix="/api/v1/habitaciones")
 
 
 @habitacion_bp.route("/", methods=["GET"])
@@ -22,12 +20,17 @@ def listar(current_user):
 
     try:
         habitaciones = habitacion_service.obtener_todas(filtros or None)
-        return jsonify({
-            "success": True,
-            "data": habitaciones,
-            "total": len(habitaciones),
-            "mensaje": "Habitaciones obtenidas correctamente."
-        }), 200
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "data": habitaciones,
+                    "total": len(habitaciones),
+                    "mensaje": "Habitaciones obtenidas correctamente.",
+                }
+            ),
+            200,
+        )
     except ValueError as e:
         return handle_service_error(e, 400)
     except Exception as e:
@@ -41,21 +44,31 @@ def disponibles():
     tipo = request.args.get("tipo")
 
     if not fecha_entrada or not fecha_salida:
-        return jsonify({
-            "success": False,
-            "mensaje": "Se requieren los parametros fecha_entrada y fecha_salida (YYYY-MM-DD)."
-        }), 400
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "mensaje": "Se requieren los parametros fecha_entrada y fecha_salida (YYYY-MM-DD).",
+                }
+            ),
+            400,
+        )
 
     try:
         habitaciones = habitacion_service.buscar_disponibles(
             fecha_entrada, fecha_salida, tipo
         )
-        return jsonify({
-            "success": True,
-            "data": habitaciones,
-            "total": len(habitaciones),
-            "mensaje": f"{len(habitaciones)} habitacion(es) disponible(s) encontrada(s)."
-        }), 200
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "data": habitaciones,
+                    "total": len(habitaciones),
+                    "mensaje": f"{len(habitaciones)} habitacion(es) disponible(s) encontrada(s).",
+                }
+            ),
+            200,
+        )
     except ValueError as e:
         return handle_service_error(e, 400)
     except Exception as e:
@@ -66,11 +79,16 @@ def disponibles():
 def obtener(habitacion_id):
     try:
         habitacion = habitacion_service.obtener_por_id(habitacion_id)
-        return jsonify({
-            "success": True,
-            "data": habitacion,
-            "mensaje": "Habitacion encontrada."
-        }), 200
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "data": habitacion,
+                    "mensaje": "Habitacion encontrada.",
+                }
+            ),
+            200,
+        )
     except LookupError as e:
         return handle_service_error(e, 404)
     except Exception as e:
@@ -83,18 +101,28 @@ def obtener(habitacion_id):
 def crear(current_user):
     datos = request.get_json()
     if not datos:
-        return jsonify({
-            "success": False,
-            "mensaje": "El cuerpo de la solicitud debe ser JSON."
-        }), 400
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "mensaje": "El cuerpo de la solicitud debe ser JSON.",
+                }
+            ),
+            400,
+        )
 
     try:
         habitacion = habitacion_service.crear(datos)
-        return jsonify({
-            "success": True,
-            "data": habitacion,
-            "mensaje": f"Habitacion {habitacion['numero']} creada correctamente."
-        }), 201
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "data": habitacion,
+                    "mensaje": f"Habitacion {habitacion['numero']} creada correctamente.",
+                }
+            ),
+            201,
+        )
     except ValueError as e:
         return handle_service_error(e, 400)
     except Exception as e:
@@ -107,18 +135,28 @@ def crear(current_user):
 def actualizar(current_user, habitacion_id):
     datos = request.get_json()
     if not datos:
-        return jsonify({
-            "success": False,
-            "mensaje": "El cuerpo de la solicitud debe ser JSON."
-        }), 400
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "mensaje": "El cuerpo de la solicitud debe ser JSON.",
+                }
+            ),
+            400,
+        )
 
     try:
         habitacion = habitacion_service.actualizar(habitacion_id, datos)
-        return jsonify({
-            "success": True,
-            "data": habitacion,
-            "mensaje": f"Habitacion {habitacion['numero']} actualizada correctamente."
-        }), 200
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "data": habitacion,
+                    "mensaje": f"Habitacion {habitacion['numero']} actualizada correctamente.",
+                }
+            ),
+            200,
+        )
     except LookupError as e:
         return handle_service_error(e, 404)
     except ValueError as e:
@@ -133,11 +171,10 @@ def actualizar(current_user, habitacion_id):
 def eliminar(current_user, habitacion_id):
     try:
         resultado = habitacion_service.eliminar(habitacion_id)
-        return jsonify({
-            "success": True,
-            "data": None,
-            "mensaje": resultado["mensaje"]
-        }), 200
+        return (
+            jsonify({"success": True, "data": None, "mensaje": resultado["mensaje"]}),
+            200,
+        )
     except LookupError as e:
         return handle_service_error(e, 404)
     except ValueError as e:

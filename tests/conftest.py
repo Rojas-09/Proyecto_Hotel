@@ -82,10 +82,13 @@ def admin(app):
 @pytest.fixture(scope="function")
 def cliente_headers(client, cliente):
     """Headers de autenticación para un cliente existente."""
-    res = client.post("/api/v1/auth/login", json={
-        "email": "cliente@test.com",
-        "password": "password123",
-    })
+    res = client.post(
+        "/api/v1/auth/login",
+        json={
+            "email": "cliente@test.com",
+            "password": "password123",
+        },
+    )
     token = _extract_token_from_cookies(client)
     return {"Authorization": f"Bearer {token}"}
 

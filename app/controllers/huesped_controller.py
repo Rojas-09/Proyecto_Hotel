@@ -27,10 +27,15 @@ def crear(current_user):
     preferencias = datos.get("preferencias")
 
     if not id_usuario or not documento_id:
-        return jsonify({
-            "success": False,
-            "mensaje": "Los campos 'id_usuario' y 'documento_id' son obligatorios."
-        }), 400
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "mensaje": "Los campos 'id_usuario' y 'documento_id' son obligatorios.",
+                }
+            ),
+            400,
+        )
 
     try:
         huesped = huesped_service.crear(
@@ -39,11 +44,16 @@ def crear(current_user):
             tipo_documento=tipo_documento,
             preferencias=preferencias,
         )
-        return jsonify({
-            "success": True,
-            "data": huesped,
-            "mensaje": "Huésped creado correctamente."
-        }), 201
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "data": huesped,
+                    "mensaje": "Huésped creado correctamente.",
+                }
+            ),
+            201,
+        )
     except (LookupError, ValueError) as e:
         return handle_service_error(e, 400)
 
@@ -55,11 +65,10 @@ def eliminar(current_user, huesped_id):
     """Desactiva (soft-delete) un huésped."""
     try:
         resultado = huesped_service.eliminar(huesped_id)
-        return jsonify({
-            "success": True,
-            "data": None,
-            "mensaje": resultado["mensaje"]
-        }), 200
+        return (
+            jsonify({"success": True, "data": None, "mensaje": resultado["mensaje"]}),
+            200,
+        )
     except LookupError as e:
         return handle_service_error(e, 404)
     except Exception as e:
@@ -73,12 +82,17 @@ def obtener_todos(current_user):
     """Obtiene todos los huéspedes."""
     try:
         huespedes = huesped_service.obtener_todos()
-        return jsonify({
-            "success": True,
-            "data": huespedes,
-            "total": len(huespedes),
-            "message": "Huéspedes obtenidos correctamente."
-        }), 200
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "data": huespedes,
+                    "total": len(huespedes),
+                    "message": "Huéspedes obtenidos correctamente.",
+                }
+            ),
+            200,
+        )
     except Exception as e:
         return handle_service_error(e, 500)
 
@@ -90,11 +104,16 @@ def obtener_por_id(current_user, huesped_id):
     """Obtiene un huésped por ID."""
     try:
         huesped = huesped_service.obtener_por_id(huesped_id)
-        return jsonify({
-            "success": True,
-            "data": huesped,
-            "message": "Huésped obtenido correctamente."
-        }), 200
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "data": huesped,
+                    "message": "Huésped obtenido correctamente.",
+                }
+            ),
+            200,
+        )
     except LookupError as e:
         return handle_service_error(e, 404)
     except Exception as e:
@@ -108,19 +127,21 @@ def buscar(current_user):
     """Busca huéspedes por nombre, apellido, email o documento_id."""
     q = request.args.get("q", "").strip()
     if not q:
-        return jsonify({
-            "success": False,
-            "message": "Parámetro 'q' requerido."
-        }), 400
+        return jsonify({"success": False, "message": "Parámetro 'q' requerido."}), 400
 
     try:
         resultados = huesped_service.buscar(q)
-        return jsonify({
-            "success": True,
-            "data": resultados,
-            "total": len(resultados),
-            "message": "Búsqueda realizada correctamente."
-        }), 200
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "data": resultados,
+                    "total": len(resultados),
+                    "message": "Búsqueda realizada correctamente.",
+                }
+            ),
+            200,
+        )
     except ValueError as e:
         return handle_service_error(e, 400)
     except Exception as e:
@@ -134,18 +155,20 @@ def actualizar(current_user, huesped_id):
     """Actualiza un huésped."""
     datos = request.get_json(silent=True)
     if not datos:
-        return jsonify({
-            "success": False,
-            "message": "Body JSON requerido."
-        }), 400
+        return jsonify({"success": False, "message": "Body JSON requerido."}), 400
 
     try:
         huesped = huesped_service.actualizar(huesped_id, datos)
-        return jsonify({
-            "success": True,
-            "data": huesped,
-            "message": "Huésped actualizado correctamente."
-        }), 200
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "data": huesped,
+                    "message": "Huésped actualizado correctamente.",
+                }
+            ),
+            200,
+        )
     except LookupError as e:
         return handle_service_error(e, 404)
     except Exception as e:

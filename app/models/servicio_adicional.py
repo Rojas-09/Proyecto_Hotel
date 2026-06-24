@@ -23,27 +23,17 @@ class ServicioAdicional(db.Model):
     id_reserva = db.Column(
         db.Integer,
         db.ForeignKey("reservas.id", name="fk_servicio_reserva"),
-        nullable=False
+        nullable=False,
     )
-    tipo = db.Column(
-        db.Enum(TipoServicio, native_enum=False),
-        nullable=False
-    )
+    tipo = db.Column(db.Enum(TipoServicio, native_enum=False), nullable=False)
     recurso = db.Column(db.String(100), nullable=True)
     descripcion = db.Column(db.String(255), nullable=False)
     costo = db.Column(Numeric(10, 2), nullable=False)
-    fecha_hora = db.Column(
-        db.DateTime,
-        default=ahora_colombia,
-        nullable=False
-    )
+    fecha_hora = db.Column(db.DateTime, default=ahora_colombia, nullable=False)
     duracion_minutos = db.Column(db.Integer, default=60, nullable=False)
     created_at = db.Column(db.DateTime, default=ahora_colombia, nullable=False)
     updated_at = db.Column(
-        db.DateTime,
-        default=ahora_colombia,
-        onupdate=ahora_colombia,
-        nullable=False
+        db.DateTime, default=ahora_colombia, onupdate=ahora_colombia, nullable=False
     )
 
     # Relationships

@@ -3,6 +3,7 @@ Tests adicionales del controlador de Pagos (RF-13).
 Cubre los happy paths y errores 400/404 de todos los endpoints
 para llevar el coverage de 86% → 90%+.
 """
+
 from decimal import Decimal
 
 import pytest  # noqa: F401 (used in conftest.py)
@@ -11,15 +12,21 @@ from app import db
 from app.models.habitacion import Habitacion, TipoHabitacion, EstadoHabitacion
 from app.models.huesped import Huesped
 from app.models.pago import EstadoPago, MetodoPago, Pago, TipoPago
-from app.models.reembolso import EstadoReembolso, Reembolso  # noqa: F401 (used in conftest.py)
-from app.models.reserva import EstadoReserva, Reserva  # noqa: F401 (used in conftest.py)
+from app.models.reembolso import (
+    EstadoReembolso,
+    Reembolso,
+)  # noqa: F401 (used in conftest.py)
+from app.models.reserva import (
+    EstadoReserva,
+    Reserva,
+)  # noqa: F401 (used in conftest.py)
 from app.models.usuario import RolEnum, Usuario
 from app.utils.jwt_helper import generar_token
-
 
 # ---------------------------------------------------------------------------
 # Helpers de fixtures
 # ---------------------------------------------------------------------------
+
 
 def _crear_usuario(rol: RolEnum, sufijo: str) -> Usuario:
     u = Usuario(
@@ -47,6 +54,7 @@ def _crear_huesped(usuario: Usuario) -> Huesped:
 
 def _crear_habitacion() -> Habitacion:
     import random
+
     hab = Habitacion(
         numero=f"99{random.randint(1, 999):03d}",
         tipo=TipoHabitacion.doble,
@@ -59,9 +67,13 @@ def _crear_habitacion() -> Habitacion:
     return hab
 
 
-def _crear_reserva(huesped: Huesped, habitacion: Habitacion,
-                   estado: EstadoReserva = EstadoReserva.pendiente) -> Reserva:
+def _crear_reserva(
+    huesped: Huesped,
+    habitacion: Habitacion,
+    estado: EstadoReserva = EstadoReserva.pendiente,
+) -> Reserva:
     from datetime import date, timedelta
+
     hoy = date.today()
     entrada = hoy + timedelta(days=5)
     salida = hoy + timedelta(days=7)
@@ -125,6 +137,7 @@ def _auth(token: str) -> dict:
 # ---------------------------------------------------------------------------
 # TestGetPagosReserva — GET /api/v1/pagos/reserva/<id>
 # ---------------------------------------------------------------------------
+
 
 class TestGetPagosReserva:
     """Cubre el endpoint GET que no fue testeado en test_pagos.py."""
@@ -196,6 +209,7 @@ class TestGetPagosReserva:
 # ---------------------------------------------------------------------------
 # TestPostLiquidacionController — POST /api/v1/pagos/liquidacion/<id>
 # ---------------------------------------------------------------------------
+
 
 class TestPostLiquidacionController:
     """Happy path y errores 400/404 del endpoint de liquidación."""
@@ -325,6 +339,7 @@ class TestPostLiquidacionController:
 # ---------------------------------------------------------------------------
 # TestPostReembolsoController — POST /api/v1/pagos/reembolso/<id>
 # ---------------------------------------------------------------------------
+
 
 class TestPostReembolsoController:
     """Happy path y errores 400/404 del endpoint de reembolso."""
@@ -462,6 +477,7 @@ class TestPostReembolsoController:
 # TestPostGarantiaController — rutas de error adicionales
 # ---------------------------------------------------------------------------
 
+
 class TestPostGarantiaController:
     """Cubre errores 400 del endpoint de garantía no cubiertos antes."""
 
@@ -573,6 +589,7 @@ class TestPostGarantiaController:
 # TestListarPagos — GET /api/v1/pagos
 # ---------------------------------------------------------------------------
 
+
 class TestListarPagos:
     """GET /api/v1/pagos con filtros opcionales."""
 
@@ -648,6 +665,7 @@ class TestListarPagos:
 # TestObtenerPagoPorId — GET /api/v1/pagos/<id>
 # ---------------------------------------------------------------------------
 
+
 class TestObtenerPagoPorId:
     """GET /api/v1/pagos/<pago_id>"""
 
@@ -679,6 +697,7 @@ class TestObtenerPagoPorId:
 # TestEliminarPago — DELETE /api/v1/pagos/<id>
 # ---------------------------------------------------------------------------
 
+
 class TestEliminarPago:
     """DELETE /api/v1/pagos/<pago_id> (admin only)"""
 
@@ -693,9 +712,11 @@ class TestEliminarPago:
             db.session.commit()
             pid = pago.id
             token = _token(admin)
-        resp = client.delete(f"/api/v1/pagos/{pid}", json={
-            "motivo": "Anulación de prueba"
-        }, headers=_auth(token))
+        resp = client.delete(
+            f"/api/v1/pagos/{pid}",
+            json={"motivo": "Anulación de prueba"},
+            headers=_auth(token),
+        )
         assert resp.status_code == 200
         assert resp.get_json()["success"] is True
 
@@ -704,9 +725,9 @@ class TestEliminarPago:
             admin = _crear_usuario(RolEnum.admin, "adm_pag_del2")
             db.session.commit()
             token = _token(admin)
-        resp = client.delete("/api/v1/pagos/99999", json={
-            "motivo": "Test"
-        }, headers=_auth(token))
+        resp = client.delete(
+            "/api/v1/pagos/99999", json={"motivo": "Test"}, headers=_auth(token)
+        )
         assert resp.status_code == 404
 
     def test_eliminar_solo_admin(self, client, app):
@@ -714,9 +735,9 @@ class TestEliminarPago:
             recep = _crear_usuario(RolEnum.recepcionista, "rec_pag_del1")
             db.session.commit()
             token = _token(recep)
-        resp = client.delete("/api/v1/pagos/1", json={
-            "motivo": "Test"
-        }, headers=_auth(token))
+        resp = client.delete(
+            "/api/v1/pagos/1", json={"motivo": "Test"}, headers=_auth(token)
+        )
         assert resp.status_code == 403
 
     def test_eliminar_sin_token(self, client):

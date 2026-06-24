@@ -52,45 +52,66 @@ def token_required(f):
             token = request.cookies.get("access_token")
 
         if not token:
-            return jsonify({
-                "success": False,
-                "error": {
-                    "code": "UNAUTHORIZED",
-                    "message": "Token de autenticación requerido.",
-                }
-            }), 401
+            return (
+                jsonify(
+                    {
+                        "success": False,
+                        "error": {
+                            "code": "UNAUTHORIZED",
+                            "message": "Token de autenticación requerido.",
+                        },
+                    }
+                ),
+                401,
+            )
 
         try:
             payload = decodificar_token(token)
         except jwt.ExpiredSignatureError:
-            return jsonify({
-                "success": False,
-                "error": {
-                    "code": "UNAUTHORIZED",
-                    "message": "El token ha expirado. Inicia sesión nuevamente.",
-                }
-            }), 401
+            return (
+                jsonify(
+                    {
+                        "success": False,
+                        "error": {
+                            "code": "UNAUTHORIZED",
+                            "message": "El token ha expirado. Inicia sesión nuevamente.",
+                        },
+                    }
+                ),
+                401,
+            )
         except jwt.InvalidTokenError:
-            return jsonify({
-                "success": False,
-                "error": {
-                    "code": "UNAUTHORIZED",
-                    "message": "Token inválido.",
-                }
-            }), 401
+            return (
+                jsonify(
+                    {
+                        "success": False,
+                        "error": {
+                            "code": "UNAUTHORIZED",
+                            "message": "Token inválido.",
+                        },
+                    }
+                ),
+                401,
+            )
 
         from app import db
         from app.models.usuario import Usuario
+
         current_user = db.session.get(Usuario, payload["user_id"])
 
         if not current_user or not current_user.activo:
-            return jsonify({
-                "success": False,
-                "error": {
-                    "code": "UNAUTHORIZED",
-                    "message": "Usuario no encontrado o inactivo.",
-                }
-            }), 401
+            return (
+                jsonify(
+                    {
+                        "success": False,
+                        "error": {
+                            "code": "UNAUTHORIZED",
+                            "message": "Usuario no encontrado o inactivo.",
+                        },
+                    }
+                ),
+                401,
+            )
 
         return f(current_user, *args, **kwargs)
 
@@ -103,17 +124,24 @@ def rol_requerido(*roles):
         def decorated(current_user, *args, **kwargs):
             user_rol = (
                 current_user.rol.value
-                if hasattr(current_user.rol, 'value')
+                if hasattr(current_user.rol, "value")
                 else current_user.rol
             )
             if user_rol not in roles:
-                return jsonify({
-                    "success": False,
-                    "error": {
-                        "code": "FORBIDDEN",
-                        "message": f"Acceso restringido. Roles permitidos: {', '.join(roles)}.",
-                    }
-                }), 403
+                return (
+                    jsonify(
+                        {
+                            "success": False,
+                            "error": {
+                                "code": "FORBIDDEN",
+                                "message": f"Acceso restringido. Roles permitidos: {', '.join(roles)}.",
+                            },
+                        }
+                    ),
+                    403,
+                )
             return f(current_user, *args, **kwargs)
+
         return decorated
+
     return decorator

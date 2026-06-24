@@ -2,6 +2,7 @@
 Módulo ServicioAdicional — RF-10 (Comedor) y RF-11 (Spa)
 Gestiona servicios adicionales vinculados a una reserva en estado Ocupada.
 """
+
 from datetime import timedelta
 from decimal import Decimal, InvalidOperation
 
@@ -85,17 +86,15 @@ def _validar_sin_traslapes_spa(
     if servicio_id_excluir:
         filtros.append(ServicioAdicional.id != servicio_id_excluir)
 
-    existentes = db.session.execute(
-        select(ServicioAdicional).filter(*filtros)
-    ).scalars().all()
+    existentes = (
+        db.session.execute(select(ServicioAdicional).filter(*filtros)).scalars().all()
+    )
 
     for s in existentes:
         s_desde = s.fecha_hora
         if s_desde.tzinfo is None:
             s_desde = s_desde.replace(tzinfo=COLOMBIA_TZ)
-        s_hasta = s_desde + timedelta(
-            minutes=s.duracion_minutos or 60
-        )
+        s_hasta = s_desde + timedelta(minutes=s.duracion_minutos or 60)
         if s_desde < hasta and s_hasta > desde:
             raise ValueError(
                 "La fecha y hora seleccionada se traslapa con otro servicio "
@@ -148,9 +147,7 @@ def agregar(
     momento = fecha_hora or ahora_colombia()
 
     if tipo == TipoServicio.spa:
-        _validar_sin_traslapes_spa(
-            momento, duracion_minutos, recurso
-        )
+        _validar_sin_traslapes_spa(momento, duracion_minutos, recurso)
 
     servicio = ServicioAdicional(
         id_reserva=reserva_id,
@@ -171,13 +168,14 @@ def listar(reserva_id: int) -> dict:
     Lista todos los servicios adicionales de una reserva.
     """
     reserva = _get_reserva(reserva_id)
-    servicios = db.session.execute(
-        select(ServicioAdicional).filter_by(id_reserva=reserva.id)
-    ).scalars().all()
+    servicios = (
+        db.session.execute(select(ServicioAdicional).filter_by(id_reserva=reserva.id))
+        .scalars()
+        .all()
+    )
     items = [s.to_dict() for s in servicios]
     subtotal = sum(
-        (Decimal(str(s.costo)) for s in servicios),
-        Decimal("0.00")
+        (Decimal(str(s.costo)) for s in servicios), Decimal("0.00")
     ).quantize(Decimal("0.01"))
     return {"servicios": items, "subtotal": float(subtotal), "total": len(items)}
 

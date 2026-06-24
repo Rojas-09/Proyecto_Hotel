@@ -24,32 +24,18 @@ class Factura(db.Model):
         db.Integer,
         db.ForeignKey("reservas.id", name="fk_factura_reserva"),
         unique=True,
-        nullable=False
+        nullable=False,
     )
-    fecha_emision = db.Column(
-        db.DateTime,
-        default=ahora_colombia,
-        nullable=False
-    )
+    fecha_emision = db.Column(db.DateTime, default=ahora_colombia, nullable=False)
     subtotal = db.Column(Numeric(10, 2), nullable=False)
     impuestos = db.Column(Numeric(10, 2), nullable=False)
-    servicios_adicionales_total = db.Column(
-        Numeric(10, 2),
-        default=0,
-        nullable=False
-    )
+    servicios_adicionales_total = db.Column(Numeric(10, 2), default=0, nullable=False)
     total = db.Column(Numeric(10, 2), nullable=False)
-    estado = db.Column(
-        db.Enum(EstadoFactura, native_enum=False),
-        nullable=False
-    )
+    estado = db.Column(db.Enum(EstadoFactura, native_enum=False), nullable=False)
     pdf_path = db.Column(db.String(255), nullable=True)
     created_at = db.Column(db.DateTime, default=ahora_colombia, nullable=False)
     updated_at = db.Column(
-        db.DateTime,
-        default=ahora_colombia,
-        onupdate=ahora_colombia,
-        nullable=False
+        db.DateTime, default=ahora_colombia, onupdate=ahora_colombia, nullable=False
     )
 
     # Relationships
@@ -62,9 +48,7 @@ class Factura(db.Model):
             "fecha_emision": self.fecha_emision.isoformat(),
             "subtotal": float(self.subtotal),
             "impuestos": float(self.impuestos),
-            "servicios_adicionales_total": float(
-                self.servicios_adicionales_total
-            ),
+            "servicios_adicionales_total": float(self.servicios_adicionales_total),
             "total": float(self.total),
             "estado": self.estado.value,
             "pdf_path": self.pdf_path,

@@ -23,7 +23,6 @@ from app.models.pago import EstadoPago, Pago, TipoPago
 from app.models.reembolso import EstadoReembolso, Reembolso
 from app.utils.fecha_helper import ahora_colombia
 
-
 TIEMPO_EXPIRA_RESERVA = 30  # minutos, default
 
 
@@ -39,11 +38,10 @@ def crear(datos, current_user):
         raise ValueError("La fecha de entrada no puede ser en el pasado.")
 
     if fecha_entrada >= fecha_salida:
-        raise ValueError(
-            "La fecha de entrada debe ser anterior a la fecha de salida."
-        )
+        raise ValueError("La fecha de entrada debe ser anterior a la fecha de salida.")
 
     from app.models.habitacion import Habitacion
+
     habitacion = db.session.execute(
         select(Habitacion).filter_by(id=id_habitacion, activo=True)
     ).scalar_one_or_none()
@@ -51,9 +49,7 @@ def crear(datos, current_user):
         raise LookupError(f"Habitación con id {id_habitacion} no encontrada.")
 
     if habitacion.estado != EstadoHabitacion.disponible:
-        raise ValueError(
-            f"La habitación {habitacion.numero} no está disponible."
-        )
+        raise ValueError(f"La habitación {habitacion.numero} no está disponible.")
 
     _validar_reserva_no_solapada(id_habitacion, fecha_entrada, fecha_salida)
 
@@ -77,7 +73,8 @@ def crear(datos, current_user):
         impuestos=impuestos,
         total=total,
         estado=EstadoReserva.pendiente,
-        expira_en=ahora_colombia() + timedelta(
+        expira_en=ahora_colombia()
+        + timedelta(
             minutes=current_app.config.get(
                 "RESERVA_EXPIRA_MINUTOS", TIEMPO_EXPIRA_RESERVA
             )
@@ -134,7 +131,7 @@ def obtener_por_id(reserva_id, current_user):
 
     rol_value = (
         current_user.rol.value
-        if hasattr(current_user.rol, 'value')
+        if hasattr(current_user.rol, "value")
         else current_user.rol
     )
     if rol_value == "cliente":
@@ -142,9 +139,7 @@ def obtener_por_id(reserva_id, current_user):
             select(Huesped).filter_by(id_usuario=current_user.id)
         ).scalar_one_or_none()
         if not huesped or reserva.id_huesped != huesped.id:
-            raise PermissionError(
-                "No tienes permiso para ver esta reserva."
-            )
+            raise PermissionError("No tienes permiso para ver esta reserva.")
 
     return reserva.to_dict()
 
@@ -157,10 +152,15 @@ def obtener_mis_reservas(current_user):
     if not huesped:
         return []
 
-    reservas = db.session.execute(
-        select(Reserva).filter_by(id_huesped=huesped.id)
-        .order_by(Reserva.fecha_entrada.desc())
-    ).scalars().all()
+    reservas = (
+        db.session.execute(
+            select(Reserva)
+            .filter_by(id_huesped=huesped.id)
+            .order_by(Reserva.fecha_entrada.desc())
+        )
+        .scalars()
+        .all()
+    )
     return [r.to_dict() for r in reservas]
 
 
@@ -183,8 +183,7 @@ def confirmar(reserva_id):
 
     _app = current_app._get_current_object()
     threading.Thread(
-        target=lambda: _enviar_email_with_context(_app, reserva),
-        daemon=True
+        target=lambda: _enviar_email_with_context(_app, reserva), daemon=True
     ).start()
 
     notificacion = db.session.execute(
@@ -209,7 +208,7 @@ def cancelar(reserva_id, motivo=None, current_user=None):
     if current_user:
         rol_value = (
             current_user.rol.value
-            if hasattr(current_user.rol, 'value')
+            if hasattr(current_user.rol, "value")
             else current_user.rol
         )
         if rol_value == "cliente":
@@ -217,13 +216,9 @@ def cancelar(reserva_id, motivo=None, current_user=None):
                 select(Huesped).filter_by(id_usuario=current_user.id)
             ).scalar_one_or_none()
             if not huesped or reserva.id_huesped != huesped.id:
-                raise PermissionError(
-                    "No tienes permiso para cancelar esta reserva."
-                )
+                raise PermissionError("No tienes permiso para cancelar esta reserva.")
 
-    horas_faltantes = (
-        reserva.fecha_entrada - date.today()
-    ).total_seconds() / 3600
+    horas_faltantes = (reserva.fecha_entrada - date.today()).total_seconds() / 3600
     if horas_faltantes < 24:
         raise ValueError(
             "No se puede cancelar. Faltan menos de 24 horas para la fecha "
@@ -330,6 +325,7 @@ def hacer_checkout(reserva_id, realizado_por_id=None):
         # Acreditación de puntos de fidelidad (no debe bloquear el checkout)
         try:
             from app.services import puntos_fidelidad_service
+
             puntos_fidelidad_service.acreditar(reserva_id)
         except Exception:
             pass
@@ -348,11 +344,7 @@ def hacer_checkout(reserva_id, realizado_por_id=None):
             subtotal=reserva.subtotal,
             impuestos=reserva.impuestos,
             servicios_adicionales_total=servicios_adicionales_total,
-            total=(
-                reserva.subtotal +
-                reserva.impuestos +
-                servicios_adicionales_total
-            ),
+            total=(reserva.subtotal + reserva.impuestos + servicios_adicionales_total),
             estado=EstadoFactura.pendiente,
         )
         db.session.add(factura)
@@ -370,7 +362,7 @@ def _obtener_id_huesped(current_user, datos=None):
     """Obtiene el id_huesped del usuario actual."""
     rol_value = (
         current_user.rol.value
-        if hasattr(current_user.rol, 'value')
+        if hasattr(current_user.rol, "value")
         else current_user.rol
     )
     if rol_value == "cliente":
@@ -385,9 +377,7 @@ def _obtener_id_huesped(current_user, datos=None):
         return huesped.id
 
     if not datos or "id_huesped" not in datos:
-        raise ValueError(
-            "Debes proporcionar 'id_huesped' en los datos para este rol."
-        )
+        raise ValueError("Debes proporcionar 'id_huesped' en los datos para este rol.")
 
     try:
         id_huesped = int(datos["id_huesped"])
@@ -396,9 +386,7 @@ def _obtener_id_huesped(current_user, datos=None):
 
     huesped = db.session.get(Huesped, id_huesped)
     if not huesped:
-        raise LookupError(
-            f"No existe un huésped con id {id_huesped}."
-        )
+        raise LookupError(f"No existe un huésped con id {id_huesped}.")
 
     return id_huesped
 
@@ -408,9 +396,7 @@ def _validar_campos_obligatorios(datos):
     requeridos = ["id_habitacion", "fecha_entrada", "fecha_salida"]
     faltantes = [c for c in requeridos if c not in datos or not datos[c]]
     if faltantes:
-        raise ValueError(
-            f"Campos obligatorios faltantes: {', '.join(faltantes)}"
-        )
+        raise ValueError(f"Campos obligatorios faltantes: {', '.join(faltantes)}")
 
 
 def _parse_fecha(fecha_str):
@@ -437,13 +423,17 @@ def limpiar_expiradas():
     Retorna el número de reservas expiradas.
     """
     ahora = ahora_colombia()
-    expiradas = db.session.execute(
-        select(Reserva).filter(
-            Reserva.estado == EstadoReserva.pendiente,
-            Reserva.expira_en.isnot(None),
-            Reserva.expira_en < ahora,
+    expiradas = (
+        db.session.execute(
+            select(Reserva).filter(
+                Reserva.estado == EstadoReserva.pendiente,
+                Reserva.expira_en.isnot(None),
+                Reserva.expira_en < ahora,
+            )
         )
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
 
     for r in expiradas:
         r.estado = EstadoReserva.cancelada
@@ -470,13 +460,9 @@ def _enviar_email_confirmacion(reserva):
             return
 
         destinatario = huesped.usuario.email
-        nombre_huesped = (
-            f"{huesped.usuario.nombre} {huesped.usuario.apellido}"
-        )
+        nombre_huesped = f"{huesped.usuario.nombre} {huesped.usuario.apellido}"
 
-        asunto = (
-            f"Confirmación de Reserva - {reserva.id} - HotelBook Pro"
-        )
+        asunto = f"Confirmación de Reserva - {reserva.id} - HotelBook Pro"
 
         cuerpo = f"""
 Estimado/a {nombre_huesped},
@@ -554,7 +540,7 @@ def actualizar(reserva_id, datos: dict, current_user=None):
     if current_user:
         rol_value = (
             current_user.rol.value
-            if hasattr(current_user.rol, 'value')
+            if hasattr(current_user.rol, "value")
             else current_user.rol
         )
         if rol_value == "cliente":
@@ -562,9 +548,7 @@ def actualizar(reserva_id, datos: dict, current_user=None):
                 select(Huesped).filter_by(id_usuario=current_user.id)
             ).scalar_one_or_none()
             if not huesped or reserva.id_huesped != huesped.id:
-                raise PermissionError(
-                    "No tienes permiso para modificar esta reserva."
-                )
+                raise PermissionError("No tienes permiso para modificar esta reserva.")
 
     # Campos editables
     campos_editables = {
@@ -583,8 +567,11 @@ def actualizar(reserva_id, datos: dict, current_user=None):
                 raise ValueError(f"Valor inválido para '{campo}'.") from exc
 
     # Validar solapamiento si cambian fechas o habitación
-    if "fecha_entrada" in nuevos_datos or "fecha_salida" in nuevos_datos \
-            or "id_habitacion" in nuevos_datos:
+    if (
+        "fecha_entrada" in nuevos_datos
+        or "fecha_salida" in nuevos_datos
+        or "id_habitacion" in nuevos_datos
+    ):
         fecha_entrada = nuevos_datos.get("fecha_entrada", reserva.fecha_entrada)
         fecha_salida = nuevos_datos.get("fecha_salida", reserva.fecha_salida)
         id_habitacion = nuevos_datos.get("id_habitacion", reserva.id_habitacion)
@@ -593,12 +580,14 @@ def actualizar(reserva_id, datos: dict, current_user=None):
             raise ValueError("La fecha de entrada debe ser anterior a la de salida.")
 
         _validar_reserva_no_solapada(
-            id_habitacion, fecha_entrada, fecha_salida,
-            excluir_id=reserva.id
+            id_habitacion, fecha_entrada, fecha_salida, excluir_id=reserva.id
         )
 
         # Recalcular totales si cambian fechas
-        if fecha_entrada != reserva.fecha_entrada or fecha_salida != reserva.fecha_salida:
+        if (
+            fecha_entrada != reserva.fecha_entrada
+            or fecha_salida != reserva.fecha_salida
+        ):
             habitacion = db.session.get(Habitacion, id_habitacion)
             if not habitacion:
                 raise LookupError(f"Habitación con id {id_habitacion} no encontrada.")
@@ -618,7 +607,9 @@ def actualizar(reserva_id, datos: dict, current_user=None):
     if "id_habitacion" in nuevos_datos:
         nueva_hab = db.session.get(Habitacion, nuevos_datos["id_habitacion"])
         if not nueva_hab or not nueva_hab.activo:
-            raise LookupError(f"Habitación con id {nuevos_datos['id_habitacion']} no encontrada.")
+            raise LookupError(
+                f"Habitación con id {nuevos_datos['id_habitacion']} no encontrada."
+            )
         if nueva_hab.estado != EstadoHabitacion.disponible:
             raise ValueError(f"La habitación {nueva_hab.numero} no está disponible.")
 
@@ -631,13 +622,19 @@ def actualizar(reserva_id, datos: dict, current_user=None):
     return reserva.to_dict()
 
 
-def _validar_reserva_no_solapada(id_habitacion, fecha_entrada, fecha_salida, excluir_id=None):
+def _validar_reserva_no_solapada(
+    id_habitacion, fecha_entrada, fecha_salida, excluir_id=None
+):
     """Valida que no haya reservas solapadas."""
-    query = select(db.func.count()).select_from(Reserva).filter(
-        Reserva.id_habitacion == id_habitacion,
-        Reserva.estado != EstadoReserva.cancelada,
-        Reserva.fecha_entrada < fecha_salida,
-        Reserva.fecha_salida > fecha_entrada,
+    query = (
+        select(db.func.count())
+        .select_from(Reserva)
+        .filter(
+            Reserva.id_habitacion == id_habitacion,
+            Reserva.estado != EstadoReserva.cancelada,
+            Reserva.fecha_entrada < fecha_salida,
+            Reserva.fecha_salida > fecha_entrada,
+        )
     )
     if excluir_id:
         query = query.filter(Reserva.id != excluir_id)
@@ -646,6 +643,5 @@ def _validar_reserva_no_solapada(id_habitacion, fecha_entrada, fecha_salida, exc
 
     if reservas_conflicto > 0:
         raise ValueError(
-            "La habitación ya tiene una reserva en el rango de fechas "
-            "seleccionado."
+            "La habitación ya tiene una reserva en el rango de fechas " "seleccionado."
         )

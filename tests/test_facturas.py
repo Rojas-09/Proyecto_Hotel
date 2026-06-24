@@ -46,6 +46,7 @@ def _crear_huesped(usuario: Usuario) -> Huesped:
 
 def _crear_habitacion() -> Habitacion:
     import random
+
     hab = Habitacion(
         numero=f"10{random.randint(1, 999):03d}",
         tipo=TipoHabitacion.doble,
@@ -61,6 +62,7 @@ def _crear_habitacion() -> Habitacion:
 
 def _crear_reserva_completada(huesped, habitacion) -> Reserva:
     from datetime import date, timedelta
+
     hoy = date.today()
     entrada = hoy - timedelta(days=5)
     salida = hoy - timedelta(days=2)
@@ -80,7 +82,9 @@ def _crear_reserva_completada(huesped, habitacion) -> Reserva:
     return reserva
 
 
-def _crear_factura(reserva: Reserva, estado: EstadoFactura = EstadoFactura.pendiente) -> Factura:
+def _crear_factura(
+    reserva: Reserva, estado: EstadoFactura = EstadoFactura.pendiente
+) -> Factura:
     f = Factura(
         id_reserva=reserva.id,
         subtotal=reserva.subtotal,
@@ -106,7 +110,9 @@ def _crear_servicio(reserva, tipo: TipoServicio, costo: Decimal) -> ServicioAdic
 
 
 def _crear_pago_liquidacion(reserva: Reserva) -> Pago:
-    monto = Decimal(str(reserva.total)) - (Decimal(str(reserva.total)) * Decimal("0.50"))
+    monto = Decimal(str(reserva.total)) - (
+        Decimal(str(reserva.total)) * Decimal("0.50")
+    )
     p = Pago(
         id_reserva=reserva.id,
         monto=monto.quantize(Decimal("0.01")),
@@ -131,6 +137,7 @@ def _auth(token: str) -> dict:
 # ---------------------------------------------------------------------------
 # TestObtenerFactura
 # ---------------------------------------------------------------------------
+
 
 class TestObtenerFactura:
     """GET /api/v1/facturas/reserva/<reserva_id>"""
@@ -207,6 +214,7 @@ class TestObtenerFactura:
 # TestEmitirFactura
 # ---------------------------------------------------------------------------
 
+
 class TestEmitirFactura:
     """POST /api/v1/facturas/reserva/<reserva_id>/emitir"""
 
@@ -223,7 +231,9 @@ class TestEmitirFactura:
             token = _token(admin)
             rid = reserva.id
 
-        resp = client.post(f"/api/v1/facturas/reserva/{rid}/emitir", headers=_auth(token))
+        resp = client.post(
+            f"/api/v1/facturas/reserva/{rid}/emitir", headers=_auth(token)
+        )
         assert resp.status_code == 201
         data = resp.get_json()
         assert data["success"] is True
@@ -243,7 +253,9 @@ class TestEmitirFactura:
             token = _token(admin)
             rid = reserva.id
 
-        resp = client.post(f"/api/v1/facturas/reserva/{rid}/emitir", headers=_auth(token))
+        resp = client.post(
+            f"/api/v1/facturas/reserva/{rid}/emitir", headers=_auth(token)
+        )
         assert resp.status_code == 201
         pdf_path = resp.get_json()["data"]["pdf_path"]
         assert pdf_path is not None
@@ -262,7 +274,9 @@ class TestEmitirFactura:
             token = _token(admin)
             rid = reserva.id
 
-        resp = client.post(f"/api/v1/facturas/reserva/{rid}/emitir", headers=_auth(token))
+        resp = client.post(
+            f"/api/v1/facturas/reserva/{rid}/emitir", headers=_auth(token)
+        )
         assert resp.status_code == 400
         assert "ya fue" in resp.get_json()["mensaje"].lower()
 
@@ -279,7 +293,9 @@ class TestEmitirFactura:
             token = _token(admin)
             rid = reserva.id
 
-        resp = client.post(f"/api/v1/facturas/reserva/{rid}/emitir", headers=_auth(token))
+        resp = client.post(
+            f"/api/v1/facturas/reserva/{rid}/emitir", headers=_auth(token)
+        )
         assert resp.status_code == 400
 
     def test_emitir_como_cliente_denegado(self, client, app):
@@ -294,7 +310,9 @@ class TestEmitirFactura:
             token = _token(cliente_u)
             rid = reserva.id
 
-        resp = client.post(f"/api/v1/facturas/reserva/{rid}/emitir", headers=_auth(token))
+        resp = client.post(
+            f"/api/v1/facturas/reserva/{rid}/emitir", headers=_auth(token)
+        )
         assert resp.status_code == 403
 
     def test_emitir_factura_no_existe(self, client, app):
@@ -309,7 +327,9 @@ class TestEmitirFactura:
             token = _token(admin)
             rid = reserva.id
 
-        resp = client.post(f"/api/v1/facturas/reserva/{rid}/emitir", headers=_auth(token))
+        resp = client.post(
+            f"/api/v1/facturas/reserva/{rid}/emitir", headers=_auth(token)
+        )
         assert resp.status_code == 404
 
     def test_emitir_con_servicios_adicionales(self, client, app):
@@ -327,7 +347,9 @@ class TestEmitirFactura:
             token = _token(admin)
             rid = reserva.id
 
-        resp = client.post(f"/api/v1/facturas/reserva/{rid}/emitir", headers=_auth(token))
+        resp = client.post(
+            f"/api/v1/facturas/reserva/{rid}/emitir", headers=_auth(token)
+        )
         assert resp.status_code == 201
         data = resp.get_json()
         assert float(data["data"]["servicios_adicionales_total"]) > 0
@@ -336,6 +358,7 @@ class TestEmitirFactura:
 # ---------------------------------------------------------------------------
 # TestDescargarFactura
 # ---------------------------------------------------------------------------
+
 
 class TestDescargarFactura:
     """GET /api/v1/facturas/reserva/<reserva_id>/descargar"""
@@ -362,7 +385,9 @@ class TestDescargarFactura:
             f_record.pdf_path = temp_path
             db.session.commit()
 
-        resp = client.get(f"/api/v1/facturas/reserva/{rid}/descargar", headers=_auth(token))
+        resp = client.get(
+            f"/api/v1/facturas/reserva/{rid}/descargar", headers=_auth(token)
+        )
         assert resp.status_code == 200
         assert resp.content_type == "application/pdf"
 
@@ -379,7 +404,9 @@ class TestDescargarFactura:
             token = _token(admin)
             rid = reserva.id
 
-        resp = client.get(f"/api/v1/facturas/reserva/{rid}/descargar", headers=_auth(token))
+        resp = client.get(
+            f"/api/v1/facturas/reserva/{rid}/descargar", headers=_auth(token)
+        )
         assert resp.status_code == 400
 
     def test_descargar_cliente_su_reserva(self, client, app):
@@ -403,7 +430,9 @@ class TestDescargarFactura:
             f_record.pdf_path = temp_path
             db.session.commit()
 
-        resp = client.get(f"/api/v1/facturas/reserva/{rid}/descargar", headers=_auth(token))
+        resp = client.get(
+            f"/api/v1/facturas/reserva/{rid}/descargar", headers=_auth(token)
+        )
         assert resp.status_code == 200
         assert resp.content_type == "application/pdf"
 
@@ -436,7 +465,9 @@ class TestDescargarFactura:
             otro_u2 = Usuario.query.filter_by(email=email_otro).first()
             otro_token = _token(otro_u2)
 
-        resp = client.get(f"/api/v1/facturas/reserva/{rid}/descargar", headers=_auth(otro_token))
+        resp = client.get(
+            f"/api/v1/facturas/reserva/{rid}/descargar", headers=_auth(otro_token)
+        )
         assert resp.status_code == 403
 
     def test_descargar_factura_no_existe(self, client, app):
@@ -451,13 +482,16 @@ class TestDescargarFactura:
             token = _token(admin)
             rid = reserva.id
 
-        resp = client.get(f"/api/v1/facturas/reserva/{rid}/descargar", headers=_auth(token))
+        resp = client.get(
+            f"/api/v1/facturas/reserva/{rid}/descargar", headers=_auth(token)
+        )
         assert resp.status_code == 404
 
 
 # ---------------------------------------------------------------------------
 # TestAnularFactura
 # ---------------------------------------------------------------------------
+
 
 class TestAnularFactura:
     """PUT /api/v1/facturas/<factura_id>/anular"""
@@ -571,6 +605,7 @@ class TestAnularFactura:
 # TestListarFacturas
 # ---------------------------------------------------------------------------
 
+
 class TestListarFacturas:
     """GET /api/v1/facturas"""
 
@@ -632,6 +667,7 @@ class TestListarFacturas:
 # TestObtenerFacturaPorId
 # ---------------------------------------------------------------------------
 
+
 class TestObtenerFacturaPorId:
     """GET /api/v1/facturas/<factura_id>"""
 
@@ -663,6 +699,7 @@ class TestObtenerFacturaPorId:
 # TestEliminarFactura
 # ---------------------------------------------------------------------------
 
+
 class TestEliminarFactura:
     """DELETE /api/v1/facturas/<factura_id>"""
 
@@ -677,9 +714,9 @@ class TestEliminarFactura:
             db.session.commit()
             fid = factura.id
             token = _token(admin)
-        resp = client.delete(f"/api/v1/facturas/{fid}", json={
-            "motivo": "Prueba"
-        }, headers=_auth(token))
+        resp = client.delete(
+            f"/api/v1/facturas/{fid}", json={"motivo": "Prueba"}, headers=_auth(token)
+        )
         assert resp.status_code == 200
         assert resp.get_json()["success"] is True
 
@@ -688,9 +725,9 @@ class TestEliminarFactura:
             admin = _crear_usuario(RolEnum.admin, "adm_del_fac2")
             db.session.commit()
             token = _token(admin)
-        resp = client.delete("/api/v1/facturas/99999", json={
-            "motivo": "Test"
-        }, headers=_auth(token))
+        resp = client.delete(
+            "/api/v1/facturas/99999", json={"motivo": "Test"}, headers=_auth(token)
+        )
         assert resp.status_code == 404
 
     def test_eliminar_solo_admin(self, client, app):
@@ -698,9 +735,9 @@ class TestEliminarFactura:
             recep = _crear_usuario(RolEnum.recepcionista, "rec_del_fac1")
             db.session.commit()
             token = _token(recep)
-        resp = client.delete("/api/v1/facturas/1", json={
-            "motivo": "Test"
-        }, headers=_auth(token))
+        resp = client.delete(
+            "/api/v1/facturas/1", json={"motivo": "Test"}, headers=_auth(token)
+        )
         assert resp.status_code == 403
 
     def test_eliminar_sin_token(self, client):

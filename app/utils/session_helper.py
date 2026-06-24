@@ -10,6 +10,7 @@ def _revalidar_usuario():
         return False
     from app import db
     from app.models.usuario import Usuario
+
     user = db.session.get(Usuario, user_id)
     if not user or not user.activo:
         session.clear()
@@ -27,6 +28,7 @@ def login_required(f):
             flash("Su cuenta ha sido desactivada.", "warning")
             return redirect(url_for("views.login"))
         return f(*args, **kwargs)
+
     return decorated_function
 
 
@@ -49,5 +51,7 @@ def roles_allowed(*roles):
                 )
                 return redirect(url_for("views.home"))
             return f(*args, **kwargs)
+
         return decorated_function
+
     return decorator

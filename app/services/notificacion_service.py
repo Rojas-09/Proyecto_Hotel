@@ -45,7 +45,11 @@ def obtener(id):
 
 
 def listar(filtros=None):
-    query = select(Notificacion).filter_by(activo=True).order_by(Notificacion.created_at.desc())
+    query = (
+        select(Notificacion)
+        .filter_by(activo=True)
+        .order_by(Notificacion.created_at.desc())
+    )
 
     if filtros:
         if filtros.get("tipo"):
@@ -63,11 +67,13 @@ def listar(filtros=None):
 
         if filtros.get("fecha_desde"):
             from datetime import date
+
             fecha = date.fromisoformat(filtros["fecha_desde"])
             query = query.filter(Notificacion.created_at >= fecha)
 
         if filtros.get("fecha_hasta"):
             from datetime import date
+
             fecha = date.fromisoformat(filtros["fecha_hasta"])
             query = query.filter(Notificacion.created_at <= fecha)
 
@@ -79,12 +85,16 @@ def buscar(query_str: str):
     """Busca notificaciones por mensaje (contiene)."""
 
     q = query_str.strip().lower()
-    notificaciones = db.session.execute(
-        select(Notificacion)
-        .filter(Notificacion.activo)
-        .filter(db.func.lower(Notificacion.mensaje).like(f"%{q}%"))
-        .order_by(Notificacion.created_at.desc())
-    ).scalars().all()
+    notificaciones = (
+        db.session.execute(
+            select(Notificacion)
+            .filter(Notificacion.activo)
+            .filter(db.func.lower(Notificacion.mensaje).like(f"%{q}%"))
+            .order_by(Notificacion.created_at.desc())
+        )
+        .scalars()
+        .all()
+    )
     return [n.to_dict() for n in notificaciones]
 
 
@@ -93,11 +103,15 @@ def listar_por_reserva(reserva_id):
     if not reserva:
         raise LookupError(f"Reserva con id {reserva_id} no encontrada.")
 
-    notificaciones = db.session.execute(
-        select(Notificacion)
-        .filter_by(id_reserva=reserva_id, activo=True)
-        .order_by(Notificacion.created_at.desc())
-    ).scalars().all()
+    notificaciones = (
+        db.session.execute(
+            select(Notificacion)
+            .filter_by(id_reserva=reserva_id, activo=True)
+            .order_by(Notificacion.created_at.desc())
+        )
+        .scalars()
+        .all()
+    )
     return [n.to_dict() for n in notificaciones]
 
 

@@ -1,6 +1,7 @@
 """
 Stripe Webhook Service — Procesa eventos asíncronos de Stripe (RF-13 M1)
 """
+
 import stripe
 from flask import current_app
 from sqlalchemy import select
@@ -21,14 +22,22 @@ def procesar_evento(payload: bytes, sig_header: str) -> dict:
     """
     secret = current_app.config.get("STRIPE_WEBHOOK_SECRET")
     if not secret:
-        return {"tipo": "error", "procesado": False, "detalle": "WEBHOOK_SECRET no configurado"}
+        return {
+            "tipo": "error",
+            "procesado": False,
+            "detalle": "WEBHOOK_SECRET no configurado",
+        }
 
     try:
         evento = stripe.Webhook.construct_event(payload, sig_header, secret)
     except ValueError:
         return {"tipo": "error", "procesado": False, "detalle": "Payload inválido"}
     except stripe.error.SignatureVerificationError:
-        return {"tipo": "error", "procesado": False, "detalle": "Firma del webhook inválida"}
+        return {
+            "tipo": "error",
+            "procesado": False,
+            "detalle": "Firma del webhook inválida",
+        }
 
     tipo = evento["type"]
     objeto = evento["data"]["object"]
@@ -80,7 +89,11 @@ def _manejar_payment_succeeded(objeto: dict) -> str:
         pago.updated_at = ahora_colombia()
 
         reserva = db.session.get(Reserva, pago.id_reserva)
-        if reserva and reserva.estado == EstadoReserva.pendiente and pago.tipo == TipoPago.garantia:
+        if (
+            reserva
+            and reserva.estado == EstadoReserva.pendiente
+            and pago.tipo == TipoPago.garantia
+        ):
             reserva.estado = EstadoReserva.confirmada
             reserva.updated_at = ahora_colombia()
 

@@ -1,6 +1,7 @@
 """
 Tests — RF-13 M1 (Webhook), M2 (Reintento), M3 (Auto-expiro)
 """
+
 import pytest
 from decimal import Decimal
 from datetime import date, timedelta, datetime
@@ -16,7 +17,8 @@ from app.utils.fecha_helper import ahora_colombia
 
 def _crear_cliente_y_reserva(app, seed: str, estado=EstadoReserva.pendiente):
     u = Usuario(
-        nombre="Cli", apellido="T",
+        nombre="Cli",
+        apellido="T",
         email=f"rf13_{seed}@test.com",
         rol=RolEnum.cliente,
     )
@@ -26,18 +28,23 @@ def _crear_cliente_y_reserva(app, seed: str, estado=EstadoReserva.pendiente):
     h = Huesped(id_usuario=u.id, documento_id=f"RF13-{seed}", tipo_documento="cc")
     db.session.add(h)
     hab = Habitacion(
-        numero=f"RF13-{seed}", tipo=TipoHabitacion.simple,
-        precio_noche=Decimal("100000"), capacidad=1,
+        numero=f"RF13-{seed}",
+        tipo=TipoHabitacion.simple,
+        precio_noche=Decimal("100000"),
+        capacidad=1,
         estado=EstadoHabitacion.disponible,
     )
     db.session.add(hab)
     db.session.flush()
     r = Reserva(
-        id_huesped=h.id, id_habitacion=hab.id,
+        id_huesped=h.id,
+        id_habitacion=hab.id,
         fecha_entrada=date.today() + timedelta(days=5),
         fecha_salida=date.today() + timedelta(days=7),
-        noches=2, subtotal=Decimal("200000"),
-        impuestos=Decimal("38000"), total=Decimal("238000"),
+        noches=2,
+        subtotal=Decimal("200000"),
+        impuestos=Decimal("38000"),
+        total=Decimal("238000"),
         estado=estado,
     )
     db.session.add(r)
@@ -64,11 +71,14 @@ class TestWebhookEventos:
 
     def test_webhook_payment_failed_crea_rechazado(self, app):
         from app.services.stripe_webhook_service import _manejar_payment_failed
+
         with app.app_context():
             r, hab = _crear_cliente_y_reserva(app, "wh_fail")
             pago = Pago(
-                id_reserva=r.id, monto=Decimal("119000"),
-                metodo=MetodoPago.tarjeta, tipo=TipoPago.garantia,
+                id_reserva=r.id,
+                monto=Decimal("119000"),
+                metodo=MetodoPago.tarjeta,
+                tipo=TipoPago.garantia,
                 estado=EstadoPago.pendiente,
                 stripe_payment_intent_id="pi_test_failed_1",
             )
@@ -91,11 +101,14 @@ class TestWebhookEventos:
 
     def test_webhook_payment_succeeded_confirma(self, app):
         from app.services.stripe_webhook_service import _manejar_payment_succeeded
+
         with app.app_context():
             r, hab = _crear_cliente_y_reserva(app, "wh_succ")
             pago = Pago(
-                id_reserva=r.id, monto=Decimal("119000"),
-                metodo=MetodoPago.tarjeta, tipo=TipoPago.garantia,
+                id_reserva=r.id,
+                monto=Decimal("119000"),
+                metodo=MetodoPago.tarjeta,
+                tipo=TipoPago.garantia,
                 estado=EstadoPago.pendiente,
                 stripe_payment_intent_id="pi_test_succ_1",
             )
@@ -112,11 +125,14 @@ class TestWebhookEventos:
 
     def test_webhook_charge_refunded_marca_reembolsado(self, app):
         from app.services.stripe_webhook_service import _manejar_charge_refunded
+
         with app.app_context():
             r, hab = _crear_cliente_y_reserva(app, "wh_ref")
             pago = Pago(
-                id_reserva=r.id, monto=Decimal("119000"),
-                metodo=MetodoPago.tarjeta, tipo=TipoPago.garantia,
+                id_reserva=r.id,
+                monto=Decimal("119000"),
+                metodo=MetodoPago.tarjeta,
+                tipo=TipoPago.garantia,
                 estado=EstadoPago.aprobado,
                 stripe_payment_intent_id="pi_test_ref_1",
             )
@@ -145,12 +161,15 @@ class TestReintentoGarantia:
 
     def test_reintento_tras_rechazo_permite_nuevo_pago(self, app):
         from app.services.pago_service import procesar_garantia
+
         with app.app_context():
             r, hab = _crear_cliente_y_reserva(app, "retry1")
 
             pago_rechazado = Pago(
-                id_reserva=r.id, monto=Decimal("119000"),
-                metodo=MetodoPago.tarjeta, tipo=TipoPago.garantia,
+                id_reserva=r.id,
+                monto=Decimal("119000"),
+                metodo=MetodoPago.tarjeta,
+                tipo=TipoPago.garantia,
                 estado=EstadoPago.rechazado,
                 failure_message="Tarjeta rechazada: fondos insuficientes",
                 stripe_payment_intent_id="pi_fail_retry",
@@ -165,12 +184,15 @@ class TestReintentoGarantia:
 
     def test_reintento_bloqueado_si_hay_aprobada(self, app):
         from app.services.pago_service import procesar_garantia
+
         with app.app_context():
             r, hab = _crear_cliente_y_reserva(app, "retry2")
 
             pago_ok = Pago(
-                id_reserva=r.id, monto=Decimal("119000"),
-                metodo=MetodoPago.efectivo, tipo=TipoPago.garantia,
+                id_reserva=r.id,
+                monto=Decimal("119000"),
+                metodo=MetodoPago.efectivo,
+                tipo=TipoPago.garantia,
                 estado=EstadoPago.aprobado,
             )
             db.session.add(pago_ok)
@@ -181,6 +203,7 @@ class TestReintentoGarantia:
 
     def test_idempotency_key_dinamica(self, app):
         from app.services.pago_service import _cobrar_stripe
+
         with app.app_context():
             ref1 = _cobrar_stripe(Decimal("10000"), "pm_mock", 1, "garantia")
             ref2 = _cobrar_stripe(Decimal("10000"), "pm_mock", 1, "garantia")
@@ -196,6 +219,7 @@ class TestAutoExpiro:
 
     def test_limpiar_expiradas_cancela_vencidas(self, app):
         from app.services.reserva_service import limpiar_expiradas
+
         with app.app_context():
             pasado = ahora_colombia() - timedelta(minutes=10)
 
@@ -218,6 +242,7 @@ class TestAutoExpiro:
 
     def test_limpiar_expiradas_ignora_futuras(self, app):
         from app.services.reserva_service import limpiar_expiradas
+
         with app.app_context():
             futuro = ahora_colombia() + timedelta(minutes=60)
             r, hab = _crear_cliente_y_reserva(app, "exp4")
@@ -231,6 +256,7 @@ class TestAutoExpiro:
 
     def test_limpiar_expiradas_ignora_no_pendientes(self, app):
         from app.services.reserva_service import limpiar_expiradas
+
         with app.app_context():
             pasado = ahora_colombia() - timedelta(minutes=10)
             r, hab = _crear_cliente_y_reserva(
@@ -246,9 +272,11 @@ class TestAutoExpiro:
 
     def test_limpiar_expiradas_endpoint(self, client, app):
         from app.utils.jwt_helper import generar_token
+
         with app.app_context():
             u = Usuario(
-                nombre="Admin", apellido="T",
+                nombre="Admin",
+                apellido="T",
                 email="exp_admin@test.com",
                 rol=RolEnum.admin,
             )
@@ -256,7 +284,8 @@ class TestAutoExpiro:
             db.session.add(u)
             db.session.commit()
             token = generar_token(
-                u.id, u.email,
+                u.id,
+                u.email,
                 u.rol.value if hasattr(u.rol, "value") else u.rol,
             )
 
@@ -274,9 +303,11 @@ class TestAutoExpiro:
 
     def test_crear_reserva_asigna_expira_en(self, app):
         from app.services.reserva_service import crear
+
         with app.app_context():
             u = Usuario(
-                nombre="Cli", apellido="T",
+                nombre="Cli",
+                apellido="T",
                 email="exp_crear@test.com",
                 rol=RolEnum.cliente,
             )
@@ -286,8 +317,10 @@ class TestAutoExpiro:
             h = Huesped(id_usuario=u.id, documento_id="EXP-CREAR", tipo_documento="cc")
             db.session.add(h)
             hab = Habitacion(
-                numero="EXP-CREAR", tipo=TipoHabitacion.simple,
-                precio_noche=Decimal("100000"), capacidad=1,
+                numero="EXP-CREAR",
+                tipo=TipoHabitacion.simple,
+                precio_noche=Decimal("100000"),
+                capacidad=1,
                 estado=EstadoHabitacion.disponible,
             )
             db.session.add(hab)

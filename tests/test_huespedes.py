@@ -12,19 +12,16 @@ from app import db
 def obtener_token_admin(client, db):
     """Crea un admin y retorna su token."""
     u = Usuario(
-        nombre="Admin",
-        apellido="Test",
-        email="admin@huespedes.test",
-        rol=RolEnum.admin
+        nombre="Admin", apellido="Test", email="admin@huespedes.test", rol=RolEnum.admin
     )
     u.password = "AdminPass123"
     db.session.add(u)
     db.session.commit()
 
-    res = client.post("/api/v1/auth/login", json={
-        "email": "admin@huespedes.test",
-        "password": "AdminPass123"
-    })
+    res = client.post(
+        "/api/v1/auth/login",
+        json={"email": "admin@huespedes.test", "password": "AdminPass123"},
+    )
     return _extract_token_from_cookies(client)
 
 
@@ -34,8 +31,7 @@ class TestObtenerTodos:
         """Obtener lista vacía si no hay huéspedes."""
         token = obtener_token_admin(client, db)
         res = client.get(
-            "/api/v1/huespedes/",
-            headers={"Authorization": f"Bearer {token}"}
+            "/api/v1/huespedes/", headers={"Authorization": f"Bearer {token}"}
         )
         data = res.get_json()
         assert res.status_code == 200
@@ -50,24 +46,19 @@ class TestObtenerTodos:
                 nombre="Carlos",
                 apellido="Mendoza",
                 email="carlos@test.com",
-                rol="cliente"
+                rol="cliente",
             )
             u1.password = "Pass1234"
             db.session.add(u1)
             db.session.flush()
 
-            h1 = Huesped(
-                id_usuario=u1.id,
-                documento_id="99999999",
-                tipo_documento="CC"
-            )
+            h1 = Huesped(id_usuario=u1.id, documento_id="99999999", tipo_documento="CC")
             db.session.add(h1)
             db.session.commit()
 
         token = obtener_token_admin(client, db)
         res = client.get(
-            "/api/v1/huespedes/",
-            headers={"Authorization": f"Bearer {token}"}
+            "/api/v1/huespedes/", headers={"Authorization": f"Bearer {token}"}
         )
         data = res.get_json()
         assert res.status_code == 200
@@ -81,10 +72,7 @@ class TestObtenerPorId:
         """Obtener un huésped específico."""
         with app.app_context():
             u = Usuario(
-                nombre="Pedro",
-                apellido="López",
-                email="pedro@test.com",
-                rol="cliente"
+                nombre="Pedro", apellido="López", email="pedro@test.com", rol="cliente"
             )
             u.password = "Pass1234"
             db.session.add(u)
@@ -94,7 +82,7 @@ class TestObtenerPorId:
                 id_usuario=u.id,
                 documento_id="77777777",
                 tipo_documento="CC",
-                preferencias="Piso alto"
+                preferencias="Piso alto",
             )
             db.session.add(h)
             db.session.commit()
@@ -103,7 +91,7 @@ class TestObtenerPorId:
         token = obtener_token_admin(client, db)
         res = client.get(
             f"/api/v1/huespedes/{huesped_id}",
-            headers={"Authorization": f"Bearer {token}"}
+            headers={"Authorization": f"Bearer {token}"},
         )
         data = res.get_json()
         assert res.status_code == 200
@@ -114,8 +102,7 @@ class TestObtenerPorId:
         """Obtener huésped que no existe."""
         token = obtener_token_admin(client, db)
         res = client.get(
-            "/api/v1/huespedes/999",
-            headers={"Authorization": f"Bearer {token}"}
+            "/api/v1/huespedes/999", headers={"Authorization": f"Bearer {token}"}
         )
         assert res.status_code == 404
 
@@ -129,24 +116,20 @@ class TestBuscar:
                 nombre="Roberto",
                 apellido="García",
                 email="roberto@test.com",
-                rol="cliente"
+                rol="cliente",
             )
             u.password = "Pass1234"
             db.session.add(u)
             db.session.flush()
 
-            h = Huesped(
-                id_usuario=u.id,
-                documento_id="55555555",
-                tipo_documento="CC"
-            )
+            h = Huesped(id_usuario=u.id, documento_id="55555555", tipo_documento="CC")
             db.session.add(h)
             db.session.commit()
 
         token = obtener_token_admin(client, db)
         res = client.get(
             "/api/v1/huespedes/buscar?q=Roberto",
-            headers={"Authorization": f"Bearer {token}"}
+            headers={"Authorization": f"Bearer {token}"},
         )
         data = res.get_json()
         assert res.status_code == 200
@@ -157,27 +140,20 @@ class TestBuscar:
         """Buscar huésped por documento_id."""
         with app.app_context():
             u = Usuario(
-                nombre="Marta",
-                apellido="Ruiz",
-                email="marta@test.com",
-                rol="cliente"
+                nombre="Marta", apellido="Ruiz", email="marta@test.com", rol="cliente"
             )
             u.password = "Pass1234"
             db.session.add(u)
             db.session.flush()
 
-            h = Huesped(
-                id_usuario=u.id,
-                documento_id="88888888",
-                tipo_documento="CC"
-            )
+            h = Huesped(id_usuario=u.id, documento_id="88888888", tipo_documento="CC")
             db.session.add(h)
             db.session.commit()
 
         token = obtener_token_admin(client, db)
         res = client.get(
             "/api/v1/huespedes/buscar?q=88888888",
-            headers={"Authorization": f"Bearer {token}"}
+            headers={"Authorization": f"Bearer {token}"},
         )
         data = res.get_json()
         assert res.status_code == 200
@@ -188,7 +164,7 @@ class TestBuscar:
         token = obtener_token_admin(client, db)
         res = client.get(
             "/api/v1/huespedes/buscar?q=NoExiste",
-            headers={"Authorization": f"Bearer {token}"}
+            headers={"Authorization": f"Bearer {token}"},
         )
         data = res.get_json()
         assert res.status_code == 200
@@ -198,8 +174,7 @@ class TestBuscar:
         """Buscar sin parámetro q."""
         token = obtener_token_admin(client, db)
         res = client.get(
-            "/api/v1/huespedes/buscar",
-            headers={"Authorization": f"Bearer {token}"}
+            "/api/v1/huespedes/buscar", headers={"Authorization": f"Bearer {token}"}
         )
         assert res.status_code == 400
 
@@ -213,17 +188,13 @@ class TestActualizar:
                 nombre="Lucia",
                 apellido="Fernández",
                 email="lucia@test.com",
-                rol="cliente"
+                rol="cliente",
             )
             u.password = "Pass1234"
             db.session.add(u)
             db.session.flush()
 
-            h = Huesped(
-                id_usuario=u.id,
-                documento_id="66666666",
-                tipo_documento="CC"
-            )
+            h = Huesped(id_usuario=u.id, documento_id="66666666", tipo_documento="CC")
             db.session.add(h)
             db.session.commit()
             huesped_id = h.id
@@ -232,7 +203,7 @@ class TestActualizar:
         res = client.put(
             f"/api/v1/huespedes/{huesped_id}",
             json={"documento_id": "11111111"},
-            headers={"Authorization": f"Bearer {token}"}
+            headers={"Authorization": f"Bearer {token}"},
         )
         data = res.get_json()
         assert res.status_code == 200
@@ -245,7 +216,7 @@ class TestActualizar:
                 nombre="Diego",
                 apellido="Sánchez",
                 email="diego@test.com",
-                rol="cliente"
+                rol="cliente",
             )
             u.password = "Pass1234"
             db.session.add(u)
@@ -255,7 +226,7 @@ class TestActualizar:
                 id_usuario=u.id,
                 documento_id="44444444",
                 tipo_documento="CC",
-                preferencias="Sin preferencias"
+                preferencias="Sin preferencias",
             )
             db.session.add(h)
             db.session.commit()
@@ -265,7 +236,7 @@ class TestActualizar:
         res = client.put(
             f"/api/v1/huespedes/{huesped_id}",
             json={"preferencias": "Piso bajo, cerca del ascensor"},
-            headers={"Authorization": f"Bearer {token}"}
+            headers={"Authorization": f"Bearer {token}"},
         )
         data = res.get_json()
         assert res.status_code == 200
@@ -278,8 +249,7 @@ class TestCrearHuesped:
         """Crear huésped walk-in válido."""
         with app.app_context():
             u = Usuario(
-                nombre="Walk", apellido="In",
-                email="walkin@test.com", rol="cliente"
+                nombre="Walk", apellido="In", email="walkin@test.com", rol="cliente"
             )
             u.password = "Pass1234"
             db.session.add(u)
@@ -287,11 +257,15 @@ class TestCrearHuesped:
             uid = u.id
 
         token = obtener_token_admin(client, db)
-        res = client.post("/api/v1/huespedes", json={
-            "id_usuario": uid,
-            "documento_id": "12345678",
-            "tipo_documento": "CC",
-        }, headers={"Authorization": f"Bearer {token}"})
+        res = client.post(
+            "/api/v1/huespedes",
+            json={
+                "id_usuario": uid,
+                "documento_id": "12345678",
+                "tipo_documento": "CC",
+            },
+            headers={"Authorization": f"Bearer {token}"},
+        )
         assert res.status_code == 201
         data = res.get_json()
         assert data["success"] is True
@@ -300,8 +274,7 @@ class TestCrearHuesped:
     def test_crear_sin_documento(self, client, app, db):
         with app.app_context():
             u = Usuario(
-                nombre="Sin", apellido="Doc",
-                email="sindoc@test.com", rol="cliente"
+                nombre="Sin", apellido="Doc", email="sindoc@test.com", rol="cliente"
             )
             u.password = "Pass1234"
             db.session.add(u)
@@ -309,24 +282,26 @@ class TestCrearHuesped:
             uid = u.id
 
         token = obtener_token_admin(client, db)
-        res = client.post("/api/v1/huespedes", json={
-            "id_usuario": uid
-        }, headers={"Authorization": f"Bearer {token}"})
+        res = client.post(
+            "/api/v1/huespedes",
+            json={"id_usuario": uid},
+            headers={"Authorization": f"Bearer {token}"},
+        )
         assert res.status_code == 400
 
     def test_crear_usuario_inexistente(self, client, app, db):
         token = obtener_token_admin(client, db)
-        res = client.post("/api/v1/huespedes", json={
-            "id_usuario": 99999,
-            "documento_id": "12345678"
-        }, headers={"Authorization": f"Bearer {token}"})
+        res = client.post(
+            "/api/v1/huespedes",
+            json={"id_usuario": 99999, "documento_id": "12345678"},
+            headers={"Authorization": f"Bearer {token}"},
+        )
         assert res.status_code == 400
 
     def test_crear_duplicado(self, client, app, db):
         with app.app_context():
             u = Usuario(
-                nombre="Dup", apellido="Test",
-                email="dup@test.com", rol="cliente"
+                nombre="Dup", apellido="Test", email="dup@test.com", rol="cliente"
             )
             u.password = "Pass1234"
             db.session.add(u)
@@ -338,16 +313,17 @@ class TestCrearHuesped:
             uid = u.id
 
         token = obtener_token_admin(client, db)
-        res = client.post("/api/v1/huespedes", json={
-            "id_usuario": uid,
-            "documento_id": "22222222"
-        }, headers={"Authorization": f"Bearer {token}"})
+        res = client.post(
+            "/api/v1/huespedes",
+            json={"id_usuario": uid, "documento_id": "22222222"},
+            headers={"Authorization": f"Bearer {token}"},
+        )
         assert res.status_code == 400
 
     def test_crear_sin_token(self, client, app, db):
-        res = client.post("/api/v1/huespedes", json={
-            "id_usuario": 1, "documento_id": "12345678"
-        })
+        res = client.post(
+            "/api/v1/huespedes", json={"id_usuario": 1, "documento_id": "12345678"}
+        )
         assert res.status_code == 401
 
 
@@ -357,8 +333,7 @@ class TestEliminarHuesped:
         """Soft-delete de huésped."""
         with app.app_context():
             u = Usuario(
-                nombre="Eli", apellido="Minar",
-                email="eliminar@test.com", rol="cliente"
+                nombre="Eli", apellido="Minar", email="eliminar@test.com", rol="cliente"
             )
             u.password = "Pass1234"
             db.session.add(u)
@@ -370,9 +345,9 @@ class TestEliminarHuesped:
             hid = h.id
 
         token = obtener_token_admin(client, db)
-        res = client.delete(f"/api/v1/huespedes/{hid}", headers={
-            "Authorization": f"Bearer {token}"
-        })
+        res = client.delete(
+            f"/api/v1/huespedes/{hid}", headers={"Authorization": f"Bearer {token}"}
+        )
         assert res.status_code == 200
 
         with app.app_context():
@@ -381,9 +356,9 @@ class TestEliminarHuesped:
 
     def test_eliminar_inexistente(self, client, app, db):
         token = obtener_token_admin(client, db)
-        res = client.delete("/api/v1/huespedes/99999", headers={
-            "Authorization": f"Bearer {token}"
-        })
+        res = client.delete(
+            "/api/v1/huespedes/99999", headers={"Authorization": f"Bearer {token}"}
+        )
         assert res.status_code == 404
 
     def test_eliminar_sin_token(self, client):
@@ -393,19 +368,22 @@ class TestEliminarHuesped:
     def test_eliminar_solo_admin(self, client, app, db):
         with app.app_context():
             u = Usuario(
-                nombre="Recep", apellido="Test",
-                email="recep_huesp@test.com", rol=RolEnum.recepcionista
+                nombre="Recep",
+                apellido="Test",
+                email="recep_huesp@test.com",
+                rol=RolEnum.recepcionista,
             )
             u.password = "Pass1234"
             db.session.add(u)
             db.session.commit()
 
-        client.post("/api/v1/auth/login", json={
-            "email": "recep_huesp@test.com", "password": "Pass1234"
-        })
+        client.post(
+            "/api/v1/auth/login",
+            json={"email": "recep_huesp@test.com", "password": "Pass1234"},
+        )
         token_recep = _extract_token_from_cookies(client)
 
-        res = client.delete("/api/v1/huespedes/1", headers={
-            "Authorization": f"Bearer {token_recep}"
-        })
+        res = client.delete(
+            "/api/v1/huespedes/1", headers={"Authorization": f"Bearer {token_recep}"}
+        )
         assert res.status_code == 403

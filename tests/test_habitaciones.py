@@ -52,28 +52,37 @@ def admin_headers(client, request, app):
     """Crea un admin usando register-admin (para el primer admin) o usuarios endpoint."""
     email = f"admin_hab_{id(request)}@test.com"
     # Intentar crear primer admin
-    resp = client.post("/api/v1/auth/register-admin", json={
-        "nombre": "Admin",
-        "apellido": "Hotel",
-        "email": email,
-        "password": "Admin1234",
-    })
-
-    # Si ya existe un admin, creamos uno como cliente y luego lo promovemos
-    if resp.status_code != 201:
-        client.post("/api/v1/auth/register", json={
+    resp = client.post(
+        "/api/v1/auth/register-admin",
+        json={
             "nombre": "Admin",
             "apellido": "Hotel",
             "email": email,
             "password": "Admin1234",
-            "documento_id": "88888888",
-            "tipo_documento": "CC"
-        })
+        },
+    )
 
-    resp = client.post("/api/v1/auth/login", json={
-        "email": email,
-        "password": "Admin1234",
-    })
+    # Si ya existe un admin, creamos uno como cliente y luego lo promovemos
+    if resp.status_code != 201:
+        client.post(
+            "/api/v1/auth/register",
+            json={
+                "nombre": "Admin",
+                "apellido": "Hotel",
+                "email": email,
+                "password": "Admin1234",
+                "documento_id": "88888888",
+                "tipo_documento": "CC",
+            },
+        )
+
+    resp = client.post(
+        "/api/v1/auth/login",
+        json={
+            "email": email,
+            "password": "Admin1234",
+        },
+    )
 
     if resp.status_code == 200:
         token = _extract_token_from_cookies(client)
@@ -104,13 +113,17 @@ class TestListarHabitaciones:
         assert data["total"] == 1
         assert data["data"][0]["id"] == habitacion_en_db["id"]
 
-    def test_listar_filtro_por_tipo_valido(self, client, admin_headers, habitacion_en_db):
+    def test_listar_filtro_por_tipo_valido(
+        self, client, admin_headers, habitacion_en_db
+    ):
         resp = client.get("/api/v1/habitaciones/?tipo=simple", headers=admin_headers)
         assert resp.status_code == 200
         assert resp.get_json()["total"] == 1
 
     def test_listar_filtro_por_tipo_invalido_retorna_400(self, client, admin_headers):
-        resp = client.get("/api/v1/habitaciones/?tipo=Inexistente", headers=admin_headers)
+        resp = client.get(
+            "/api/v1/habitaciones/?tipo=Inexistente", headers=admin_headers
+        )
         assert resp.status_code == 400
         assert resp.get_json()["success"] is False
 
@@ -137,9 +150,7 @@ class TestCrearHabitacion:
         self, client, admin_headers, habitacion_data
     ):
         resp = client.post(
-            "/api/v1/habitaciones/",
-            json=habitacion_data,
-            headers=admin_headers
+            "/api/v1/habitaciones/", json=habitacion_data, headers=admin_headers
         )
         assert resp.status_code == 201
         data = resp.get_json()
@@ -151,15 +162,11 @@ class TestCrearHabitacion:
         self, client, cliente_headers, habitacion_data
     ):
         resp = client.post(
-            "/api/v1/habitaciones/",
-            json=habitacion_data,
-            headers=cliente_headers
+            "/api/v1/habitaciones/", json=habitacion_data, headers=cliente_headers
         )
         assert resp.status_code == 403
 
-    def test_crear_habitacion_sin_token_retorna_401(
-        self, client, habitacion_data
-    ):
+    def test_crear_habitacion_sin_token_retorna_401(self, client, habitacion_data):
         resp = client.post("/api/v1/habitaciones/", json=habitacion_data)
         assert resp.status_code == 401
 
@@ -168,9 +175,7 @@ class TestCrearHabitacion:
     ):
         habitacion_data["numero"] = habitacion_en_db["numero"]
         resp = client.post(
-            "/api/v1/habitaciones/",
-            json=habitacion_data,
-            headers=admin_headers
+            "/api/v1/habitaciones/", json=habitacion_data, headers=admin_headers
         )
         assert resp.status_code == 400
         assert "numero" in resp.get_json()["mensaje"].lower()
@@ -180,9 +185,7 @@ class TestCrearHabitacion:
     ):
         habitacion_data["tipo"] = "Penthouse"
         resp = client.post(
-            "/api/v1/habitaciones/",
-            json=habitacion_data,
-            headers=admin_headers
+            "/api/v1/habitaciones/", json=habitacion_data, headers=admin_headers
         )
         assert resp.status_code == 400
 
@@ -191,9 +194,7 @@ class TestCrearHabitacion:
     ):
         habitacion_data["precio_noche"] = -5000
         resp = client.post(
-            "/api/v1/habitaciones/",
-            json=habitacion_data,
-            headers=admin_headers
+            "/api/v1/habitaciones/", json=habitacion_data, headers=admin_headers
         )
         assert resp.status_code == 400
 
@@ -203,7 +204,7 @@ class TestCrearHabitacion:
         resp = client.post(
             "/api/v1/habitaciones/",
             json={"descripcion": "Sin campos obligatorios"},
-            headers=admin_headers
+            headers=admin_headers,
         )
         assert resp.status_code == 400
 
@@ -217,18 +218,16 @@ class TestActualizarHabitacion:
         resp = client.put(
             f"/api/v1/habitaciones/{hab_id}",
             json={"precio_noche": 200000.00},
-            headers=admin_headers
+            headers=admin_headers,
         )
         assert resp.status_code == 200
         assert resp.get_json()["data"]["precio_noche"] == 200000.00
 
-    def test_actualizar_habitacion_inexistente_retorna_404(
-        self, client, admin_headers
-    ):
+    def test_actualizar_habitacion_inexistente_retorna_404(self, client, admin_headers):
         resp = client.put(
             "/api/v1/habitaciones/9999",
             json={"precio_noche": 200000.00},
-            headers=admin_headers
+            headers=admin_headers,
         )
         assert resp.status_code == 404
 
@@ -239,7 +238,7 @@ class TestActualizarHabitacion:
         resp = client.put(
             f"/api/v1/habitaciones/{hab_id}",
             json={"precio_noche": 200000.00},
-            headers=cliente_headers
+            headers=cliente_headers,
         )
         assert resp.status_code == 403
 
@@ -250,31 +249,21 @@ class TestEliminarHabitacion:
         self, client, admin_headers, habitacion_en_db
     ):
         hab_id = habitacion_en_db["id"]
-        resp = client.delete(
-            f"/api/v1/habitaciones/{hab_id}",
-            headers=admin_headers
-        )
+        resp = client.delete(f"/api/v1/habitaciones/{hab_id}", headers=admin_headers)
         assert resp.status_code == 200
         assert resp.get_json()["success"] is True
         # Soft delete: la habitación existe pero no aparece en listado
         resp2 = client.get("/api/v1/habitaciones/")
         assert resp2.get_json()["total"] == 0
 
-    def test_eliminar_habitacion_inexistente_retorna_404(
-        self, client, admin_headers
-    ):
-        resp = client.delete(
-            "/api/v1/habitaciones/9999",
-            headers=admin_headers
-        )
+    def test_eliminar_habitacion_inexistente_retorna_404(self, client, admin_headers):
+        resp = client.delete("/api/v1/habitaciones/9999", headers=admin_headers)
         assert resp.status_code == 404
 
 
 class TestBuscarDisponibles:
 
-    def test_disponibles_retorna_habitacion_disponible(
-        self, client, habitacion_en_db
-    ):
+    def test_disponibles_retorna_habitacion_disponible(self, client, habitacion_en_db):
         resp = client.get(
             "/api/v1/habitaciones/disponibles"
             "?fecha_entrada=2027-01-10&fecha_salida=2027-01-15"

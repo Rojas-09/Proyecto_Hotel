@@ -31,7 +31,12 @@ def get_factura_por_reserva(current_user, reserva_id):
     """
     try:
         factura = factura_service.obtener_por_reserva(reserva_id)
-        return jsonify({"success": True, "data": factura, "mensaje": "Factura encontrada."}), 200
+        return (
+            jsonify(
+                {"success": True, "data": factura, "mensaje": "Factura encontrada."}
+            ),
+            200,
+        )
     except LookupError as e:
         return handle_service_error(e, 404)
 
@@ -49,9 +54,16 @@ def emitir_factura(current_user, reserva_id):
     """
     try:
         factura = factura_service.emitir(reserva_id)
-        return jsonify(
-            {"success": True, "data": factura, "mensaje": "Factura emitida correctamente."}
-        ), 201
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "data": factura,
+                    "mensaje": "Factura emitida correctamente.",
+                }
+            ),
+            201,
+        )
     except LookupError as e:
         return handle_service_error(e, 404)
     except ValueError as e:
@@ -81,13 +93,16 @@ def descargar_factura(current_user, reserva_id):
             ).scalar_one_or_none()
             reserva = db.session.get(Reserva, reserva_id)
             if not huesped or not reserva or reserva.id_huesped != huesped.id:
-                return jsonify(
-                    {
-                        "success": False,
-                        "data": None,
-                        "mensaje": "No tiene permiso para descargar esta factura.",
-                    }
-                ), 403
+                return (
+                    jsonify(
+                        {
+                            "success": False,
+                            "data": None,
+                            "mensaje": "No tiene permiso para descargar esta factura.",
+                        }
+                    ),
+                    403,
+                )
 
         pdf_path = factura_service.descargar(reserva_id)
         with open(pdf_path, "rb") as f:
@@ -124,9 +139,16 @@ def anular_factura(current_user, factura_id):
 
     try:
         resultado = factura_service.anular(factura_id, motivo)
-        return jsonify(
-            {"success": True, "data": resultado, "mensaje": "Factura anulada correctamente."}
-        ), 200
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "data": resultado,
+                    "mensaje": "Factura anulada correctamente.",
+                }
+            ),
+            200,
+        )
     except LookupError as e:
         return handle_service_error(e, 404)
     except ValueError as e:
@@ -156,12 +178,17 @@ def listar_facturas(current_user):
 
     try:
         facturas = factura_service.listar(filtros or None)
-        return jsonify({
-            "success": True,
-            "data": facturas,
-            "total": len(facturas),
-            "mensaje": "Facturas obtenidas correctamente."
-        }), 200
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "data": facturas,
+                    "total": len(facturas),
+                    "mensaje": "Facturas obtenidas correctamente.",
+                }
+            ),
+            200,
+        )
     except ValueError as e:
         return handle_service_error(e, 400)
     except Exception as e:
@@ -180,11 +207,12 @@ def obtener_factura(current_user, factura_id):
     """
     try:
         factura = factura_service.obtener_por_id(factura_id)
-        return jsonify({
-            "success": True,
-            "data": factura,
-            "mensaje": "Factura encontrada."
-        }), 200
+        return (
+            jsonify(
+                {"success": True, "data": factura, "mensaje": "Factura encontrada."}
+            ),
+            200,
+        )
     except LookupError as e:
         return handle_service_error(e, 404)
 
@@ -204,11 +232,16 @@ def eliminar_factura(current_user, factura_id):
 
     try:
         factura_service.anular(factura_id, motivo)
-        return jsonify({
-            "success": True,
-            "data": None,
-            "mensaje": "Factura anulada correctamente."
-        }), 200
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "data": None,
+                    "mensaje": "Factura anulada correctamente.",
+                }
+            ),
+            200,
+        )
     except LookupError as e:
         return handle_service_error(e, 404)
     except ValueError as e:

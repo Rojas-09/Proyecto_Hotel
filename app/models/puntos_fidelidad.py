@@ -13,12 +13,12 @@ class PuntosFidelidad(db.Model):
     id_huesped = db.Column(
         db.Integer,
         db.ForeignKey("huespedes.id", name="fk_puntos_huesped"),
-        nullable=False
+        nullable=False,
     )
     id_reserva = db.Column(
         db.Integer,
         db.ForeignKey("reservas.id", name="fk_puntos_reserva"),
-        nullable=True
+        nullable=True,
     )
     puntos = db.Column(db.Integer, nullable=False)
     fecha = db.Column(db.DateTime, default=ahora_colombia, nullable=False)

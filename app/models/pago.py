@@ -33,49 +33,31 @@ class Pago(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     id_reserva = db.Column(
-        db.Integer,
-        db.ForeignKey("reservas.id", name="fk_pago_reserva"),
-        nullable=False
+        db.Integer, db.ForeignKey("reservas.id", name="fk_pago_reserva"), nullable=False
     )
     fecha = db.Column(db.DateTime, default=ahora_colombia, nullable=False)
     monto = db.Column(Numeric(10, 2), nullable=False)
-    metodo = db.Column(
-        db.Enum(MetodoPago, native_enum=False),
-        nullable=False
-    )
-    tipo = db.Column(
-        db.Enum(TipoPago, native_enum=False),
-        nullable=False
-    )
-    estado = db.Column(
-        db.Enum(EstadoPago, native_enum=False),
-        nullable=False
-    )
+    metodo = db.Column(db.Enum(MetodoPago, native_enum=False), nullable=False)
+    tipo = db.Column(db.Enum(TipoPago, native_enum=False), nullable=False)
+    estado = db.Column(db.Enum(EstadoPago, native_enum=False), nullable=False)
     referencia_externa = db.Column(db.String(100), nullable=True)
     stripe_payment_intent_id = db.Column(db.String(100), nullable=True)
     failure_message = db.Column(db.String(500), nullable=True)
     confirmado_por = db.Column(
         db.Integer,
         db.ForeignKey("usuarios.id", name="fk_pago_confirmado_por"),
-        nullable=True
+        nullable=True,
     )
     fecha_confirmacion = db.Column(db.DateTime, nullable=True)
     created_at = db.Column(db.DateTime, default=ahora_colombia, nullable=False)
     updated_at = db.Column(
-        db.DateTime,
-        default=ahora_colombia,
-        onupdate=ahora_colombia,
-        nullable=False
+        db.DateTime, default=ahora_colombia, onupdate=ahora_colombia, nullable=False
     )
 
     # Relationships
     reserva = db.relationship("Reserva", back_populates="pagos")
     confirmador = db.relationship("Usuario", foreign_keys=[confirmado_por])
-    reembolso = db.relationship(
-        "Reembolso",
-        back_populates="pago",
-        uselist=False
-    )
+    reembolso = db.relationship("Reembolso", back_populates="pago", uselist=False)
 
     def to_dict(self) -> dict:
         return {
@@ -91,15 +73,11 @@ class Pago(db.Model):
             "failure_message": self.failure_message,
             "confirmado_por": self.confirmado_por,
             "fecha_confirmacion": (
-                self.fecha_confirmacion.isoformat()
-                if self.fecha_confirmacion else None
+                self.fecha_confirmacion.isoformat() if self.fecha_confirmacion else None
             ),
             "created_at": self.created_at.isoformat(),
             "updated_at": self.updated_at.isoformat(),
         }
 
     def __repr__(self):
-        return (
-            f"<Pago {self.id} - {self.estado.value} "
-            f"({self.metodo.value})>"
-        )
+        return f"<Pago {self.id} - {self.estado.value} " f"({self.metodo.value})>"

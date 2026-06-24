@@ -27,28 +27,19 @@ class Usuario(db.Model):
     _password_hash = db.Column("password_hash", db.String(255))
     telefono = db.Column(db.String(20), nullable=True)
     rol = db.Column(
-        db.Enum(RolEnum, native_enum=False),
-        nullable=False,
-        default=RolEnum.cliente
+        db.Enum(RolEnum, native_enum=False), nullable=False, default=RolEnum.cliente
     )
     puntos_fidelizacion = db.Column(db.Integer, default=0, nullable=False)
     activo = db.Column(db.Boolean, default=True, nullable=False)
     created_at = db.Column(db.DateTime, default=ahora_colombia, nullable=False)
     updated_at = db.Column(
-        db.DateTime, default=ahora_colombia, onupdate=ahora_colombia,
-        nullable=False
+        db.DateTime, default=ahora_colombia, onupdate=ahora_colombia, nullable=False
     )
 
     # Relationships
-    huesped = db.relationship(
-        "Huesped",
-        back_populates="usuario",
-        uselist=False
-    )
+    huesped = db.relationship("Huesped", back_populates="usuario", uselist=False)
     reportes_generados = db.relationship(
-        "ReporteGenerado",
-        back_populates="usuario",
-        lazy="dynamic"
+        "ReporteGenerado", back_populates="usuario", lazy="dynamic"
     )
 
     @property

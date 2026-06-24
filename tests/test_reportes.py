@@ -44,6 +44,7 @@ def _crear_huesped(usuario: Usuario) -> Huesped:
 
 def _crear_habitacion(tipo: TipoHabitacion = TipoHabitacion.doble) -> Habitacion:
     import random
+
     hab = Habitacion(
         numero=f"20{random.randint(1, 999):03d}",
         tipo=tipo,
@@ -57,7 +58,9 @@ def _crear_habitacion(tipo: TipoHabitacion = TipoHabitacion.doble) -> Habitacion
     return hab
 
 
-def _crear_reserva(huesped, habitacion, estado: EstadoReserva, dias_offset=5) -> Reserva:
+def _crear_reserva(
+    huesped, habitacion, estado: EstadoReserva, dias_offset=5
+) -> Reserva:
     hoy = date.today()
     entrada = hoy + timedelta(days=dias_offset)
     salida = entrada + timedelta(days=2)
@@ -90,7 +93,9 @@ def _crear_pago_aprobado(reserva: Reserva, monto: Decimal = None) -> Pago:
     return p
 
 
-def _crear_factura(reserva: Reserva, estado: EstadoFactura = EstadoFactura.pendiente) -> Factura:
+def _crear_factura(
+    reserva: Reserva, estado: EstadoFactura = EstadoFactura.pendiente
+) -> Factura:
     f = Factura(
         id_reserva=reserva.id,
         subtotal=reserva.subtotal,
@@ -123,6 +128,7 @@ def _fechas():
 # ---------------------------------------------------------------------------
 # TestReporteOcupacion
 # ---------------------------------------------------------------------------
+
 
 class TestReporteOcupacion:
     """GET /api/v1/reportes/ocupacion"""
@@ -222,6 +228,7 @@ class TestReporteOcupacion:
 # TestReporteIngresos
 # ---------------------------------------------------------------------------
 
+
 class TestReporteIngresos:
     """GET /api/v1/reportes/ingresos"""
 
@@ -288,13 +295,16 @@ class TestReporteIngresos:
     def test_ingresos_sin_token(self, client, app):
         """401 — requiere autenticación."""
         fini, ffin = _fechas()
-        resp = client.get(f"/api/v1/reportes/ingresos?fecha_inicio={fini}&fecha_fin={ffin}")
+        resp = client.get(
+            f"/api/v1/reportes/ingresos?fecha_inicio={fini}&fecha_fin={ffin}"
+        )
         assert resp.status_code == 401
 
 
 # ---------------------------------------------------------------------------
 # TestReporteEstadisticas
 # ---------------------------------------------------------------------------
+
 
 class TestReporteEstadisticas:
     """GET /api/v1/reportes/estadisticas"""

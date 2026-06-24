@@ -29,24 +29,45 @@ def register_admin():
     from flask import current_app
 
     if not current_app.config.get("ADMIN_BOOTSTRAP_ENABLED", False):
-        return jsonify({
-            "success": False,
-            "error": {"code": "FORBIDDEN", "message": "Endpoint deshabilitado."}
-        }), 403
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "error": {
+                        "code": "FORBIDDEN",
+                        "message": "Endpoint deshabilitado.",
+                    },
+                }
+            ),
+            403,
+        )
 
     secret = current_app.config.get("ADMIN_BOOTSTRAP_SECRET", "")
     if secret and request.headers.get("X-Bootstrap-Secret") != secret:
-        return jsonify({
-            "success": False,
-            "error": {"code": "UNAUTHORIZED", "message": "No autorizado."}
-        }), 401
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "error": {"code": "UNAUTHORIZED", "message": "No autorizado."},
+                }
+            ),
+            401,
+        )
 
     data = request.get_json(silent=True)
     if not data:
-        return jsonify({
-            "success": False,
-            "error": {"code": "VALIDATION_ERROR", "message": "Body JSON requerido."}
-        }), 400
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "error": {
+                        "code": "VALIDATION_ERROR",
+                        "message": "Body JSON requerido.",
+                    },
+                }
+            ),
+            400,
+        )
     result, status = AuthService.crear_primer_admin(data)
     return jsonify(result), status
 
@@ -57,15 +78,22 @@ def register():
     data = request.get_json(silent=True) or {}
     errors = RegisterSchema().validate(data)
     if errors:
-        return jsonify({
-            "success": False,
-            "error": {"code": "VALIDATION_ERROR", "message": errors}
-        }), 422
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "error": {"code": "VALIDATION_ERROR", "message": errors},
+                }
+            ),
+            422,
+        )
     result, status = AuthService.registrar(data)
     if status not in (200, 201):
         return jsonify(result), status
     resp = jsonify(result)
-    _set_auth_cookies(resp, result["data"].get("access_token"), result["data"].get("refresh_token"))
+    _set_auth_cookies(
+        resp, result["data"].get("access_token"), result["data"].get("refresh_token")
+    )
     return resp, status
 
 
@@ -75,15 +103,22 @@ def login():
     data = request.get_json(silent=True) or {}
     errors = LoginSchema().validate(data)
     if errors:
-        return jsonify({
-            "success": False,
-            "error": {"code": "VALIDATION_ERROR", "message": errors}
-        }), 422
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "error": {"code": "VALIDATION_ERROR", "message": errors},
+                }
+            ),
+            422,
+        )
     result, status = AuthService.login(data)
     if status != 200:
         return jsonify(result), status
     resp = jsonify(result)
-    _set_auth_cookies(resp, result["data"].get("access_token"), result["data"].get("refresh_token"))
+    _set_auth_cookies(
+        resp, result["data"].get("access_token"), result["data"].get("refresh_token")
+    )
     return resp, status
 
 
@@ -100,7 +135,9 @@ def refresh():
     if status != 200:
         return jsonify(result), status
     resp = jsonify(result)
-    _set_auth_cookies(resp, result["data"].get("access_token"), result["data"].get("refresh_token"))
+    _set_auth_cookies(
+        resp, result["data"].get("access_token"), result["data"].get("refresh_token")
+    )
     return resp, status
 
 
@@ -109,6 +146,7 @@ def logout():
     refresh_token = request.cookies.get("refresh_token")
     if refresh_token:
         from app.models.refresh_token import RefreshToken
+
         rt = RefreshToken.verificar(refresh_token)
         if rt:
             rt.revocar()
@@ -125,16 +163,22 @@ def _set_auth_cookies(resp, access_token, refresh_token):
     secure = current_app.config.get("SESSION_COOKIE_SECURE", False)
     if access_token:
         resp.set_cookie(
-            "access_token", access_token,
-            httponly=True, samesite="Lax",
-            max_age=900, path="/",  # 15 min
+            "access_token",
+            access_token,
+            httponly=True,
+            samesite="Lax",
+            max_age=900,
+            path="/",  # 15 min
             secure=secure,
         )
     if refresh_token:
         resp.set_cookie(
-            "refresh_token", refresh_token,
-            httponly=True, samesite="Lax",
-            max_age=604800, path="/",  # 7 días
+            "refresh_token",
+            refresh_token,
+            httponly=True,
+            samesite="Lax",
+            max_age=604800,
+            path="/",  # 7 días
             secure=secure,
         )
 
@@ -142,10 +186,15 @@ def _set_auth_cookies(resp, access_token, refresh_token):
 @auth_bp.route("/me", methods=["GET"])
 @token_required
 def me(current_user):
-    return jsonify({
-        "success": True,
-        "data": {"usuario": current_user.to_dict()},
-    }), 200
+    return (
+        jsonify(
+            {
+                "success": True,
+                "data": {"usuario": current_user.to_dict()},
+            }
+        ),
+        200,
+    )
 
 
 @auth_bp.route("/usuarios", methods=["POST"])
@@ -154,10 +203,18 @@ def me(current_user):
 def crear_usuario(current_user):
     data = request.get_json(silent=True)
     if not data:
-        return jsonify({
-            "success": False,
-            "error": {"code": "VALIDATION_ERROR", "message": "Body JSON requerido."}
-        }), 400
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "error": {
+                        "code": "VALIDATION_ERROR",
+                        "message": "Body JSON requerido.",
+                    },
+                }
+            ),
+            400,
+        )
     result, status = AuthService.crear_usuario_admin(data)
     return jsonify(result), status
 
@@ -168,10 +225,18 @@ def editar_mi_perfil(current_user):
     """Editar mi propio perfil."""
     data = request.get_json(silent=True)
     if not data:
-        return jsonify({
-            "success": False,
-            "error": {"code": "VALIDATION_ERROR", "message": "Body JSON requerido."}
-        }), 400
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "error": {
+                        "code": "VALIDATION_ERROR",
+                        "message": "Body JSON requerido.",
+                    },
+                }
+            ),
+            400,
+        )
     result, status = AuthService.editar_mi_perfil(current_user, data)
     return jsonify(result), status
 
@@ -182,10 +247,18 @@ def editar_usuario(current_user, usuario_id):
     """Editar un usuario según jerarquía de roles."""
     data = request.get_json(silent=True)
     if not data:
-        return jsonify({
-            "success": False,
-            "error": {"code": "VALIDATION_ERROR", "message": "Body JSON requerido."}
-        }), 400
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "error": {
+                        "code": "VALIDATION_ERROR",
+                        "message": "Body JSON requerido.",
+                    },
+                }
+            ),
+            400,
+        )
     result, status = AuthService.editar_usuario(usuario_id, current_user, data)
     return jsonify(result), status
 
@@ -197,12 +270,17 @@ def listar_usuarios(current_user):
     """Listar todos los usuarios (solo admin)."""
     try:
         usuarios = AuthService.listar_usuarios()
-        return jsonify({
-            "success": True,
-            "data": usuarios,
-            "total": len(usuarios),
-            "mensaje": "Usuarios obtenidos correctamente."
-        }), 200
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "data": usuarios,
+                    "total": len(usuarios),
+                    "mensaje": "Usuarios obtenidos correctamente.",
+                }
+            ),
+            200,
+        )
     except Exception as e:
         return handle_service_error(e, 500)
 
@@ -212,18 +290,31 @@ def listar_usuarios(current_user):
 @rol_requerido("admin")
 def eliminar_usuario(current_user, usuario_id):
     if usuario_id == current_user.id:
-        return jsonify({
-            "success": False,
-            "error": {"code": "FORBIDDEN", "message": "No puedes eliminarte a ti mismo."}
-        }), 403
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "error": {
+                        "code": "FORBIDDEN",
+                        "message": "No puedes eliminarte a ti mismo.",
+                    },
+                }
+            ),
+            403,
+        )
 
     try:
         resultado = AuthService.eliminar_usuario(usuario_id)
-        return jsonify({
-            "success": True,
-            "data": None,
-            "mensaje": f"Usuario {resultado['email']} eliminado correctamente."
-        }), 200
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "data": None,
+                    "mensaje": f"Usuario {resultado['email']} eliminado correctamente.",
+                }
+            ),
+            200,
+        )
     except LookupError as e:
         return handle_service_error(e, 404)
     except Exception as e:
@@ -235,10 +326,7 @@ def eliminar_usuario(current_user, usuario_id):
 def obtener_usuario(current_user, usuario_id):
     try:
         usuario = AuthService.obtener_usuario(usuario_id)
-        return jsonify({
-            "success": True,
-            "data": {"usuario": usuario}
-        }), 200
+        return jsonify({"success": True, "data": {"usuario": usuario}}), 200
     except LookupError as e:
         return handle_service_error(e, 404)
     except Exception as e:
@@ -251,15 +339,25 @@ def eliminar_mi_cuenta(current_user):
     """Eliminar (soft-delete) la propia cuenta del usuario."""
     try:
         AuthService.eliminar_usuario(current_user.id)
-        return jsonify({
-            "success": True,
-            "data": None,
-            "mensaje": "Cuenta desactivada correctamente."
-        }), 200
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "data": None,
+                    "mensaje": "Cuenta desactivada correctamente.",
+                }
+            ),
+            200,
+        )
     except LookupError:
-        return jsonify({
-            "success": False,
-            "error": {"code": "NOT_FOUND", "message": "Usuario no encontrado."}
-        }), 404
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "error": {"code": "NOT_FOUND", "message": "Usuario no encontrado."},
+                }
+            ),
+            404,
+        )
     except Exception as e:
         return handle_service_error(e, 500)

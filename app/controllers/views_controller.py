@@ -1,14 +1,21 @@
 from functools import wraps
 
 from flask import (
-    Blueprint, flash, redirect, render_template,
-    request, session, url_for,
+    Blueprint,
+    flash,
+    redirect,
+    render_template,
+    request,
+    session,
+    url_for,
 )
 from sqlalchemy import select
 
 from app import db
 from app.models.habitacion import (
-    EstadoHabitacion, Habitacion, TipoHabitacion,
+    EstadoHabitacion,
+    Habitacion,
+    TipoHabitacion,
 )
 from app.models.usuario import Usuario
 from app.services.auth_service import AuthService
@@ -22,6 +29,7 @@ def login_required(f):
         if "user_id" not in session:
             return redirect(url_for("views.login_page", next=request.url))
         return f(*args, **kwargs)
+
     return decorated
 
 
@@ -38,7 +46,9 @@ def rol_requerido(*roles):
                 )
                 return redirect(url_for("views.home"))
             return f(*args, **kwargs)
+
         return decorated
+
     return decorator
 
 
@@ -78,6 +88,7 @@ def login_submit():
         return render_template("public/login.html", email=email)
 
     from app.utils.jwt_helper import decodificar_token
+
     try:
         payload = decodificar_token(token)
     except Exception:
@@ -115,8 +126,12 @@ def register_page():
 def register_submit():
     data = request.form
     required = [
-        "nombre", "apellido", "email", "password",
-        "telefono", "documento_id",
+        "nombre",
+        "apellido",
+        "email",
+        "password",
+        "telefono",
+        "documento_id",
     ]
     for field in required:
         if not data.get(field, "").strip():
@@ -219,9 +234,7 @@ def detalle_habitacion(hab_id):
     if not habitacion:
         flash("Habitación no encontrada.", "warning")
         return redirect(url_for("views.habitaciones"))
-    return render_template(
-        "public/detalle_habitacion.html", habitacion=habitacion
-    )
+    return render_template("public/detalle_habitacion.html", habitacion=habitacion)
 
 
 @views_bp.route("/reservar")
@@ -250,9 +263,7 @@ def mis_reservas():
 @views_bp.route("/mis-reservas/<int:reserva_id>")
 @login_required
 def detalle_reserva(reserva_id):
-    return render_template(
-        "cliente/detalle_reserva.html", reserva_id=reserva_id
-    )
+    return render_template("cliente/detalle_reserva.html", reserva_id=reserva_id)
 
 
 @views_bp.route("/recepcionista/dashboard")
@@ -319,9 +330,7 @@ def editar_habitacion(hab_id):
     if not habitacion:
         flash("Habitación no encontrada.", "warning")
         return redirect(url_for("views.gestion_habitaciones"))
-    return render_template(
-        "admin/editar_habitacion.html", habitacion=habitacion
-    )
+    return render_template("admin/editar_habitacion.html", habitacion=habitacion)
 
 
 @views_bp.route("/admin/reportes")

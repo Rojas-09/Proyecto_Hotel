@@ -23,21 +23,15 @@ class Notificacion(db.Model):
     id_reserva = db.Column(
         db.Integer,
         db.ForeignKey("reservas.id", name="fk_notificacion_reserva"),
-        nullable=False
+        nullable=False,
     )
-    tipo = db.Column(
-        db.Enum(TipoNotificacion, native_enum=False),
-        nullable=False
-    )
+    tipo = db.Column(db.Enum(TipoNotificacion, native_enum=False), nullable=False)
     mensaje = db.Column(db.Text, nullable=False)
     fecha_envio = db.Column(db.DateTime, nullable=True)
     enviado = db.Column(db.Boolean, default=False, nullable=False)
     created_at = db.Column(db.DateTime, default=ahora_colombia, nullable=False)
     updated_at = db.Column(
-        db.DateTime,
-        default=ahora_colombia,
-        onupdate=ahora_colombia,
-        nullable=False
+        db.DateTime, default=ahora_colombia, onupdate=ahora_colombia, nullable=False
     )
 
     # Relationships
@@ -49,9 +43,7 @@ class Notificacion(db.Model):
             "id_reserva": self.id_reserva,
             "tipo": self.tipo.value,
             "mensaje": self.mensaje,
-            "fecha_envio": (
-                self.fecha_envio.isoformat() if self.fecha_envio else None
-            ),
+            "fecha_envio": (self.fecha_envio.isoformat() if self.fecha_envio else None),
             "enviado": self.enviado,
             "activo": self.activo,
             "created_at": self.created_at.isoformat(),

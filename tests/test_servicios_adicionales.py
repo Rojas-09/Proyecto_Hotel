@@ -1,6 +1,7 @@
 """
 Tests del módulo ServicioAdicional — RF-10 (Comedor) y RF-11 (Spa)
 """
+
 from datetime import timedelta
 from decimal import Decimal
 from unittest.mock import patch
@@ -12,7 +13,10 @@ from app.models.factura import EstadoFactura, Factura
 from app.models.habitacion import EstadoHabitacion, Habitacion, TipoHabitacion
 from app.models.huesped import Huesped
 from app.models.pago import (  # noqa: F401
-    EstadoPago, MetodoPago, Pago, TipoPago,
+    EstadoPago,
+    MetodoPago,
+    Pago,
+    TipoPago,
 )
 from app.models.reserva import EstadoReserva, Reserva
 from app.models.servicio_adicional import ServicioAdicional, TipoServicio
@@ -47,6 +51,7 @@ def _huesped(usuario: Usuario) -> Huesped:
 
 def _habitacion() -> Habitacion:
     import random
+
     hab = Habitacion(
         numero=f"{random.randint(8000, 9999)}",
         tipo=TipoHabitacion.doble,
@@ -59,9 +64,11 @@ def _habitacion() -> Habitacion:
     return hab
 
 
-def _reserva(huesped: Huesped, hab: Habitacion,
-             estado: EstadoReserva = EstadoReserva.ocupada) -> Reserva:
+def _reserva(
+    huesped: Huesped, hab: Habitacion, estado: EstadoReserva = EstadoReserva.ocupada
+) -> Reserva:
     from datetime import date, timedelta
+
     hoy = date.today()
     r = Reserva(
         id_huesped=huesped.id,
@@ -79,8 +86,9 @@ def _reserva(huesped: Huesped, hab: Habitacion,
     return r
 
 
-def _servicio(reserva: Reserva, tipo=TipoServicio.comedor,
-              costo="15000.00") -> ServicioAdicional:
+def _servicio(
+    reserva: Reserva, tipo=TipoServicio.comedor, costo="15000.00"
+) -> ServicioAdicional:
     s = ServicioAdicional(
         id_reserva=reserva.id,
         tipo=tipo,
@@ -126,6 +134,7 @@ class TestAgregarServicio:
             rid = r.id
 
             from app.services import servicio_adicional_service as svc
+
             resultado = svc.agregar(rid, "Comedor", "Desayuno continental", "15000")
 
             assert resultado["tipo"] == "Comedor"
@@ -141,6 +150,7 @@ class TestAgregarServicio:
             rid = r.id
 
             from app.services import servicio_adicional_service as svc
+
             resultado = svc.agregar(rid, "Spa", "Masaje relajante 60 min", "80000")
 
             assert resultado["tipo"] == "Spa"
@@ -155,6 +165,7 @@ class TestAgregarServicio:
             rid = r.id
 
             from app.services import servicio_adicional_service as svc
+
             resultado = svc.agregar(rid, "Lavanderia", "Lavado 3 prendas", "20000")
 
             assert resultado["tipo"] == "Lavanderia"
@@ -162,6 +173,7 @@ class TestAgregarServicio:
     def test_reserva_no_encontrada(self, app):
         with app.app_context():
             from app.services import servicio_adicional_service as svc
+
             with pytest.raises(LookupError, match="no encontrada"):
                 svc.agregar(99999, "Comedor", "Desayuno", "15000")
 
@@ -175,6 +187,7 @@ class TestAgregarServicio:
             rid = r.id
 
             from app.services import servicio_adicional_service as svc
+
             with pytest.raises(ValueError, match="Ocupada"):
                 svc.agregar(rid, "Comedor", "Desayuno", "15000")
 
@@ -188,6 +201,7 @@ class TestAgregarServicio:
             rid = r.id
 
             from app.services import servicio_adicional_service as svc
+
             with pytest.raises(ValueError, match="Ocupada"):
                 svc.agregar(rid, "Spa", "Masaje", "80000")
 
@@ -202,6 +216,7 @@ class TestAgregarServicio:
             rid = r.id
 
             from app.services import servicio_adicional_service as svc
+
             with pytest.raises(ValueError, match="factura emitida"):
                 svc.agregar(rid, "Comedor", "Desayuno", "15000")
 
@@ -215,6 +230,7 @@ class TestAgregarServicio:
             rid = r.id
 
             from app.services import servicio_adicional_service as svc
+
             with pytest.raises(ValueError, match="inválido"):
                 svc.agregar(rid, "Discoteca", "Fiesta", "50000")
 
@@ -228,6 +244,7 @@ class TestAgregarServicio:
             rid = r.id
 
             from app.services import servicio_adicional_service as svc
+
             with pytest.raises(ValueError, match="obligatorio"):
                 svc.agregar(rid, None, "Desayuno", "15000")
 
@@ -241,6 +258,7 @@ class TestAgregarServicio:
             rid = r.id
 
             from app.services import servicio_adicional_service as svc
+
             with pytest.raises(ValueError, match="mayor que cero"):
                 svc.agregar(rid, "Comedor", "Desayuno", "0")
 
@@ -254,6 +272,7 @@ class TestAgregarServicio:
             rid = r.id
 
             from app.services import servicio_adicional_service as svc
+
             with pytest.raises(ValueError, match="mayor que cero"):
                 svc.agregar(rid, "Spa", "Masaje", "-100")
 
@@ -267,6 +286,7 @@ class TestAgregarServicio:
             rid = r.id
 
             from app.services import servicio_adicional_service as svc
+
             with pytest.raises(ValueError, match="obligatorio"):
                 svc.agregar(rid, "Comedor", "Desayuno", None)
 
@@ -280,6 +300,7 @@ class TestAgregarServicio:
             rid = r.id
 
             from app.services import servicio_adicional_service as svc
+
             with pytest.raises(ValueError, match="descripción"):
                 svc.agregar(rid, "Comedor", "   ", "15000")
 
@@ -297,11 +318,19 @@ class TestServicioSpaRecurso:
             rid = r.id
 
             from app.services import servicio_adicional_service as svc
-            svc.agregar(rid, "Spa", "Masaje 1", "80000",
-                        recurso="Sala A", duracion_minutos=60)
+
+            svc.agregar(
+                rid, "Spa", "Masaje 1", "80000", recurso="Sala A", duracion_minutos=60
+            )
             with pytest.raises(ValueError, match="traslapa"):
-                svc.agregar(rid, "Spa", "Masaje 2", "80000",
-                            recurso="Sala A", duracion_minutos=60)
+                svc.agregar(
+                    rid,
+                    "Spa",
+                    "Masaje 2",
+                    "80000",
+                    recurso="Sala A",
+                    duracion_minutos=60,
+                )
 
     def test_spa_recurso_diferente_sin_traslape(self, app):
         with app.app_context():
@@ -313,10 +342,23 @@ class TestServicioSpaRecurso:
             rid = r.id
 
             from app.services import servicio_adicional_service as svc
-            svc.agregar(rid, "Spa", "Masaje Sala A", "80000",
-                        recurso="Sala A", duracion_minutos=60)
-            resultado = svc.agregar(rid, "Spa", "Masaje Sala B", "80000",
-                                    recurso="Sala B", duracion_minutos=60)
+
+            svc.agregar(
+                rid,
+                "Spa",
+                "Masaje Sala A",
+                "80000",
+                recurso="Sala A",
+                duracion_minutos=60,
+            )
+            resultado = svc.agregar(
+                rid,
+                "Spa",
+                "Masaje Sala B",
+                "80000",
+                recurso="Sala B",
+                duracion_minutos=60,
+            )
             assert resultado["tipo"] == "Spa"
 
     def test_spa_sin_recurso_no_traslape(self, app):
@@ -329,8 +371,10 @@ class TestServicioSpaRecurso:
             rid = r.id
 
             from app.services import servicio_adicional_service as svc
-            resultado = svc.agregar(rid, "Spa", "Sin recurso", "80000",
-                                    duracion_minutos=60)
+
+            resultado = svc.agregar(
+                rid, "Spa", "Sin recurso", "80000", duracion_minutos=60
+            )
             assert resultado["tipo"] == "Spa"
             assert resultado["recurso"] is None
 
@@ -347,15 +391,31 @@ class TestServicioSpaRecurso:
             from app.services import servicio_adicional_service as svc
 
             fake_now = ahora_colombia()
-            with patch("app.services.servicio_adicional_service.ahora_colombia",
-                       return_value=fake_now):
-                svc.agregar(rid, "Spa", "Primero", "80000",
-                            recurso="Sala C", duracion_minutos=60)
+            with patch(
+                "app.services.servicio_adicional_service.ahora_colombia",
+                return_value=fake_now,
+            ):
+                svc.agregar(
+                    rid,
+                    "Spa",
+                    "Primero",
+                    "80000",
+                    recurso="Sala C",
+                    duracion_minutos=60,
+                )
             mas_tarde = fake_now + timedelta(hours=3)
-            with patch("app.services.servicio_adicional_service.ahora_colombia",
-                       return_value=mas_tarde):
-                resultado = svc.agregar(rid, "Spa", "Segundo", "80000",
-                                        recurso="Sala C", duracion_minutos=60)
+            with patch(
+                "app.services.servicio_adicional_service.ahora_colombia",
+                return_value=mas_tarde,
+            ):
+                resultado = svc.agregar(
+                    rid,
+                    "Spa",
+                    "Segundo",
+                    "80000",
+                    recurso="Sala C",
+                    duracion_minutos=60,
+                )
             assert resultado["tipo"] == "Spa"
 
 
@@ -371,6 +431,7 @@ class TestListarServicios:
             rid = r.id
 
             from app.services import servicio_adicional_service as svc
+
             resultado = svc.listar(rid)
 
             assert resultado["servicios"] == []
@@ -389,6 +450,7 @@ class TestListarServicios:
             rid = r.id
 
             from app.services import servicio_adicional_service as svc
+
             resultado = svc.listar(rid)
 
             assert resultado["total"] == 2
@@ -397,6 +459,7 @@ class TestListarServicios:
     def test_listar_reserva_no_existe(self, app):
         with app.app_context():
             from app.services import servicio_adicional_service as svc
+
             with pytest.raises(LookupError):
                 svc.listar(99999)
 
@@ -414,6 +477,7 @@ class TestEliminarServicio:
             sid = s.id
 
             from app.services import servicio_adicional_service as svc
+
             resultado = svc.eliminar(sid)
 
             assert resultado["id"] == sid
@@ -421,6 +485,7 @@ class TestEliminarServicio:
     def test_eliminar_no_existe(self, app):
         with app.app_context():
             from app.services import servicio_adicional_service as svc
+
             with pytest.raises(LookupError):
                 svc.eliminar(99999)
 
@@ -436,6 +501,7 @@ class TestEliminarServicio:
             sid = s.id
 
             from app.services import servicio_adicional_service as svc
+
             with pytest.raises(ValueError, match="factura emitida"):
                 svc.eliminar(sid)
 
@@ -453,6 +519,7 @@ class TestActualizarServicio:
             sid = s.id
 
             from app.services import servicio_adicional_service as svc
+
             resultado = svc.actualizar(sid, costo_raw="20000")
 
             assert resultado["costo"] == 20000.0
@@ -468,6 +535,7 @@ class TestActualizarServicio:
             sid = s.id
 
             from app.services import servicio_adicional_service as svc
+
             resultado = svc.actualizar(sid, descripcion="Nueva descripción")
 
             assert resultado["descripcion"] == "Nueva descripción"
@@ -475,6 +543,7 @@ class TestActualizarServicio:
     def test_actualizar_no_existe(self, app):
         with app.app_context():
             from app.services import servicio_adicional_service as svc
+
             with pytest.raises(LookupError):
                 svc.actualizar(99999, costo_raw="100")
 
@@ -551,7 +620,11 @@ class TestServicioControllerEndpoints:
 
         resp = client.post(
             f"/api/v1/reservas/{rid}/servicios",
-            json={"tipo": "Comedor", "descripcion": "Almuerzo ejecutivo", "costo": 25000},
+            json={
+                "tipo": "Comedor",
+                "descripcion": "Almuerzo ejecutivo",
+                "costo": 25000,
+            },
             headers=headers,
         )
         assert resp.status_code == 201

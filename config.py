@@ -37,13 +37,17 @@ def _get_database_uri() -> str:
     user = os.environ.get("DB_USER", "postgres")
     password = os.environ.get("DB_PASSWORD", "")
 
-    db_url = f"postgresql://{user}:{password}@{host}:{port}/{name}" if password \
+    db_url = (
+        f"postgresql://{user}:{password}@{host}:{port}/{name}"
+        if password
         else f"postgresql://{user}@{host}:{port}/{name}"
+    )
     return db_url
 
 
 class Config:
     """Configuración base compartida por todos los entornos."""
+
     SECRET_KEY = _get_secret_key()
     JWT_SECRET_KEY = _get_secret_key("JWT_SECRET_KEY")
     JWT_ACCESS_MINUTOS = int(os.environ.get("JWT_ACCESS_MINUTOS", 15))
@@ -61,7 +65,9 @@ class Config:
     PUNTOS_POR_NOCHE = 10
     GARANTIA_PORCENTAJE = 0.50
     CORS_ORIGINS = os.environ.get("CORS_ORIGINS", "*")
-    ADMIN_BOOTSTRAP_ENABLED = os.environ.get("ADMIN_BOOTSTRAP_ENABLED", "False") == "True"
+    ADMIN_BOOTSTRAP_ENABLED = (
+        os.environ.get("ADMIN_BOOTSTRAP_ENABLED", "False") == "True"
+    )
     ADMIN_BOOTSTRAP_SECRET = os.environ.get("ADMIN_BOOTSTRAP_SECRET", "")
     PERMANENT_SESSION_LIFETIME = 86400  # 24 horas en segundos
     STRIPE_WEBHOOK_SECRET = os.environ.get("STRIPE_WEBHOOK_SECRET", "")
@@ -71,6 +77,7 @@ class Config:
 
 class DevelopmentConfig(Config):
     """Entorno de desarrollo: PostgreSQL o SQLite fallback."""
+
     DEBUG = True
     SQLALCHEMY_DATABASE_URI = (
         _get_database_uri()
@@ -83,6 +90,7 @@ class DevelopmentConfig(Config):
 
 class TestingConfig(Config):
     """Entorno de pruebas: SQLite en memoria."""
+
     TESTING = True
     DEBUG = True
     SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
@@ -95,6 +103,7 @@ class TestingConfig(Config):
 
 class ProductionConfig(Config):
     """Entorno de producción: PostgreSQL, debug desactivado."""
+
     DEBUG = False
     SQLALCHEMY_DATABASE_URI = _get_database_uri()
     SQLALCHEMY_TRACK_MODIFICATIONS = False
@@ -103,7 +112,8 @@ class ProductionConfig(Config):
     SESSION_COOKIE_SAMESITE = "Lax"
     CORS_ORIGINS = (
         os.environ.get("CORS_ORIGINS", "").split(",")
-        if os.environ.get("CORS_ORIGINS") else []
+        if os.environ.get("CORS_ORIGINS")
+        else []
     )
     SQLALCHEMY_ENGINE_OPTIONS = {
         "pool_size": 10,

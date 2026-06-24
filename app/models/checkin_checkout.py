@@ -14,21 +14,18 @@ class CheckInCheckOut(db.Model):
         db.Integer,
         db.ForeignKey("reservas.id", name="fk_checkin_reserva"),
         unique=True,
-        nullable=False
+        nullable=False,
     )
     fecha_checkin = db.Column(db.DateTime, nullable=True)
     fecha_checkout = db.Column(db.DateTime, nullable=True)
     realizado_por = db.Column(
         db.Integer,
         db.ForeignKey("usuarios.id", name="fk_checkin_usuario"),
-        nullable=True
+        nullable=True,
     )
     created_at = db.Column(db.DateTime, default=ahora_colombia, nullable=False)
     updated_at = db.Column(
-        db.DateTime,
-        default=ahora_colombia,
-        onupdate=ahora_colombia,
-        nullable=False
+        db.DateTime, default=ahora_colombia, onupdate=ahora_colombia, nullable=False
     )
 
     # Relationships
@@ -48,7 +45,8 @@ class CheckInCheckOut(db.Model):
             "realizado_por": self.realizado_por,
             "usuario_nombre": (
                 f"{self.usuario.nombre} {self.usuario.apellido}"
-                if self.usuario else None
+                if self.usuario
+                else None
             ),
             "created_at": self.created_at.isoformat(),
             "updated_at": self.updated_at.isoformat(),

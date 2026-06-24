@@ -21,7 +21,7 @@ puntos_fidelidad_bp = Blueprint("puntos_fidelidad", __name__)
 def _verificar_ownership_puntos(current_user, huesped_id):
     rol_actual = (
         current_user.rol.value
-        if hasattr(current_user.rol, 'value')
+        if hasattr(current_user.rol, "value")
         else current_user.rol
     )
     if rol_actual == "cliente":
@@ -44,11 +44,16 @@ def obtener_total(current_user, huesped_id):
     """
     try:
         total = puntos_fidelidad_service.obtener_total(huesped_id)
-        return jsonify({
-            "success": True,
-            "data": {"total": total},
-            "mensaje": "Puntos obtenidos correctamente."
-        }), 200
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "data": {"total": total},
+                    "mensaje": "Puntos obtenidos correctamente.",
+                }
+            ),
+            200,
+        )
     except LookupError as e:
         return handle_service_error(e, 404)
 
@@ -65,11 +70,16 @@ def listar_historial(current_user, huesped_id):
     """
     try:
         historial = puntos_fidelidad_service.listar_historial(huesped_id)
-        return jsonify({
-            "success": True,
-            "data": {"historial": historial, "total": len(historial)},
-            "mensaje": "Historial obtenido correctamente."
-        }), 200
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "data": {"historial": historial, "total": len(historial)},
+                    "mensaje": "Historial obtenido correctamente.",
+                }
+            ),
+            200,
+        )
     except LookupError as e:
         return handle_service_error(e, 404)
 
@@ -85,10 +95,15 @@ def listar_canjeos(current_user, huesped_id):
     Roles permitidos: todos los roles autenticados.
     """
     canjeos = puntos_fidelidad_service.listar_canjeos()
-    return jsonify({
-        "success": True,
-        "data": {"canjeos": canjeos},
-    }), 200
+    return (
+        jsonify(
+            {
+                "success": True,
+                "data": {"canjeos": canjeos},
+            }
+        ),
+        200,
+    )
 
 
 @puntos_fidelidad_bp.route("/<int:huesped_id>/puntos/canjear", methods=["POST"])
@@ -107,20 +122,30 @@ def canjear_puntos(current_user, huesped_id):
     opcion_id = data.get("opcion_id")
 
     if opcion_id is None:
-        return jsonify({
-            "success": False,
-            "data": None,
-            "mensaje": "El campo 'opcion_id' es obligatorio."
-        }), 400
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "data": None,
+                    "mensaje": "El campo 'opcion_id' es obligatorio.",
+                }
+            ),
+            400,
+        )
 
     try:
         _verificar_ownership_puntos(current_user, huesped_id)
         resultado = puntos_fidelidad_service.canjear(huesped_id, int(opcion_id))
-        return jsonify({
-            "success": True,
-            "data": resultado,
-            "mensaje": "Canje realizado exitosamente."
-        }), 200
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "data": resultado,
+                    "mensaje": "Canje realizado exitosamente.",
+                }
+            ),
+            200,
+        )
     except LookupError as e:
         return handle_service_error(e, 404)
     except ValueError as e:

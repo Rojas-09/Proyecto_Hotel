@@ -24,10 +24,7 @@ class Habitacion(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     numero = db.Column(db.String(10), unique=True, nullable=False)
-    tipo = db.Column(
-        db.Enum(TipoHabitacion, native_enum=False),
-        nullable=False
-    )
+    tipo = db.Column(db.Enum(TipoHabitacion, native_enum=False), nullable=False)
     descripcion = db.Column(db.Text, nullable=True)
     precio_noche = db.Column(Numeric(10, 2), nullable=False)
     capacidad = db.Column(db.Integer, nullable=False)
@@ -35,15 +32,12 @@ class Habitacion(db.Model):
     estado = db.Column(
         db.Enum(EstadoHabitacion, native_enum=False),
         nullable=False,
-        default=EstadoHabitacion.disponible
+        default=EstadoHabitacion.disponible,
     )
     activo = db.Column(db.Boolean, default=True, nullable=False)
     created_at = db.Column(db.DateTime, default=ahora_colombia, nullable=False)
     updated_at = db.Column(
-        db.DateTime,
-        default=ahora_colombia,
-        onupdate=ahora_colombia,
-        nullable=False
+        db.DateTime, default=ahora_colombia, onupdate=ahora_colombia, nullable=False
     )
 
     # Relationships
