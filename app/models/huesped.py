@@ -19,6 +19,7 @@ class Huesped(db.Model):
     documento_id = db.Column(db.String(20), nullable=False)
     tipo_documento = db.Column(db.String(20), nullable=False, default="CC")
     preferencias = db.Column(db.Text, nullable=True)
+    activo = db.Column(db.Boolean, default=True, nullable=False)
     created_at = db.Column(db.DateTime, default=ahora_colombia, nullable=False)
     updated_at = db.Column(
         db.DateTime,
@@ -44,6 +45,7 @@ class Huesped(db.Model):
             "documento_id": self.documento_id,
             "tipo_documento": self.tipo_documento,
             "preferencias": self.preferencias,
+            "activo": self.activo,
             "nombre": usuario_data.get("nombre"),
             "apellido": usuario_data.get("apellido"),
             "email": usuario_data.get("email"),

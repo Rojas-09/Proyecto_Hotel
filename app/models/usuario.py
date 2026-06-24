@@ -45,6 +45,11 @@ class Usuario(db.Model):
         back_populates="usuario",
         uselist=False
     )
+    reportes_generados = db.relationship(
+        "ReporteGenerado",
+        back_populates="usuario",
+        lazy="dynamic"
+    )
 
     @property
     def password(self):

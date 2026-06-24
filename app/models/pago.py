@@ -25,6 +25,7 @@ class EstadoPago(enum.Enum):
     aprobado = "Aprobado"
     rechazado = "Rechazado"
     reembolsado = "Reembolsado"
+    anulado = "Anulado"
 
 
 class Pago(db.Model):

@@ -19,6 +19,7 @@ class Notificacion(db.Model):
     __tablename__ = "notificaciones"
 
     id = db.Column(db.Integer, primary_key=True)
+    activo = db.Column(db.Boolean, default=True, nullable=False)
     id_reserva = db.Column(
         db.Integer,
         db.ForeignKey("reservas.id", name="fk_notificacion_reserva"),
@@ -52,6 +53,7 @@ class Notificacion(db.Model):
                 self.fecha_envio.isoformat() if self.fecha_envio else None
             ),
             "enviado": self.enviado,
+            "activo": self.activo,
             "created_at": self.created_at.isoformat(),
             "updated_at": self.updated_at.isoformat(),
         }

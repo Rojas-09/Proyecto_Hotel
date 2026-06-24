@@ -9,6 +9,7 @@ from app.models.factura import Factura, EstadoFactura
 from app.models.servicio_adicional import ServicioAdicional, TipoServicio
 from app.models.notificacion import Notificacion, TipoNotificacion
 from app.models.puntos_fidelidad import PuntosFidelidad
+from app.models.reporte import ReporteGenerado
 
 __all__ = [
     "Usuario",
@@ -33,4 +34,5 @@ __all__ = [
     "Notificacion",
     "TipoNotificacion",
     "PuntosFidelidad",
+    "ReporteGenerado",
 ]
