@@ -203,7 +203,7 @@ def eliminar_factura(current_user, factura_id):
     motivo = datos.get("motivo", "Eliminada por administrador")
 
     try:
-        resultado = factura_service.anular(factura_id, motivo)
+        factura_service.anular(factura_id, motivo)
         return jsonify({
             "success": True,
             "data": None,

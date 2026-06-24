@@ -5,8 +5,6 @@ import hashlib
 import uuid
 from datetime import timedelta
 
-from flask import current_app
-
 from app import db
 from app.utils.fecha_helper import ahora_colombia
 
@@ -62,7 +60,7 @@ class RefreshToken(db.Model):
         return db.session.execute(
             db.select(cls).filter(
                 cls.token_hash == token_hash,
-                cls.revoked == False,
+                not cls.revoked,
                 cls.expires_at > ahora,
             )
         ).scalar_one_or_none()

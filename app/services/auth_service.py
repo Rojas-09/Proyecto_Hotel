@@ -1,7 +1,6 @@
 """
 Auth Service - Lógica de negocio para autenticación
 """
-from uuid import uuid4
 from sqlalchemy import select
 
 from flask import current_app
@@ -11,7 +10,7 @@ from app.models.usuario import Usuario, RolEnum
 from app.models.huesped import Huesped
 from app.models.refresh_token import RefreshToken
 from app.utils.fecha_helper import ahora_colombia
-from app.utils.jwt_helper import generar_token, generar_token_acceso
+from app.utils.jwt_helper import generar_token_acceso
 
 
 class AuthService:
@@ -151,7 +150,7 @@ class AuthService:
         activos = db.session.execute(
             select(RefreshToken).filter(
                 RefreshToken.id_usuario == id_usuario,
-                RefreshToken.revoked == False,
+                not RefreshToken.revoked,
                 RefreshToken.expires_at > ahora,
             )
         ).scalars().all()

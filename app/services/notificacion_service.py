@@ -83,7 +83,7 @@ def buscar(query_str: str):
     q = query_str.strip().lower()
     notificaciones = db.session.execute(
         select(Notificacion)
-        .filter(Notificacion.activo == True)
+        .filter(Notificacion.activo)
         .filter(db.func.lower(Notificacion.mensaje).like(f"%{q}%"))
         .order_by(Notificacion.created_at.desc())
     ).scalars().all()

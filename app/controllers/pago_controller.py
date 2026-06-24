@@ -241,7 +241,7 @@ def eliminar_pago(current_user, pago_id):
     motivo = datos.get("motivo", "Anulado por administrador")
 
     try:
-        resultado = pago_service.anular(pago_id, motivo)
+        pago_service.anular(pago_id, motivo)
         return jsonify({
             "success": True,
             "data": None,

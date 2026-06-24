@@ -171,7 +171,10 @@ def _generar_pdf(datos: list, nombre_archivo: str, titulo: str) -> str:
 # Reporte de Ocupación
 # ---------------------------------------------------------------------------
 
-def generar_ocupacion(fecha_inicio: str, fecha_fin: str, formato: str = "xlsx", creado_por: int = None) -> dict:
+def generar_ocupacion(
+    fecha_inicio: str, fecha_fin: str, formato: str = "xlsx",
+    creado_por: int = None
+) -> dict:
     """
     Genera reporte de ocupación de habitaciones.
     Incluye: habitaciones ocupadas vs disponibles,
@@ -292,7 +295,10 @@ def generar_ocupacion(fecha_inicio: str, fecha_fin: str, formato: str = "xlsx", 
 # Reporte de Ingresos
 # ---------------------------------------------------------------------------
 
-def generar_ingresos(fecha_inicio: str, fecha_fin: str, formato: str = "xlsx", creado_por: int = None) -> dict:
+def generar_ingresos(
+    fecha_inicio: str, fecha_fin: str, formato: str = "xlsx",
+    creado_por: int = None
+) -> dict:
     """
     Genera reporte de ingresos por período.
     Incluye: total ingresos, desglose subtotal/IVA/servicios,
@@ -426,7 +432,10 @@ def generar_ingresos(fecha_inicio: str, fecha_fin: str, formato: str = "xlsx", c
 # Reporte de Estadísticas
 # ---------------------------------------------------------------------------
 
-def generar_estadisticas(fecha_inicio: str, fecha_fin: str, formato: str = "xlsx", creado_por: int = None) -> dict:
+def generar_estadisticas(
+    fecha_inicio: str, fecha_fin: str, formato: str = "xlsx",
+    creado_por: int = None
+) -> dict:
     """
     Genera reporte de estadísticas generales.
     Incluye: reservas por estado, top 5 habitaciones más reservadas,

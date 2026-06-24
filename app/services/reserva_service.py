@@ -422,24 +422,6 @@ def _parse_fecha(fecha_str):
     return datetime.strptime(fecha_str, "%Y-%m-%d").date()
 
 
-def _validar_reserva_no_solapada(id_habitacion, fecha_entrada, fecha_salida):
-    """Valida que no haya reservas solapadas."""
-    reservas_conflicto = db.session.execute(
-        select(db.func.count()).select_from(Reserva).filter(
-            Reserva.id_habitacion == id_habitacion,
-            Reserva.estado != EstadoReserva.cancelada,
-            Reserva.fecha_entrada < fecha_salida,
-            Reserva.fecha_salida > fecha_entrada,
-        )
-    ).scalar()
-
-    if reservas_conflicto > 0:
-        raise ValueError(
-            "La habitación ya tiene una reserva en el rango de fechas "
-            "seleccionado."
-        )
-
-
 def _enviar_email_with_context(app, reserva):
     with app.app_context():
         try:
@@ -601,7 +583,8 @@ def actualizar(reserva_id, datos: dict, current_user=None):
                 raise ValueError(f"Valor inválido para '{campo}'.") from exc
 
     # Validar solapamiento si cambian fechas o habitación
-    if "fecha_entrada" in nuevos_datos or "fecha_salida" in nuevos_datos or "id_habitacion" in nuevos_datos:
+    if "fecha_entrada" in nuevos_datos or "fecha_salida" in nuevos_datos \
+            or "id_habitacion" in nuevos_datos:
         fecha_entrada = nuevos_datos.get("fecha_entrada", reserva.fecha_entrada)
         fecha_salida = nuevos_datos.get("fecha_salida", reserva.fecha_salida)
         id_habitacion = nuevos_datos.get("id_habitacion", reserva.id_habitacion)
