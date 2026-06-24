@@ -48,7 +48,10 @@ def disponibles():
             jsonify(
                 {
                     "success": False,
-                    "mensaje": "Se requieren los parametros fecha_entrada y fecha_salida (YYYY-MM-DD).",
+                    "mensaje": (
+                        "Se requieren los parametros fecha_entrada"
+                        " y fecha_salida (YYYY-MM-DD)."
+                    ),
                 }
             ),
             400,

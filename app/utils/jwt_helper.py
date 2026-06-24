@@ -134,7 +134,10 @@ def rol_requerido(*roles):
                             "success": False,
                             "error": {
                                 "code": "FORBIDDEN",
-                                "message": f"Acceso restringido. Roles permitidos: {', '.join(roles)}.",
+                                "message": (
+                                    f"Acceso restringido. Roles permitidos:"
+                                    f" {', '.join(roles)}."
+                                ),
                             },
                         }
                     ),
