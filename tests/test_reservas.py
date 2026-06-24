@@ -481,3 +481,92 @@ class TestFlujoReserva:
             headers=admin_user
         )
         assert resp.status_code == 400
+
+
+class TestEliminarReserva:
+
+    def test_eliminar_como_admin(self, client, admin_user, cliente_user, habitacion_disponible, reserva_data):
+        headers_cliente, _ = cliente_user
+        reserva_data["id_habitacion"] = habitacion_disponible["id"]
+        resp_crear = client.post("/api/v1/reservas/", json=reserva_data, headers=headers_cliente)
+        reserva_id = resp_crear.get_json()["data"]["id"]
+
+        resp = client.delete(f"/api/v1/reservas/{reserva_id}", headers=admin_user)
+        assert resp.status_code == 200
+        assert resp.get_json()["data"]["estado"] == "Cancelada"
+
+    def test_eliminar_inexistente(self, client, admin_user):
+        resp = client.delete("/api/v1/reservas/99999", headers=admin_user)
+        assert resp.status_code == 404
+
+    def test_eliminar_sin_token(self, client):
+        resp = client.delete("/api/v1/reservas/1")
+        assert resp.status_code == 401
+
+    def test_eliminar_como_cliente_retorna_403(self, client, cliente_user, habitacion_disponible, reserva_data):
+        headers_cliente, _ = cliente_user
+        reserva_data["id_habitacion"] = habitacion_disponible["id"]
+        resp_crear = client.post("/api/v1/reservas/", json=reserva_data, headers=headers_cliente)
+        reserva_id = resp_crear.get_json()["data"]["id"]
+
+        resp = client.delete(f"/api/v1/reservas/{reserva_id}", headers=headers_cliente)
+        assert resp.status_code == 403
+
+    def test_eliminar_con_motivo(self, client, admin_user, cliente_user, habitacion_disponible, reserva_data):
+        headers_cliente, _ = cliente_user
+        reserva_data["id_habitacion"] = habitacion_disponible["id"]
+        resp_crear = client.post("/api/v1/reservas/", json=reserva_data, headers=headers_cliente)
+        reserva_id = resp_crear.get_json()["data"]["id"]
+
+        resp = client.delete(f"/api/v1/reservas/{reserva_id}", json={
+            "motivo": "Reserva duplicada"
+        }, headers=admin_user)
+        assert resp.status_code == 200
+
+
+class TestActualizarReserva:
+
+    def test_actualizar_fechas_como_admin(self, client, admin_user, cliente_user, habitacion_disponible, reserva_data):
+        headers_cliente, _ = cliente_user
+        reserva_data["id_habitacion"] = habitacion_disponible["id"]
+        resp_crear = client.post("/api/v1/reservas/", json=reserva_data, headers=headers_cliente)
+        reserva_id = resp_crear.get_json()["data"]["id"]
+
+        from datetime import date, timedelta
+        nuevas_fechas = {
+            "fecha_entrada": (date.today() + timedelta(days=6)).strftime("%Y-%m-%d"),
+            "fecha_salida": (date.today() + timedelta(days=9)).strftime("%Y-%m-%d"),
+        }
+        resp = client.patch(f"/api/v1/reservas/{reserva_id}", json=nuevas_fechas, headers=admin_user)
+        assert resp.status_code == 200
+        data = resp.get_json()["data"]
+        assert data["fecha_entrada"] == nuevas_fechas["fecha_entrada"]
+
+    def test_actualizar_como_cliente_su_reserva(self, client, cliente_user, habitacion_disponible, reserva_data):
+        headers_cliente, huesped_id = cliente_user
+        reserva_data["id_habitacion"] = habitacion_disponible["id"]
+        resp_crear = client.post("/api/v1/reservas/", json=reserva_data, headers=headers_cliente)
+        reserva_id = resp_crear.get_json()["data"]["id"]
+
+        resp = client.patch(f"/api/v1/reservas/{reserva_id}", json={
+            "fecha_entrada": reserva_data["fecha_entrada"],
+            "fecha_salida": (date.fromisoformat(reserva_data["fecha_salida"]) + timedelta(days=1)).strftime("%Y-%m-%d"),
+        }, headers=headers_cliente)
+        assert resp.status_code == 200
+
+    def test_actualizar_body_vacio(self, client, admin_user, cliente_user, habitacion_disponible, reserva_data):
+        headers_cliente, _ = cliente_user
+        reserva_data["id_habitacion"] = habitacion_disponible["id"]
+        resp_crear = client.post("/api/v1/reservas/", json=reserva_data, headers=headers_cliente)
+        reserva_id = resp_crear.get_json()["data"]["id"]
+
+        resp = client.patch(f"/api/v1/reservas/{reserva_id}", json={}, headers=admin_user)
+        assert resp.status_code == 400
+
+    def test_actualizar_inexistente(self, client, admin_user):
+        resp = client.patch("/api/v1/reservas/99999", json={"fecha_entrada": "2026-12-01"}, headers=admin_user)
+        assert resp.status_code == 404
+
+    def test_actualizar_sin_token(self, client):
+        resp = client.patch("/api/v1/reservas/1", json={"fecha_entrada": "2026-12-01"})
+        assert resp.status_code == 401

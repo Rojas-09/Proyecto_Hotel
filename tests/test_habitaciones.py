@@ -89,28 +89,28 @@ def admin_headers(client, request, app):
 
 class TestListarHabitaciones:
 
-    def test_listar_sin_datos_retorna_lista_vacia(self, client):
-        resp = client.get("/api/v1/habitaciones/")
+    def test_listar_sin_datos_retorna_lista_vacia(self, client, admin_headers):
+        resp = client.get("/api/v1/habitaciones/", headers=admin_headers)
         assert resp.status_code == 200
         data = resp.get_json()
         assert data["success"] is True
         assert data["data"] == []
         assert data["total"] == 0
 
-    def test_listar_con_una_habitacion(self, client, habitacion_en_db):
-        resp = client.get("/api/v1/habitaciones/")
+    def test_listar_con_una_habitacion(self, client, admin_headers, habitacion_en_db):
+        resp = client.get("/api/v1/habitaciones/", headers=admin_headers)
         assert resp.status_code == 200
         data = resp.get_json()
         assert data["total"] == 1
         assert data["data"][0]["id"] == habitacion_en_db["id"]
 
-    def test_listar_filtro_por_tipo_valido(self, client, habitacion_en_db):
-        resp = client.get("/api/v1/habitaciones/?tipo=simple")
+    def test_listar_filtro_por_tipo_valido(self, client, admin_headers, habitacion_en_db):
+        resp = client.get("/api/v1/habitaciones/?tipo=simple", headers=admin_headers)
         assert resp.status_code == 200
         assert resp.get_json()["total"] == 1
 
-    def test_listar_filtro_por_tipo_invalido_retorna_400(self, client):
-        resp = client.get("/api/v1/habitaciones/?tipo=Inexistente")
+    def test_listar_filtro_por_tipo_invalido_retorna_400(self, client, admin_headers):
+        resp = client.get("/api/v1/habitaciones/?tipo=Inexistente", headers=admin_headers)
         assert resp.status_code == 400
         assert resp.get_json()["success"] is False
 

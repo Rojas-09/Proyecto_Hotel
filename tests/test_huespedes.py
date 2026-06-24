@@ -6,6 +6,7 @@ Cubre: obtener_todos, obtener_por_id, buscar, actualizar
 from tests.conftest import _extract_token_from_cookies
 from app.models.usuario import Usuario, RolEnum
 from app.models.huesped import Huesped
+from app import db
 
 
 def obtener_token_admin(client, db):
@@ -269,3 +270,142 @@ class TestActualizar:
         data = res.get_json()
         assert res.status_code == 200
         assert "Piso bajo" in data["data"]["preferencias"]
+
+
+class TestCrearHuesped:
+
+    def test_crear_valido(self, client, app, db):
+        """Crear huésped walk-in válido."""
+        with app.app_context():
+            u = Usuario(
+                nombre="Walk", apellido="In",
+                email="walkin@test.com", rol="cliente"
+            )
+            u.password = "Pass1234"
+            db.session.add(u)
+            db.session.commit()
+            uid = u.id
+
+        token = obtener_token_admin(client, db)
+        res = client.post("/api/v1/huespedes", json={
+            "id_usuario": uid,
+            "documento_id": "12345678",
+            "tipo_documento": "CC",
+        }, headers={"Authorization": f"Bearer {token}"})
+        assert res.status_code == 201
+        data = res.get_json()
+        assert data["success"] is True
+        assert data["data"]["documento_id"] == "12345678"
+
+    def test_crear_sin_documento(self, client, app, db):
+        with app.app_context():
+            u = Usuario(
+                nombre="Sin", apellido="Doc",
+                email="sindoc@test.com", rol="cliente"
+            )
+            u.password = "Pass1234"
+            db.session.add(u)
+            db.session.commit()
+            uid = u.id
+
+        token = obtener_token_admin(client, db)
+        res = client.post("/api/v1/huespedes", json={
+            "id_usuario": uid
+        }, headers={"Authorization": f"Bearer {token}"})
+        assert res.status_code == 400
+
+    def test_crear_usuario_inexistente(self, client, app, db):
+        token = obtener_token_admin(client, db)
+        res = client.post("/api/v1/huespedes", json={
+            "id_usuario": 99999,
+            "documento_id": "12345678"
+        }, headers={"Authorization": f"Bearer {token}"})
+        assert res.status_code == 400
+
+    def test_crear_duplicado(self, client, app, db):
+        with app.app_context():
+            u = Usuario(
+                nombre="Dup", apellido="Test",
+                email="dup@test.com", rol="cliente"
+            )
+            u.password = "Pass1234"
+            db.session.add(u)
+            db.session.flush()
+
+            h = Huesped(id_usuario=u.id, documento_id="11111111")
+            db.session.add(h)
+            db.session.commit()
+            uid = u.id
+
+        token = obtener_token_admin(client, db)
+        res = client.post("/api/v1/huespedes", json={
+            "id_usuario": uid,
+            "documento_id": "22222222"
+        }, headers={"Authorization": f"Bearer {token}"})
+        assert res.status_code == 400
+
+    def test_crear_sin_token(self, client, app, db):
+        res = client.post("/api/v1/huespedes", json={
+            "id_usuario": 1, "documento_id": "12345678"
+        })
+        assert res.status_code == 401
+
+
+class TestEliminarHuesped:
+
+    def test_eliminar_valido(self, client, app, db):
+        """Soft-delete de huésped."""
+        with app.app_context():
+            u = Usuario(
+                nombre="Eli", apellido="Minar",
+                email="eliminar@test.com", rol="cliente"
+            )
+            u.password = "Pass1234"
+            db.session.add(u)
+            db.session.flush()
+
+            h = Huesped(id_usuario=u.id, documento_id="99999999")
+            db.session.add(h)
+            db.session.commit()
+            hid = h.id
+
+        token = obtener_token_admin(client, db)
+        res = client.delete(f"/api/v1/huespedes/{hid}", headers={
+            "Authorization": f"Bearer {token}"
+        })
+        assert res.status_code == 200
+
+        with app.app_context():
+            h_db = db.session.get(Huesped, hid)
+            assert h_db.activo is False
+
+    def test_eliminar_inexistente(self, client, app, db):
+        token = obtener_token_admin(client, db)
+        res = client.delete("/api/v1/huespedes/99999", headers={
+            "Authorization": f"Bearer {token}"
+        })
+        assert res.status_code == 404
+
+    def test_eliminar_sin_token(self, client):
+        res = client.delete("/api/v1/huespedes/1")
+        assert res.status_code == 401
+
+    def test_eliminar_solo_admin(self, client, app, db):
+        with app.app_context():
+            u = Usuario(
+                nombre="Recep", apellido="Test",
+                email="recep_huesp@test.com", rol=RolEnum.recepcionista
+            )
+            u.password = "Pass1234"
+            db.session.add(u)
+            db.session.commit()
+
+        client.post("/api/v1/auth/login", json={
+            "email": "recep_huesp@test.com", "password": "Pass1234"
+        })
+        token_recep = _extract_token_from_cookies(client)
+
+        res = client.delete("/api/v1/huespedes/1", headers={
+            "Authorization": f"Bearer {token_recep}"
+        })
+        assert res.status_code == 403

@@ -567,3 +567,158 @@ class TestPostGarantiaController:
         assert resp.status_code == 201
         data = resp.get_json()
         assert data["data"]["referencia_externa"].startswith("pi_mock_")
+
+
+# ---------------------------------------------------------------------------
+# TestListarPagos — GET /api/v1/pagos
+# ---------------------------------------------------------------------------
+
+class TestListarPagos:
+    """GET /api/v1/pagos con filtros opcionales."""
+
+    def test_listar_vacio(self, client, app):
+        with app.app_context():
+            admin = _crear_usuario(RolEnum.admin, "adm_pag_list1")
+            db.session.commit()
+            token = _token(admin)
+        resp = client.get("/api/v1/pagos", headers=_auth(token))
+        assert resp.status_code == 200
+        data = resp.get_json()
+        assert data["success"] is True
+        assert data["total"] == 0
+
+    def test_listar_con_datos(self, client, app):
+        with app.app_context():
+            admin = _crear_usuario(RolEnum.admin, "adm_pag_list2")
+            huesped_u = _crear_usuario(RolEnum.cliente, "cli_pag_list1")
+            huesped = _crear_huesped(huesped_u)
+            hab = _crear_habitacion()
+            reserva = _crear_reserva(huesped, hab)
+            _pago_garantia(reserva)
+            db.session.commit()
+            token = _token(admin)
+        resp = client.get("/api/v1/pagos", headers=_auth(token))
+        assert resp.status_code == 200
+        assert resp.get_json()["total"] == 1
+
+    def test_listar_filtro_tipo(self, client, app):
+        with app.app_context():
+            admin = _crear_usuario(RolEnum.admin, "adm_pag_list3")
+            huesped_u = _crear_usuario(RolEnum.cliente, "cli_pag_list2")
+            huesped = _crear_huesped(huesped_u)
+            hab = _crear_habitacion()
+            reserva = _crear_reserva(huesped, hab, EstadoReserva.ocupada)
+            _pago_garantia(reserva)
+            _pago_liquidacion(reserva)
+            db.session.commit()
+            token = _token(admin)
+        resp = client.get("/api/v1/pagos?tipo=Garantia", headers=_auth(token))
+        assert resp.status_code == 200
+        assert resp.get_json()["total"] == 1
+
+    def test_listar_filtro_estado(self, client, app):
+        with app.app_context():
+            admin = _crear_usuario(RolEnum.admin, "adm_pag_list4")
+            huesped_u = _crear_usuario(RolEnum.cliente, "cli_pag_list3")
+            huesped = _crear_huesped(huesped_u)
+            hab = _crear_habitacion()
+            reserva = _crear_reserva(huesped, hab, EstadoReserva.ocupada)
+            _pago_garantia(reserva)
+            _pago_liquidacion(reserva)
+            db.session.commit()
+            token = _token(admin)
+        resp = client.get("/api/v1/pagos?estado=Aprobado", headers=_auth(token))
+        assert resp.status_code == 200
+        assert resp.get_json()["total"] == 2
+
+    def test_listar_sin_token(self, client):
+        resp = client.get("/api/v1/pagos")
+        assert resp.status_code == 401
+
+    def test_listar_como_cliente_retorna_403(self, client, app):
+        with app.app_context():
+            cliente_u = _crear_usuario(RolEnum.cliente, "cli_pag_list4")
+            db.session.commit()
+            token = _token(cliente_u)
+        resp = client.get("/api/v1/pagos", headers=_auth(token))
+        assert resp.status_code == 403
+
+
+# ---------------------------------------------------------------------------
+# TestObtenerPagoPorId — GET /api/v1/pagos/<id>
+# ---------------------------------------------------------------------------
+
+class TestObtenerPagoPorId:
+    """GET /api/v1/pagos/<pago_id>"""
+
+    def test_obtener_por_id(self, client, app):
+        with app.app_context():
+            admin = _crear_usuario(RolEnum.admin, "adm_pag_get1")
+            huesped_u = _crear_usuario(RolEnum.cliente, "cli_pag_get1")
+            huesped = _crear_huesped(huesped_u)
+            hab = _crear_habitacion()
+            reserva = _crear_reserva(huesped, hab)
+            pago = _pago_garantia(reserva)
+            db.session.commit()
+            pid = pago.id
+            token = _token(admin)
+        resp = client.get(f"/api/v1/pagos/{pid}", headers=_auth(token))
+        assert resp.status_code == 200
+        assert resp.get_json()["data"]["id"] == pid
+
+    def test_obtener_inexistente(self, client, app):
+        with app.app_context():
+            admin = _crear_usuario(RolEnum.admin, "adm_pag_get2")
+            db.session.commit()
+            token = _token(admin)
+        resp = client.get("/api/v1/pagos/99999", headers=_auth(token))
+        assert resp.status_code == 404
+
+
+# ---------------------------------------------------------------------------
+# TestEliminarPago — DELETE /api/v1/pagos/<id>
+# ---------------------------------------------------------------------------
+
+class TestEliminarPago:
+    """DELETE /api/v1/pagos/<pago_id> (admin only)"""
+
+    def test_eliminar_valido(self, client, app):
+        with app.app_context():
+            admin = _crear_usuario(RolEnum.admin, "adm_pag_del1")
+            huesped_u = _crear_usuario(RolEnum.cliente, "cli_pag_del1")
+            huesped = _crear_huesped(huesped_u)
+            hab = _crear_habitacion()
+            reserva = _crear_reserva(huesped, hab)
+            pago = _pago_garantia(reserva)
+            db.session.commit()
+            pid = pago.id
+            token = _token(admin)
+        resp = client.delete(f"/api/v1/pagos/{pid}", json={
+            "motivo": "Anulación de prueba"
+        }, headers=_auth(token))
+        assert resp.status_code == 200
+        assert resp.get_json()["success"] is True
+
+    def test_eliminar_inexistente(self, client, app):
+        with app.app_context():
+            admin = _crear_usuario(RolEnum.admin, "adm_pag_del2")
+            db.session.commit()
+            token = _token(admin)
+        resp = client.delete("/api/v1/pagos/99999", json={
+            "motivo": "Test"
+        }, headers=_auth(token))
+        assert resp.status_code == 404
+
+    def test_eliminar_solo_admin(self, client, app):
+        with app.app_context():
+            recep = _crear_usuario(RolEnum.recepcionista, "rec_pag_del1")
+            db.session.commit()
+            token = _token(recep)
+        resp = client.delete("/api/v1/pagos/1", json={
+            "motivo": "Test"
+        }, headers=_auth(token))
+        assert resp.status_code == 403
+
+    def test_eliminar_sin_token(self, client):
+        resp = client.delete("/api/v1/pagos/1")
+        assert resp.status_code == 401

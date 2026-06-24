@@ -565,3 +565,144 @@ class TestAnularFactura:
         """401 — requiere autenticación."""
         resp = client.put("/api/v1/facturas/1/anular", json={"motivo": "Test"})
         assert resp.status_code == 401
+
+
+# ---------------------------------------------------------------------------
+# TestListarFacturas
+# ---------------------------------------------------------------------------
+
+class TestListarFacturas:
+    """GET /api/v1/facturas"""
+
+    def test_listar_vacio(self, client, app):
+        with app.app_context():
+            admin = _crear_usuario(RolEnum.admin, "adm_list_fac1")
+            db.session.commit()
+            token = _token(admin)
+        resp = client.get("/api/v1/facturas", headers=_auth(token))
+        assert resp.status_code == 200
+        data = resp.get_json()
+        assert data["success"] is True
+        assert data["total"] == 0
+
+    def test_listar_con_datos(self, client, app):
+        with app.app_context():
+            admin = _crear_usuario(RolEnum.admin, "adm_list_fac2")
+            huesped_u = _crear_usuario(RolEnum.cliente, "cli_list_fac1")
+            huesped = _crear_huesped(huesped_u)
+            hab = _crear_habitacion()
+            reserva = _crear_reserva_completada(huesped, hab)
+            _crear_factura(reserva, EstadoFactura.emitida)
+            db.session.commit()
+            token = _token(admin)
+        resp = client.get("/api/v1/facturas", headers=_auth(token))
+        assert resp.status_code == 200
+        assert resp.get_json()["total"] == 1
+
+    def test_listar_filtro_estado(self, client, app):
+        with app.app_context():
+            admin = _crear_usuario(RolEnum.admin, "adm_list_fac3")
+            huesped_u = _crear_usuario(RolEnum.cliente, "cli_list_fac2")
+            huesped = _crear_huesped(huesped_u)
+            hab = _crear_habitacion()
+            r1 = _crear_reserva_completada(huesped, hab)
+            _crear_factura(r1, EstadoFactura.emitida)
+            r2 = _crear_reserva_completada(huesped, hab)
+            _crear_factura(r2, EstadoFactura.pendiente)
+            db.session.commit()
+            token = _token(admin)
+        resp = client.get("/api/v1/facturas?estado=Emitida", headers=_auth(token))
+        assert resp.status_code == 200
+        assert resp.get_json()["total"] == 1
+
+    def test_listar_sin_token(self, client):
+        resp = client.get("/api/v1/facturas")
+        assert resp.status_code == 401
+
+    def test_listar_como_cliente_retorna_403(self, client, app):
+        with app.app_context():
+            cliente_u = _crear_usuario(RolEnum.cliente, "cli_list_fac3")
+            db.session.commit()
+            token = _token(cliente_u)
+        resp = client.get("/api/v1/facturas", headers=_auth(token))
+        assert resp.status_code == 403
+
+
+# ---------------------------------------------------------------------------
+# TestObtenerFacturaPorId
+# ---------------------------------------------------------------------------
+
+class TestObtenerFacturaPorId:
+    """GET /api/v1/facturas/<factura_id>"""
+
+    def test_obtener_por_id(self, client, app):
+        with app.app_context():
+            admin = _crear_usuario(RolEnum.admin, "adm_get_fac1")
+            huesped_u = _crear_usuario(RolEnum.cliente, "cli_get_fac1")
+            huesped = _crear_huesped(huesped_u)
+            hab = _crear_habitacion()
+            reserva = _crear_reserva_completada(huesped, hab)
+            factura = _crear_factura(reserva, EstadoFactura.emitida)
+            db.session.commit()
+            fid = factura.id
+            token = _token(admin)
+        resp = client.get(f"/api/v1/facturas/{fid}", headers=_auth(token))
+        assert resp.status_code == 200
+        assert resp.get_json()["data"]["id"] == fid
+
+    def test_obtener_inexistente(self, client, app):
+        with app.app_context():
+            admin = _crear_usuario(RolEnum.admin, "adm_get_fac2")
+            db.session.commit()
+            token = _token(admin)
+        resp = client.get("/api/v1/facturas/99999", headers=_auth(token))
+        assert resp.status_code == 404
+
+
+# ---------------------------------------------------------------------------
+# TestEliminarFactura
+# ---------------------------------------------------------------------------
+
+class TestEliminarFactura:
+    """DELETE /api/v1/facturas/<factura_id>"""
+
+    def test_eliminar_valido(self, client, app):
+        with app.app_context():
+            admin = _crear_usuario(RolEnum.admin, "adm_del_fac1")
+            huesped_u = _crear_usuario(RolEnum.cliente, "cli_del_fac1")
+            huesped = _crear_huesped(huesped_u)
+            hab = _crear_habitacion()
+            reserva = _crear_reserva_completada(huesped, hab)
+            factura = _crear_factura(reserva, EstadoFactura.pendiente)
+            db.session.commit()
+            fid = factura.id
+            token = _token(admin)
+        resp = client.delete(f"/api/v1/facturas/{fid}", json={
+            "motivo": "Prueba"
+        }, headers=_auth(token))
+        assert resp.status_code == 200
+        assert resp.get_json()["success"] is True
+
+    def test_eliminar_inexistente(self, client, app):
+        with app.app_context():
+            admin = _crear_usuario(RolEnum.admin, "adm_del_fac2")
+            db.session.commit()
+            token = _token(admin)
+        resp = client.delete("/api/v1/facturas/99999", json={
+            "motivo": "Test"
+        }, headers=_auth(token))
+        assert resp.status_code == 404
+
+    def test_eliminar_solo_admin(self, client, app):
+        with app.app_context():
+            recep = _crear_usuario(RolEnum.recepcionista, "rec_del_fac1")
+            db.session.commit()
+            token = _token(recep)
+        resp = client.delete("/api/v1/facturas/1", json={
+            "motivo": "Test"
+        }, headers=_auth(token))
+        assert resp.status_code == 403
+
+    def test_eliminar_sin_token(self, client):
+        resp = client.delete("/api/v1/facturas/1")
+        assert resp.status_code == 401

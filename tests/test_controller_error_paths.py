@@ -33,7 +33,9 @@ def _token_para(client, app, email, rol="admin"):
     return _extract_token_from_cookies(client)
 
 
-def test_habitaciones_listar_error_500(client, monkeypatch):
+def test_habitaciones_listar_error_500(client, app, monkeypatch):
+    token = _token_para(client, app, "ha_err@test.com", "admin")
+
     def _boom(_):
         raise RuntimeError("boom")
 
@@ -41,7 +43,7 @@ def test_habitaciones_listar_error_500(client, monkeypatch):
         "app.controllers.habitacion_controller.habitacion_service.obtener_todas"
     )
     monkeypatch.setattr(target, _boom)
-    resp = client.get("/api/v1/habitaciones/")
+    resp = client.get("/api/v1/habitaciones/", headers={"Authorization": f"Bearer {token}"})
     assert resp.status_code == 500
 
 
