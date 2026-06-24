@@ -150,7 +150,7 @@ class AuthService:
         activos = db.session.execute(
             select(RefreshToken).filter(
                 RefreshToken.id_usuario == id_usuario,
-                not RefreshToken.revoked,
+                RefreshToken.revoked.is_(False),
                 RefreshToken.expires_at > ahora,
             )
         ).scalars().all()

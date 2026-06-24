@@ -77,8 +77,6 @@ def listar(filtros=None):
 
 def buscar(query_str: str):
     """Busca notificaciones por mensaje (contiene)."""
-    if not query_str or not query_str.strip():
-        raise ValueError("Debe proporcionar un término de búsqueda.")
 
     q = query_str.strip().lower()
     notificaciones = db.session.execute(
@@ -117,17 +115,6 @@ def actualizar(id, **kwargs):
         if notificacion.enviado and not notificacion.fecha_envio:
             notificacion.fecha_envio = ahora_colombia()
 
-    db.session.commit()
-    return notificacion.to_dict()
-
-
-def marcar_enviado(id, fecha_envio=None):
-    notificacion = db.session.get(Notificacion, id)
-    if not notificacion or not notificacion.activo:
-        raise LookupError(f"Notificación con id {id} no encontrada.")
-
-    notificacion.enviado = True
-    notificacion.fecha_envio = fecha_envio or ahora_colombia()
     db.session.commit()
     return notificacion.to_dict()
 

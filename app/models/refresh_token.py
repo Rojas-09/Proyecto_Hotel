@@ -60,7 +60,7 @@ class RefreshToken(db.Model):
         return db.session.execute(
             db.select(cls).filter(
                 cls.token_hash == token_hash,
-                not cls.revoked,
+                cls.revoked.is_(False),
                 cls.expires_at > ahora,
             )
         ).scalar_one_or_none()

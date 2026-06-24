@@ -218,6 +218,35 @@ class TestListarNotificaciones:
         resp = client.get("/api/v1/notificaciones", headers=cliente_headers)
         assert resp.status_code == 403
 
+    def test_listar_filtro_enviado(self, client, admin_headers, reserva_en_db):
+        client.post("/api/v1/notificaciones", json={
+            "id_reserva": reserva_en_db,
+            "tipo": "ConfirmacionReserva",
+            "mensaje": "Enviada"
+        }, headers=admin_headers)
+
+        resp = client.get("/api/v1/notificaciones?enviado=false", headers=admin_headers)
+        assert resp.status_code == 200
+        data = resp.get_json()
+        assert data["data"]["total"] >= 1
+
+    def test_listar_filtro_fecha(self, client, admin_headers, reserva_en_db):
+        client.post("/api/v1/notificaciones", json={
+            "id_reserva": reserva_en_db,
+            "tipo": "ConfirmacionReserva",
+            "mensaje": "Fecha test"
+        }, headers=admin_headers)
+
+        ayer = (date.today() - timedelta(days=1)).isoformat()
+        manana = (date.today() + timedelta(days=1)).isoformat()
+        resp = client.get(
+            f"/api/v1/notificaciones?fecha_desde={ayer}&fecha_hasta={manana}",
+            headers=admin_headers
+        )
+        assert resp.status_code == 200
+        data = resp.get_json()
+        assert data["data"]["total"] >= 1
+
 
 class TestObtenerNotificacion:
 
@@ -342,6 +371,20 @@ class TestActualizarNotificacion:
             "mensaje": "Actualizado por recep"
         }, headers=recepcionista_headers)
         assert resp.status_code == 200
+
+    def test_actualizar_tipo(self, client, admin_headers, reserva_en_db):
+        resp_crear = client.post("/api/v1/notificaciones", json={
+            "id_reserva": reserva_en_db,
+            "tipo": "ConfirmacionReserva",
+            "mensaje": "Cambiar tipo"
+        }, headers=admin_headers)
+        nid = resp_crear.get_json()["data"]["id"]
+
+        resp = client.put(f"/api/v1/notificaciones/{nid}", json={
+            "tipo": "Recordatorio"
+        }, headers=admin_headers)
+        assert resp.status_code == 200
+        assert resp.get_json()["data"]["tipo"] == "Recordatorio"
 
 
 class TestEliminarNotificacion:
