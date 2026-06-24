@@ -3,6 +3,7 @@ import { useAuthStore } from '../stores/auth';
 
 import MainLayout from '../layouts/MainLayout.vue';
 import LoginView from '../views/LoginView.vue';
+import RegisterView from '../views/RegisterView.vue';
 import HabitacionesView from '../views/HabitacionesView.vue';
 import ReservasView from '../views/ReservasView.vue';
 import HuespedesView from '../views/HuespedesView.vue';
@@ -17,6 +18,12 @@ const routes = [
     path: '/login',
     name: 'Login',
     component: LoginView,
+    meta: { requiresAuth: false }
+  },
+  {
+    path: '/register',
+    name: 'Register',
+    component: RegisterView,
     meta: { requiresAuth: false }
   },
   {

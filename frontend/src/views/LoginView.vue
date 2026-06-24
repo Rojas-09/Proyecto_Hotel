@@ -63,6 +63,13 @@
             <span v-else>Ingresar</span>
           </button>
         </form>
+
+        <p class="text-center text-gray-500 text-sm mt-6">
+          ¿No tienes cuenta?
+          <router-link to="/register" class="text-hotel-gold hover:text-yellow-500 transition-colors font-medium">
+            Regístrate aquí
+          </router-link>
+        </p>
       </div>
     </div>
   </div>
