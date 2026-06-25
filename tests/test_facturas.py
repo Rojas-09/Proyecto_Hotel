@@ -262,7 +262,7 @@ class TestEmitirFactura:
         assert os.path.exists(pdf_path), f"PDF no encontrado en: {pdf_path}"
 
     def test_emitir_factura_ya_emitida(self, client, app):
-        """400 — no se puede reemitir factura ya emitida."""
+        """201 — se permite reemitir factura ya emitida."""
         with app.app_context():
             admin = _crear_usuario(RolEnum.admin, "adm_emit3")
             huesped_u = _crear_usuario(RolEnum.cliente, "cli_emit3")
@@ -277,8 +277,8 @@ class TestEmitirFactura:
         resp = client.post(
             f"/api/v1/facturas/reserva/{rid}/emitir", headers=_auth(token)
         )
-        assert resp.status_code == 400
-        assert "ya fue" in resp.get_json()["mensaje"].lower()
+        assert resp.status_code == 201
+        assert resp.get_json()["success"] is True
 
     def test_emitir_factura_pagada(self, client, app):
         """400 — no se puede emitir factura pagada."""

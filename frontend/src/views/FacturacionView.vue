@@ -28,6 +28,9 @@
       <template #estado="{ item }">
         <span :class="estadoClass(item.estado)" class="px-2.5 py-0.5 rounded-full text-xs font-medium capitalize">{{ item.estado }}</span>
       </template>
+      <template #cliente="{ item }">
+        <span class="text-gray-300 text-xs">{{ item.huesped_nombre || '—' }}</span>
+      </template>
       <template #subtotal="{ item }">
         <span class="text-gray-400">${{ Number(item.subtotal).toLocaleString('es-CO') }}</span>
       </template>
@@ -45,6 +48,15 @@
         </div>
       </template>
     </BaseTable>
+
+    <!-- Modal Confirmar Anulación -->
+    <BaseConfirmModal
+      v-model="showAnularConfirm"
+      message="¿Anular esta factura? No se podrá revertir."
+      confirmText="Anular"
+      variant="danger"
+      @confirm="ejecutarAnularFactura"
+    />
   </div>
 </template>
 
@@ -54,6 +66,7 @@ import api from '../services/api';
 import { useAuthStore } from '../stores/auth';
 import BaseButton from '../components/BaseButton.vue';
 import BaseTable from '../components/BaseTable.vue';
+import BaseConfirmModal from '../components/BaseConfirmModal.vue';
 
 const authStore = useAuthStore();
 const toast = inject('toast');
@@ -61,11 +74,14 @@ const facturas = ref([]);
 const reservasCompletadas = ref([]);
 const reservaSeleccionada = ref('');
 const emitiendo = ref(false);
+const showAnularConfirm = ref(false);
+const facturaAAnular = ref(null);
 const currentPage = ref(1);
 const ITEMS_PER_PAGE = 10;
 
 const columns = [
   { key: 'id', label: '#' },
+  { key: 'cliente', label: 'Cliente' },
   { key: 'id_reserva', label: 'Reserva' },
   { key: 'fecha_emision', label: 'Emisión' },
   { key: 'subtotal', label: 'Subtotal' },
@@ -147,11 +163,17 @@ async function descargarPDF(reservaId) {
   }
 }
 
-async function anularFactura(facturaId) {
-  if (!confirm('¿Anular esta factura?')) return;
+function anularFactura(facturaId) {
+  facturaAAnular.value = facturaId;
+  showAnularConfirm.value = true;
+}
+
+async function ejecutarAnularFactura() {
+  if (!facturaAAnular.value) return;
   try {
-    await api.put(`/facturas/${facturaId}/anular`, { motivo: 'Anulada desde administración' });
+    await api.put(`/facturas/${facturaAAnular.value}/anular`, { motivo: 'Anulada desde administración' });
     toast?.value?.add('Factura anulada', 'success');
+    showAnularConfirm.value = false;
     await cargar();
   } catch (err) {
     toast?.value?.add(err.response?.data?.mensaje || 'Error al anular', 'error');

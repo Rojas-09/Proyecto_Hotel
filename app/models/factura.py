@@ -42,6 +42,8 @@ class Factura(db.Model):
     reserva = db.relationship("Reserva", back_populates="factura")
 
     def to_dict(self) -> dict:
+        huesped = self.reserva.huesped if self.reserva else None
+        usuario = huesped.usuario if huesped else None
         return {
             "id": self.id,
             "id_reserva": self.id_reserva,
@@ -52,6 +54,10 @@ class Factura(db.Model):
             "total": float(self.total),
             "estado": self.estado.value,
             "pdf_path": self.pdf_path,
+            "huesped_nombre": (
+                f"{usuario.nombre} {usuario.apellido}"
+                if usuario else None
+            ),
             "created_at": self.created_at.isoformat(),
             "updated_at": self.updated_at.isoformat(),
         }

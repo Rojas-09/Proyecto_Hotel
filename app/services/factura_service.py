@@ -319,16 +319,16 @@ def _generar_pdf_factura(factura: Factura) -> str:
 
 def emitir(reserva_id: int) -> dict:
     """
-    Emite una factura pendiente para una reserva.
+    Emite (o re-emite) una factura para una reserva.
     Recalcula totales, genera PDF y cambia estado a 'emitida'.
+    Si ya existe y está emitida, la actualiza (re-emisión).
     """
     factura = _get_factura_por_reserva(reserva_id)
 
-    if factura.estado not in (EstadoFactura.pendiente,):
-        raise ValueError(
-            f"La factura ya fue {factura.estado.value.lower()}. "
-            f"No se puede volver a emitir."
-        )
+    if factura.estado == EstadoFactura.pagada:
+        raise ValueError("No se puede reemitir una factura ya pagada.")
+    if factura.estado == EstadoFactura.anulada:
+        raise ValueError("No se puede reemitir una factura anulada.")
 
     servicios = (
         db.session.execute(select(ServicioAdicional).filter_by(id_reserva=reserva_id))
