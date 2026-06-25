@@ -164,6 +164,74 @@ def reporte_ingresos(current_user):
         return handle_service_error(e, 500)
 
 
+@reporte_bp.route("/dashboard/ocupacion", methods=["GET"])
+@token_required
+@rol_requerido("admin", "gerente")
+def dashboard_ocupacion(current_user):
+    """
+    GET /api/v1/reportes/dashboard/ocupacion?fecha_inicio=YYYY-MM-DD&fecha_fin=YYYY-MM-DD
+
+    Retorna datos de ocupación en JSON para el dashboard (sin generar archivo).
+    Roles permitidos: admin, gerente.
+    """
+    fecha_inicio = request.args.get("fecha_inicio", "")
+    fecha_fin = request.args.get("fecha_fin", "")
+
+    try:
+        _validar_fechas(fecha_inicio, fecha_fin)
+    except ValueError as e:
+        return handle_service_error(e, 400)
+
+    try:
+        resultado = reporte_service.generar_ocupacion(
+            fecha_inicio, fecha_fin, formato="json", creado_por=None
+        )
+        return jsonify({
+            "success": True,
+            "data": resultado["resumen"],
+            "detalle": resultado.get("detalle", []),
+            "mensaje": "Datos de ocupación obtenidos correctamente.",
+        }), 200
+    except ValueError as e:
+        return handle_service_error(e, 400)
+    except Exception as e:
+        return handle_service_error(e, 500)
+
+
+@reporte_bp.route("/dashboard/ingresos", methods=["GET"])
+@token_required
+@rol_requerido("admin", "gerente")
+def dashboard_ingresos(current_user):
+    """
+    GET /api/v1/reportes/dashboard/ingresos?fecha_inicio=YYYY-MM-DD&fecha_fin=YYYY-MM-DD
+
+    Retorna datos de ingresos en JSON para el dashboard (sin generar archivo).
+    Roles permitidos: admin, gerente.
+    """
+    fecha_inicio = request.args.get("fecha_inicio", "")
+    fecha_fin = request.args.get("fecha_fin", "")
+
+    try:
+        _validar_fechas(fecha_inicio, fecha_fin)
+    except ValueError as e:
+        return handle_service_error(e, 400)
+
+    try:
+        resultado = reporte_service.generar_ingresos(
+            fecha_inicio, fecha_fin, formato="json", creado_por=None
+        )
+        return jsonify({
+            "success": True,
+            "data": resultado["resumen"],
+            "detalle": resultado.get("detalle", []),
+            "mensaje": "Datos de ingresos obtenidos correctamente.",
+        }), 200
+    except ValueError as e:
+        return handle_service_error(e, 400)
+    except Exception as e:
+        return handle_service_error(e, 500)
+
+
 @reporte_bp.route("/estadisticas", methods=["GET"])
 @token_required
 @rol_requerido("admin", "gerente")

@@ -236,6 +236,25 @@ def generar_ocupacion(
         else 0
     )
 
+    # Preparar detalle por habitación (para dashboard)
+    detalle_ocupacion = []
+    habitaciones_activas = (
+        db.session.execute(select(Habitacion).filter_by(activo=True)).scalars().all()
+    )
+    for h in habitaciones_activas:
+        reservas_hab = [r for r in reservas_periodo if r.id_habitacion == h.id]
+        noches_ocupadas = sum(r.noches for r in reservas_hab)
+        ingreso_hab = sum(float(r.total) for r in reservas_hab)
+        total_noches_periodo = (fin - inicio).days or 1
+        pct = round(noches_ocupadas / total_noches_periodo * 100, 1) if total_noches_periodo > 0 else 0
+        detalle_ocupacion.append({
+            "numero": h.numero,
+            "tipo": h.tipo.value,
+            "noches_ocupadas": noches_ocupadas,
+            "ingresos": ingreso_hab,
+            "ocupacion_pct": min(pct, 100),
+        })
+
     datos_xlsx = [
         ["Tipo de Habitación", "Habitaciones", "Reservas", "Ocupación (%)"],
     ]
@@ -269,7 +288,16 @@ def generar_ocupacion(
                     info["porcentaje_ocupacion"],
                 ]
             )
+        datos_pdf.append(["", "", "", ""])
+        datos_pdf.append(["RESUMEN GENERAL", "", "", ""])
+        datos_pdf.append(["Total habitaciones activas", total_habitaciones, "", ""])
+        datos_pdf.append(["Total reservas en período", total_reservas, "", ""])
+        datos_pdf.append(["Ocupación general (%)", ocupacion_general, "", ""])
+        datos_pdf.append(["Días promedio de estancia", dias_promedio, "", ""])
+        datos_pdf.append(["Período", f"{fecha_inicio} a {fecha_fin}", "", ""])
         ruta = _generar_pdf(datos_pdf, nombre_archivo, "Reporte de Ocupación")
+    elif formato == "json":
+        ruta = None
     else:
         ruta = _generar_xlsx(
             datos_xlsx,
@@ -284,7 +312,7 @@ def generar_ocupacion(
             formato=formato,
             fecha_inicio=fecha_inicio,
             fecha_fin=fecha_fin,
-            archivo_path=ruta,
+            archivo_path=ruta or "",
             archivo_nombre=nombre_archivo,
             creado_por=creado_por,
             resumen={
@@ -306,7 +334,10 @@ def generar_ocupacion(
             "total_reservas": total_reservas,
             "ocupacion_general": ocupacion_general,
             "dias_promedio": dias_promedio,
+            "porcentaje_ocupacion": ocupacion_general,
+            "habitaciones_disponibles": total_habitaciones - total_reservas,
         },
+        "detalle": detalle_ocupacion,
         "historial": reporte_registrado,
     }
 
@@ -385,6 +416,16 @@ def generar_ingresos(
             "reservas": len(reservas_tipo),
         }
 
+    # Preparar detalle por tipo (para dashboard)
+    detalle_ingresos = []
+    for tipo, info in ingresos_por_tipo.items():
+        detalle_ingresos.append({
+            "tipo": tipo,
+            "reservas": info["reservas"],
+            "servicios": info["servicios"],
+            "ingresos": info["ingresos"],
+        })
+
     datos_xlsx = [
         ["Tipo de Habitación", "Reservas", "Servicios Adicionales ($)", "Ingresos ($)"],
     ]
@@ -419,8 +460,15 @@ def generar_ingresos(
                 ]
             )
         datos_pdf.append(["", "", "", ""])
-        datos_pdf.append(["TOTAL", len(pagos_aprobados), "", round(total_ingresos, 2)])
+        datos_pdf.append(["RESUMEN GENERAL", "", "", ""])
+        datos_pdf.append(["Total ingresos período", "", "", round(total_ingresos, 2)])
+        datos_pdf.append(["Subtotal acumulado", "", "", round(subtotal_total, 2)])
+        datos_pdf.append(["IVA acumulado", "", "", round(iva_total, 2)])
+        datos_pdf.append(["Total transacciones", len(pagos_aprobados), "", ""])
+        datos_pdf.append(["Período", f"{fecha_inicio} a {fecha_fin}", "", ""])
         ruta = _generar_pdf(datos_pdf, nombre_archivo, "Reporte de Ingresos")
+    elif formato == "json":
+        ruta = None
     else:
         ruta = _generar_xlsx(
             datos_xlsx,
@@ -440,7 +488,7 @@ def generar_ingresos(
             formato=formato,
             fecha_inicio=fecha_inicio,
             fecha_fin=fecha_fin,
-            archivo_path=ruta,
+            archivo_path=ruta or "",
             archivo_nombre=nombre_archivo,
             creado_por=creado_por,
             resumen={
@@ -463,6 +511,7 @@ def generar_ingresos(
             "iva": float(round(iva_total, 2)),
             "transacciones": len(pagos_aprobados),
         },
+        "detalle": detalle_ingresos,
         "historial": reporte_registrado,
     }
 

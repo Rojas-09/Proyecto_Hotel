@@ -134,12 +134,12 @@ async function cargarReportes() {
   const params = { params: filtros.value };
   try {
     const [resOcup, resIng] = await Promise.all([
-      api.get('/reportes/ocupacion', params),
-      api.get('/reportes/ingresos', params)
+      api.get('/reportes/dashboard/ocupacion', params),
+      api.get('/reportes/dashboard/ingresos', params)
     ]);
-    reporteOcupacion.value = resOcup.data.data || resOcup.data;
-    reporteIngresos.value = resIng.data.data || resIng.data;
-    datosOcupacion.value = reporteOcupacion.value?.detalle || [];
+    reporteOcupacion.value = resOcup.data.data;
+    reporteIngresos.value = resIng.data.data;
+    datosOcupacion.value = resOcup.data.detalle || [];
   } catch (err) {
     toast?.value?.add('Error al cargar reportes', 'error');
   }
