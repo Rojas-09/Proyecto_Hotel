@@ -85,16 +85,66 @@ class AuthService:
 
         email = data["email"].strip().lower()
 
-        if db.session.execute(
+        existing_user = db.session.execute(
             select(Usuario).filter_by(email=email)
-        ).scalar_one_or_none():
+        ).scalar_one_or_none()
+
+        if existing_user:
+            huesped_existente = db.session.execute(
+                select(Huesped).filter_by(id_usuario=existing_user.id)
+            ).scalar_one_or_none()
+
+            # Si el huésped está activo (o no hay huésped), es conflicto real
+            if huesped_existente and huesped_existente.activo:
+                return {
+                    "success": False,
+                    "error": {
+                        "code": "CONFLICT",
+                        "message": "Ya existe un huésped activo con ese correo electrónico.",
+                    },
+                }, 409
+            if not huesped_existente and existing_user.activo:
+                return {
+                    "success": False,
+                    "error": {
+                        "code": "CONFLICT",
+                        "message": "Ya existe una cuenta activa con ese correo electrónico.",
+                    },
+                }, 409
+
+            # Reactivar usuario y huésped
+            existing_user.activo = True
+            existing_user.nombre = data["nombre"].strip()
+            existing_user.apellido = data["apellido"].strip()
+            existing_user.password = data["password"]
+            existing_user.telefono = data.get("telefono", "").strip() or None
+            db.session.flush()
+
+            if not huesped_existente and rol == "cliente":
+                huesped_existente = Huesped(
+                    id_usuario=existing_user.id,
+                    documento_id=data["documento_id"].strip(),
+                    tipo_documento=data.get("tipo_documento", "CC").strip(),
+                    preferencias=data.get("preferencias", "").strip() or None,
+                )
+                db.session.add(huesped_existente)
+            elif huesped_existente:
+                huesped_existente.activo = True
+                huesped_existente.documento_id = data["documento_id"].strip()
+
+            db.session.commit()
+
+            tokens = AuthService._emitir_tokens(existing_user)
+
             return {
-                "success": False,
-                "error": {
-                    "code": "CONFLICT",
-                    "message": "Ya existe una cuenta con ese correo electrónico.",
+                "success": True,
+                "data": {
+                    "usuario": existing_user.to_dict(),
+                    "access_token": tokens["access_token"],
+                    "refresh_token": tokens["refresh_token"],
                 },
-            }, 409
+                "message": "Cuenta reactivada exitosamente.",
+            }, 200
 
         if len(data["password"]) < 8:
             return {

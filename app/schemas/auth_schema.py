@@ -12,6 +12,7 @@ class RegisterSchema(Schema):
     )
     tipo_documento = fields.String(validate=validate.Length(max=10), load_default="CC")
     preferencias = fields.String(load_default=None)
+    rol = fields.String(load_default=None)
 
 
 class LoginSchema(Schema):

@@ -90,6 +90,20 @@ def register():
     result, status = AuthService.registrar(data)
     if status not in (200, 201):
         return jsonify(result), status
+
+    # Si el header X-Admin-Create está presente y hay un token admin válido,
+    # no sobreescribir las cookies del admin autenticado.
+    if request.headers.get("X-Admin-Create") == "true":
+        token = request.cookies.get("access_token")
+        if token:
+            try:
+                from app.utils.jwt_helper import decodificar_token
+                payload = decodificar_token(token)
+                if payload.get("rol") == "admin":
+                    return jsonify(result), status
+            except Exception:
+                pass
+
     resp = jsonify(result)
     _set_auth_cookies(
         resp, result["data"].get("access_token"), result["data"].get("refresh_token")
