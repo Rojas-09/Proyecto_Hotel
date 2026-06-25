@@ -32,6 +32,7 @@
         <div class="flex gap-2">
           <button @click="verHistorial(item)" class="text-xs text-blue-400 hover:text-blue-300 transition-colors">Historial</button>
           <button @click="openEdit(item)" class="text-xs text-hotel-gold hover:text-yellow-400 transition-colors">Editar</button>
+          <button v-if="canDelete" @click="confirmarEliminarHuesped(item)" class="text-xs text-red-400 hover:text-red-300 transition-colors">Eliminar</button>
         </div>
       </template>
     </BaseTable>
@@ -71,9 +72,14 @@
           <label class="label">Número de documento</label>
           <input v-model="form.documento_id" required class="input-field w-full" placeholder="123456789" />
         </div>
-        <div v-if="!editingItem">
+        <div v-if="!editingItem" class="relative">
           <label class="label">Contraseña</label>
-          <input v-model="form.password" type="password" :required="!editingItem" class="input-field w-full" placeholder="Mínimo 8 caracteres" />
+          <div class="relative">
+            <input v-model="form.password" :type="showPass ? 'text' : 'password'" :required="!editingItem" class="input-field w-full pr-16" placeholder="Mínimo 8 caracteres" />
+            <button type="button" @click="showPass = !showPass" class="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-500 hover:text-gray-300 uppercase tracking-wider">
+              {{ showPass ? 'Ocultar' : 'Ver' }}
+            </button>
+          </div>
         </div>
       </form>
       <template #footer>
@@ -96,16 +102,29 @@
         </div>
       </div>
     </BaseModal>
+
+    <!-- Modal Confirmar Eliminación -->
+    <BaseConfirmModal
+      v-model="showDeleteConfirm"
+      :message="`¿Eliminar a ${huespedAEliminar?.nombre} ${huespedAEliminar?.apellido}? Se desactivará su cuenta.`"
+      confirmText="Eliminar"
+      variant="danger"
+      :loading="deleting"
+      @confirm="eliminarHuesped"
+    />
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted, inject } from 'vue';
 import api from '../services/api';
+import { useAuthStore } from '../stores/auth';
 import BaseButton from '../components/BaseButton.vue';
 import BaseTable from '../components/BaseTable.vue';
 import BaseModal from '../components/BaseModal.vue';
+import BaseConfirmModal from '../components/BaseConfirmModal.vue';
 
+const authStore = useAuthStore();
 const toast = inject('toast');
 const huespedes = ref([]);
 const busqueda = ref('');
@@ -117,6 +136,12 @@ const historial = ref([]);
 const saving = ref(false);
 const currentPage = ref(1);
 const totalPages = ref(1);
+const showDeleteConfirm = ref(false);
+const huespedAEliminar = ref(null);
+const deleting = ref(false);
+const showPass = ref(false);
+
+const canDelete = computed(() => authStore.userRole === 'admin');
 
 const columns = [
   { key: 'nombre', label: 'Huésped' },
@@ -132,7 +157,7 @@ const defaultForm = {
 const form = ref({ ...defaultForm });
 
 const huespedesFiltrados = computed(() => {
-  let result = huespedes.value;
+  let result = huespedes.value.filter(h => h.activo !== false);
   if (busqueda.value) {
     const q = busqueda.value.toLowerCase();
     result = result.filter(h => `${h.nombre} ${h.apellido} ${h.email} ${h.documento_id}`.toLowerCase().includes(q));
@@ -191,6 +216,7 @@ async function guardar() {
       toast?.value?.add('Huésped actualizado', 'success');
     } else {
       // Registrar nuevo usuario cliente + huésped
+      // Envía X-Admin-Create para que el backend no sobreescriba cookies de admin
       await api.post('/auth/register', {
         nombre: form.value.nombre,
         apellido: form.value.apellido,
@@ -200,7 +226,7 @@ async function guardar() {
         rol: 'cliente',
         documento_id: form.value.documento_id,
         tipo_documento: form.value.tipo_documento,
-      });
+      }, { headers: { 'X-Admin-Create': 'true' } });
       toast?.value?.add('Huésped registrado exitosamente', 'success');
     }
     showModal.value = false;
@@ -209,6 +235,25 @@ async function guardar() {
     const msg = err.response?.data?.error?.message || err.response?.data?.mensaje || 'Error al guardar';
     toast?.value?.add(msg, 'error');
   } finally { saving.value = false; }
+}
+
+function confirmarEliminarHuesped(huesped) {
+  huespedAEliminar.value = huesped;
+  showDeleteConfirm.value = true;
+}
+
+async function eliminarHuesped() {
+  if (!huespedAEliminar.value) return;
+  deleting.value = true;
+  try {
+    await api.delete(`/huespedes/${huespedAEliminar.value.id}`);
+    toast?.value?.add('Huésped eliminado correctamente', 'success');
+    showDeleteConfirm.value = false;
+    await cargar();
+  } catch (err) {
+    const msg = err.response?.data?.mensaje || 'Error al eliminar';
+    toast?.value?.add(msg, 'error');
+  } finally { deleting.value = false; }
 }
 
 const estadoClass = (e) => ({

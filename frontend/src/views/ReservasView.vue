@@ -22,14 +22,37 @@
         </div>
         <BaseButton variant="secondary" @click="consultarDisponibilidad">Consultar</BaseButton>
       </div>
-      <div v-if="habitacionesDisponibles.length" class="mt-3 flex flex-wrap gap-2">
-        <span
-          v-for="h in habitacionesDisponibles" :key="h.id"
-          @click="form.id_habitacion = h.id"
-          class="cursor-pointer text-xs bg-green-900/40 text-green-300 border border-green-800 rounded-full px-3 py-1 hover:bg-green-900/70 transition-colors"
-        >
-          ✓ Hab. {{ h.numero }} ({{ h.tipo }}) – ${{ Number(h.precio_noche).toLocaleString('es-CO') }}
-        </span>
+      <div v-if="habitacionesDisponibles.length" class="mt-3 overflow-x-auto">
+        <table class="w-full text-xs text-gray-300 border border-gray-700 rounded-lg overflow-hidden">
+          <thead>
+            <tr class="bg-gray-800 text-gray-400 uppercase tracking-wider text-[10px]">
+              <th class="px-3 py-2 text-left">N°</th>
+              <th class="px-3 py-2 text-left">Tipo</th>
+              <th class="px-3 py-2 text-left">Precio/noche</th>
+              <th class="px-3 py-2 text-center">Seleccionar</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr
+              v-for="h in habitacionesDisponibles" :key="h.id"
+              @click="form.id_habitacion = h.id"
+              class="border-t border-gray-700 cursor-pointer hover:bg-gray-800/60 transition-colors"
+              :class="{'bg-green-900/20 border-green-700': form.id_habitacion === h.id}"
+            >
+              <td class="px-3 py-2.5 font-medium text-gray-200">{{ h.numero }}</td>
+              <td class="px-3 py-2.5">
+                <span class="bg-gray-800 text-gray-300 rounded px-2 py-0.5">{{ h.tipo }}</span>
+              </td>
+              <td class="px-3 py-2.5 text-hotel-gold font-medium">
+                ${{ Number(h.precio_noche).toLocaleString('es-CO') }}
+              </td>
+              <td class="px-3 py-2.5 text-center">
+                <span v-if="form.id_habitacion === h.id" class="text-green-400 font-bold text-sm">✓</span>
+                <span v-else class="text-gray-600">—</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </div>
 
@@ -52,9 +75,28 @@
           <button v-if="['Pendiente'].includes(item.estado)" @click="confirmarReserva(item.id)" class="text-xs text-green-400 hover:text-green-300 transition-colors">Confirmar</button>
           <button v-if="['Confirmada', 'Pendiente'].includes(item.estado)" @click="openEdit(item)" class="text-xs text-hotel-gold hover:text-yellow-400 transition-colors">Editar</button>
           <button v-if="['Pendiente', 'Confirmada'].includes(item.estado)" @click="cancelar(item.id)" class="text-xs text-red-400 hover:text-red-300 transition-colors">Cancelar</button>
+          <button v-if="canDelete" @click="confirmarEliminarReserva(item)" class="text-xs text-red-400 hover:text-red-300 transition-colors">Eliminar</button>
         </div>
       </template>
     </BaseTable>
+
+    <!-- Modal Confirmar Eliminación -->
+    <BaseConfirmModal
+      v-model="showDeleteConfirm"
+      message="¿Eliminar esta reserva? Se cancelará permanentemente."
+      confirmText="Eliminar"
+      variant="danger"
+      :loading="deleting"
+      @confirm="eliminarReserva"
+    />
+    <!-- Modal Confirmar Cancelación -->
+    <BaseConfirmModal
+      v-model="showCancelConfirm"
+      message="¿Cancelar esta reserva? No se podrá revertir."
+      confirmText="Sí, cancelar"
+      variant="danger"
+      @confirm="ejecutarCancelacion"
+    />
 
     <!-- Modal Crear / Editar -->
     <BaseModal v-model="showModal" :title="editingItem ? 'Editar Reserva' : 'Nueva Reserva'">
@@ -64,7 +106,7 @@
             <label class="label">Habitación</label>
             <select v-model.number="form.id_habitacion" required class="input-field w-full">
               <option value="" disabled>Seleccionar...</option>
-              <option v-for="h in todasHabitaciones" :key="h.id" :value="h.id">{{ h.numero }} – {{ h.tipo }}</option>
+              <option v-for="h in habitacionesDisponiblesModal" :key="h.id" :value="h.id">{{ h.numero }} – {{ h.tipo }} — ${{ Number(h.precio_noche).toLocaleString('es-CO') }}</option>
             </select>
           </div>
           <div>
@@ -101,10 +143,13 @@
 <script setup>
 import { ref, computed, onMounted, inject } from 'vue';
 import api from '../services/api';
+import { useAuthStore } from '../stores/auth';
 import BaseButton from '../components/BaseButton.vue';
 import BaseTable from '../components/BaseTable.vue';
 import BaseModal from '../components/BaseModal.vue';
+import BaseConfirmModal from '../components/BaseConfirmModal.vue';
 
+const authStore = useAuthStore();
 const toast = inject('toast');
 const reservas = ref([]);
 const todasHabitaciones = ref([]);
@@ -117,8 +162,24 @@ const currentPage = ref(1);
 const ITEMS_PER_PAGE = 10;
 
 const disponibilidad = ref({ entrada: '', salida: '' });
+const showDeleteConfirm = ref(false);
+const showCancelConfirm = ref(false);
+const reservaAEliminar = ref(null);
+const reservaACancelar = ref(null);
+const deleting = ref(false);
 const defaultForm = { id_habitacion: '', id_huesped: '', fecha_entrada: '', fecha_salida: '', notas: '' };
 const form = ref({ ...defaultForm });
+
+const canDelete = computed(() => authStore.userRole === 'admin');
+
+const habitacionesDisponiblesModal = computed(() => {
+  let list = todasHabitaciones.value.filter(h => h.estado?.toLowerCase() === 'disponible');
+  if (editingItem.value) {
+    const actual = todasHabitaciones.value.find(h => h.id === editingItem.value.id_habitacion);
+    if (actual && actual.estado?.toLowerCase() !== 'disponible') list.unshift(actual);
+  }
+  return list;
+});
 
 const columns = [
   { key: 'id', label: '#' },
@@ -200,7 +261,7 @@ async function guardar() {
   saving.value = true;
   try {
     if (editingItem.value) {
-      await api.put(`/reservas/${editingItem.value.id}`, form.value);
+      await api.patch(`/reservas/${editingItem.value.id}`, form.value);
       toast?.value?.add('Reserva actualizada', 'success');
     } else {
       await api.post('/reservas/', form.value);
@@ -226,16 +287,41 @@ async function confirmarReserva(id) {
   }
 }
 
-async function cancelar(id) {
-  if (!confirm('¿Cancelar esta reserva?')) return;
+function cancelar(id) {
+  reservaACancelar.value = id;
+  showCancelConfirm.value = true;
+}
+
+async function ejecutarCancelacion() {
+  if (!reservaACancelar.value) return;
   try {
-    await api.put(`/reservas/${id}/cancelar`);
+    await api.put(`/reservas/${reservaACancelar.value}/cancelar`);
     toast?.value?.add('Reserva cancelada', 'success');
+    showCancelConfirm.value = false;
     await cargarReservas();
   } catch (err) {
     const msg = err.response?.data?.mensaje || 'Error al cancelar';
     toast?.value?.add(msg, 'error');
   }
+}
+
+function confirmarEliminarReserva(item) {
+  reservaAEliminar.value = item;
+  showDeleteConfirm.value = true;
+}
+
+async function eliminarReserva() {
+  if (!reservaAEliminar.value) return;
+  deleting.value = true;
+  try {
+    await api.delete(`/reservas/${reservaAEliminar.value.id}`);
+    toast?.value?.add('Reserva eliminada correctamente', 'success');
+    showDeleteConfirm.value = false;
+    await cargarReservas();
+  } catch (err) {
+    const msg = err.response?.data?.mensaje || 'Error al eliminar';
+    toast?.value?.add(msg, 'error');
+  } finally { deleting.value = false; }
 }
 
 const estadoClass = (e) => ({

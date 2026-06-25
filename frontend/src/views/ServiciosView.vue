@@ -56,7 +56,7 @@
             </div>
             <div>
               <label class="label">Costo (COP)</label>
-              <input v-model.number="form.costo" type="number" min="1" required class="input-field w-full" placeholder="45000" />
+              <input v-model="form.costo" type="number" min="1" required class="input-field w-full" placeholder="45000" />
             </div>
             <BaseButton type="submit" :disabled="guardando">
               {{ guardando ? 'Guardando...' : '+ Agregar' }}
@@ -101,6 +101,15 @@
     <div v-else class="text-center text-gray-600 py-16 text-sm">
       Selecciona una reserva activa (con check-in) para gestionar sus servicios.
     </div>
+
+    <!-- Modal Confirmar Eliminación -->
+    <BaseConfirmModal
+      v-model="showDeleteConfirm"
+      message="¿Eliminar este servicio?"
+      confirmText="Eliminar"
+      variant="danger"
+      @confirm="ejecutarEliminarServicio"
+    />
   </div>
 </template>
 
@@ -108,6 +117,7 @@
 import { ref, computed, onMounted, inject } from 'vue';
 import api from '../services/api';
 import BaseButton from '../components/BaseButton.vue';
+import BaseConfirmModal from '../components/BaseConfirmModal.vue';
 import { useAuthStore } from '../stores/auth';
 
 const authStore = useAuthStore();
@@ -134,6 +144,8 @@ const tipoMap = {
 };
 
 const form = ref({ descripcion: '', costo: '' });
+const showDeleteConfirm = ref(false);
+const servicioAEliminar = ref(null);
 const canDeleteServicio = computed(() => authStore.userRole === 'admin');
 
 // Filtra los servicios según el tab activo
@@ -161,13 +173,14 @@ async function cargarServicios() {
 }
 
 async function agregarServicio() {
-  if (!form.value.descripcion || !form.value.costo) return;
+  const costo = Number(form.value.costo);
+  if (!form.value.descripcion || !costo) return;
   guardando.value = true;
   try {
     await api.post(`/reservas/${reservaId.value}/servicios`, {
       tipo: tipoMap[activeTab.value],
       descripcion: form.value.descripcion,
-      costo: form.value.costo,
+      costo: costo,
     });
     toast?.value?.add('Servicio agregado correctamente', 'success');
     form.value = { descripcion: '', costo: '' };
@@ -178,11 +191,17 @@ async function agregarServicio() {
   } finally { guardando.value = false; }
 }
 
-async function eliminarServicio(servicioId) {
-  if (!confirm('¿Eliminar este servicio?')) return;
+function eliminarServicio(servicioId) {
+  servicioAEliminar.value = servicioId;
+  showDeleteConfirm.value = true;
+}
+
+async function ejecutarEliminarServicio() {
+  if (!servicioAEliminar.value) return;
   try {
-    await api.delete(`/servicios/${servicioId}`);
+    await api.delete(`/servicios/${servicioAEliminar.value}`);
     toast?.value?.add('Servicio eliminado', 'success');
+    showDeleteConfirm.value = false;
     await cargarServicios();
   } catch (err) {
     const msg = err.response?.data?.error || 'Error al eliminar';
