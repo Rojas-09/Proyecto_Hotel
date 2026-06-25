@@ -96,6 +96,13 @@ def procesar_garantia(
         raise ValueError(failure_msg)
 
     if es_manual:
+        # Si admin/recepcionista paga en efectivo, auto-aprobar y confirmar
+        if current_user and rol_actual in ("admin", "recepcionista"):
+            pago.estado = EstadoPago.aprobado
+            pago.confirmado_por = current_user.id
+            pago.fecha_confirmacion = ahora_colombia()
+            reserva.estado = EstadoReserva.confirmada
+            reserva.updated_at = ahora_colombia()
         db.session.commit()
         return pago.to_dict()
 

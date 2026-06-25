@@ -115,7 +115,7 @@ def crear(
 
 
 def eliminar(huesped_id: int):
-    """Soft-delete: marca el huésped como inactivo."""
+    """Soft-delete: marca el huésped como inactivo (el usuario sigue activo)."""
     huesped = db.session.get(Huesped, huesped_id)
     if not huesped:
         raise LookupError(f"Huésped con id {huesped_id} no encontrado.")

@@ -273,13 +273,21 @@ def hacer_checkin(reserva_id, realizado_por_id=None):
     reserva.habitacion.estado = EstadoHabitacion.ocupada
     reserva.updated_at = ahora_colombia()
 
-    checkin_checkout = CheckInCheckOut(
-        id_reserva=reserva.id,
-        fecha_checkin=ahora_colombia(),
-        realizado_por=realizado_por_id,
-    )
+    checkin_checkout = db.session.execute(
+        select(CheckInCheckOut).filter_by(id_reserva=reserva.id)
+    ).scalar_one_or_none()
 
-    db.session.add(checkin_checkout)
+    if checkin_checkout:
+        checkin_checkout.fecha_checkin = ahora_colombia()
+        checkin_checkout.realizado_por = realizado_por_id
+        checkin_checkout.fecha_checkout = None
+    else:
+        checkin_checkout = CheckInCheckOut(
+            id_reserva=reserva.id,
+            fecha_checkin=ahora_colombia(),
+            realizado_por=realizado_por_id,
+        )
+        db.session.add(checkin_checkout)
     db.session.commit()
 
     return reserva.to_dict()
