@@ -41,7 +41,7 @@
         <div class="flex gap-2">
           <button @click="descargarPDF(item.id_reserva)" class="text-xs text-blue-400 hover:text-blue-300 transition-colors">📄 PDF</button>
           <button
-            v-if="item.estado === 'emitida' && canAnular"
+            v-if="item.estado === 'Emitida' && canAnular"
             @click="anularFactura(item.id)"
             class="text-xs text-red-400 hover:text-red-300 transition-colors"
           >Anular</button>
@@ -124,6 +124,9 @@ async function cargar() {
     );
 
     facturas.value = facturasList.filter(Boolean);
+    reservasCompletadas.value = reservasCompletadas.value.filter(
+      r => !facturas.value.some(f => f.id_reserva === r.id)
+    );
     currentPage.value = Math.min(currentPage.value, totalPages.value);
   } catch { toast?.value?.add('Error al cargar datos', 'error'); }
 }
@@ -181,10 +184,10 @@ async function ejecutarAnularFactura() {
 }
 
 const estadoClass = (e) => ({
-  emitida: 'bg-blue-900/50 text-blue-300',
-  pendiente: 'bg-yellow-900/50 text-yellow-300',
-  pagada: 'bg-green-900/50 text-green-300',
-  anulada: 'bg-red-900/50 text-red-300'
+  'Emitida': 'bg-blue-900/50 text-blue-300',
+  'Pendiente': 'bg-yellow-900/50 text-yellow-300',
+  'Pagada': 'bg-green-900/50 text-green-300',
+  'Anulada': 'bg-red-900/50 text-red-300'
 }[e] || 'bg-gray-800 text-gray-400');
 
 onMounted(cargar);

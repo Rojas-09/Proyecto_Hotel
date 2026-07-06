@@ -17,7 +17,7 @@
             </div>
             <p class="text-sm text-gray-300">{{ message }}</p>
           </div>
-          <div class="px-6 py-4 border-t border-gray-700 flex justify-end gap-3">
+          <div class="px-6 py-4 border-t border-gray-700 flex justify-center gap-3">
             <BaseButton variant="secondary" @click="cancel">Cancelar</BaseButton>
             <BaseButton :variant="variant === 'danger' ? 'danger' : 'primary'" :disabled="loading" @click="confirm">
               {{ loading ? 'Procesando...' : confirmText }}

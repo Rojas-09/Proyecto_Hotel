@@ -591,10 +591,11 @@ def actualizar(reserva_id, datos: dict, current_user=None):
             id_habitacion, fecha_entrada, fecha_salida, excluir_id=reserva.id
         )
 
-        # Recalcular totales si cambian fechas
+        # Recalcular totales si cambian fechas o habitación
         if (
             fecha_entrada != reserva.fecha_entrada
             or fecha_salida != reserva.fecha_salida
+            or id_habitacion != reserva.id_habitacion
         ):
             habitacion = db.session.get(Habitacion, id_habitacion)
             if not habitacion:

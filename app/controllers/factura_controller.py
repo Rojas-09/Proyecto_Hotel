@@ -108,8 +108,6 @@ def descargar_factura(current_user, reserva_id):
         with open(pdf_path, "rb") as f:
             pdf_bytes = io.BytesIO(f.read())
 
-        os.remove(pdf_path)
-
         return send_file(
             pdf_bytes,
             mimetype="application/pdf",

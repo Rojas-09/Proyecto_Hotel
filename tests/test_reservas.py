@@ -431,6 +431,108 @@ class TestActualizarReserva:
         assert resp.status_code == 200
         data = resp.get_json()["data"]
         assert data["fecha_entrada"] == nuevas_fechas["fecha_entrada"]
+        assert data["noches"] == 3
+        assert data["subtotal"] == 600000.0
+        assert data["impuestos"] == 114000.0
+        assert data["total"] == 714000.0
+
+    def test_actualizar_habitacion_recalcula_totales(
+        self, client, admin_user, cliente_user, habitacion_disponible, app
+    ):
+        headers_cliente, _ = cliente_user
+        fecha_entrada = (date.today() + timedelta(days=5)).strftime("%Y-%m-%d")
+        fecha_salida = (date.today() + timedelta(days=7)).strftime("%Y-%m-%d")
+
+        resp_crear = client.post(
+            "/api/v1/reservas/",
+            json={
+                "id_habitacion": habitacion_disponible["id"],
+                "fecha_entrada": fecha_entrada,
+                "fecha_salida": fecha_salida,
+            },
+            headers=headers_cliente,
+        )
+        assert resp_crear.status_code == 201
+        reserva_id = resp_crear.get_json()["data"]["id"]
+        data_original = resp_crear.get_json()["data"]
+        assert data_original["subtotal"] == 400000.0
+
+        with app.app_context():
+            hab_b = Habitacion(
+                numero="301",
+                tipo=TipoHabitacion.suite,
+                descripcion="Suite de lujo",
+                precio_noche=300000,
+                capacidad=2,
+                piso=3,
+                estado=EstadoHabitacion.disponible,
+            )
+            db.session.add(hab_b)
+            db.session.commit()
+            hab_b_id = hab_b.id
+
+        resp = client.patch(
+            f"/api/v1/reservas/{reserva_id}",
+            json={"id_habitacion": hab_b_id},
+            headers=admin_user,
+        )
+        assert resp.status_code == 200
+        data = resp.get_json()["data"]
+        assert data["id_habitacion"] == hab_b_id
+        assert data["noches"] == 2
+        assert data["subtotal"] == 600000.0
+        assert data["impuestos"] == 114000.0
+        assert data["total"] == 714000.0
+
+    def test_actualizar_habitacion_y_fechas_recalcula_totales(
+        self, client, admin_user, cliente_user, habitacion_disponible, app
+    ):
+        headers_cliente, _ = cliente_user
+        fecha_entrada = (date.today() + timedelta(days=5)).strftime("%Y-%m-%d")
+        fecha_salida = (date.today() + timedelta(days=7)).strftime("%Y-%m-%d")
+
+        resp_crear = client.post(
+            "/api/v1/reservas/",
+            json={
+                "id_habitacion": habitacion_disponible["id"],
+                "fecha_entrada": fecha_entrada,
+                "fecha_salida": fecha_salida,
+            },
+            headers=headers_cliente,
+        )
+        assert resp_crear.status_code == 201
+        reserva_id = resp_crear.get_json()["data"]["id"]
+
+        with app.app_context():
+            hab_c = Habitacion(
+                numero="302",
+                tipo=TipoHabitacion.suite,
+                descripcion="Suite premium",
+                precio_noche=350000,
+                capacidad=2,
+                piso=3,
+                estado=EstadoHabitacion.disponible,
+            )
+            db.session.add(hab_c)
+            db.session.commit()
+            hab_c_id = hab_c.id
+
+        nuevas_fechas_y_hab = {
+            "id_habitacion": hab_c_id,
+            "fecha_entrada": (date.today() + timedelta(days=6)).strftime("%Y-%m-%d"),
+            "fecha_salida": (date.today() + timedelta(days=10)).strftime("%Y-%m-%d"),
+        }
+        resp = client.patch(
+            f"/api/v1/reservas/{reserva_id}",
+            json=nuevas_fechas_y_hab,
+            headers=admin_user,
+        )
+        assert resp.status_code == 200
+        data = resp.get_json()["data"]
+        assert data["noches"] == 4
+        assert data["subtotal"] == 1400000.0
+        assert data["impuestos"] == 266000.0
+        assert data["total"] == 1666000.0
 
     def test_actualizar_como_cliente_su_reserva(
         self, client, cliente_user, habitacion_disponible, reserva_data
