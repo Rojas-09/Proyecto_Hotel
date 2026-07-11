@@ -113,7 +113,7 @@ def procesar_garantia(
     return pago.to_dict()
 
 
-def procesar_liquidacion(reserva_id, metodo_str, payment_method_id=None):
+def procesar_liquidacion(reserva_id, metodo_str, payment_method_id=None, current_user=None):
     """
     Procesa el pago de liquidación (saldo restante + servicios adicionales).
 
@@ -160,6 +160,8 @@ def procesar_liquidacion(reserva_id, metodo_str, payment_method_id=None):
         tipo=TipoPago.liquidacion,
         estado=EstadoPago.aprobado,
         referencia_externa=referencia_externa,
+        confirmado_por=current_user.id if current_user else None,
+        fecha_confirmacion=ahora_colombia() if current_user else None,
     )
     db.session.add(pago)
     db.session.commit()

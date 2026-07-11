@@ -418,6 +418,17 @@ class TestProcesarLiquidacion:
             u.password = "Pass1234!"
             db.session.add(u)
             db.session.flush()
+
+            u_admin = Usuario(
+                nombre="Admin",
+                apellido="Test",
+                email=f"admin_liq_{id(self)}@test.com",
+                rol=RolEnum.admin,
+            )
+            u_admin.password = "Pass1234!"
+            db.session.add(u_admin)
+            db.session.flush()
+
             h = Huesped(
                 id_usuario=u.id, documento_id=f"DOC6-{id(self)}", tipo_documento="cc"
             )
@@ -459,9 +470,11 @@ class TestProcesarLiquidacion:
             db.session.add(garantia)
             db.session.commit()
 
-            resultado = procesar_liquidacion(r.id, "Efectivo")
+            resultado = procesar_liquidacion(r.id, "Efectivo", None, u_admin)
             assert resultado["tipo"] == "Liquidacion"
             assert resultado["estado"] == "Aprobado"
+            assert resultado["confirmado_por"] == u_admin.id
+            assert resultado["fecha_confirmacion"] is not None
 
     def test_liquidacion_sin_garantia(self, app):
         from app.services.pago_service import procesar_liquidacion
@@ -504,7 +517,7 @@ class TestProcesarLiquidacion:
             db.session.commit()
 
             with pytest.raises(ValueError, match="pago de garantía"):
-                procesar_liquidacion(r.id, "Efectivo")
+                procesar_liquidacion(r.id, "Efectivo", None, None)
 
     def test_liquidacion_reserva_no_ocupada(self, app):
         from app.services.pago_service import procesar_liquidacion
@@ -557,7 +570,7 @@ class TestProcesarLiquidacion:
             db.session.commit()
 
             with pytest.raises(ValueError, match="no está en estado Ocupada"):
-                procesar_liquidacion(r.id, "Efectivo")
+                procesar_liquidacion(r.id, "Efectivo", None, None)
 
 
 class TestSolicitarReembolso:
@@ -849,10 +862,22 @@ class TestLiquidacionExtra:
             db.session.add(garantia)
             db.session.commit()
 
-            resultado = procesar_liquidacion(r.id, "Efectivo")
+            u_admin = Usuario(
+                nombre="Admin",
+                apellido="Test",
+                email=f"admin_liq_zero_{id(self)}@test.com",
+                rol=RolEnum.admin,
+            )
+            u_admin.password = "Pass1234!"
+            db.session.add(u_admin)
+            db.session.flush()
+
+            resultado = procesar_liquidacion(r.id, "Efectivo", None, u_admin)
 
             assert resultado["tipo"] == "Liquidacion"
             assert float(resultado["monto"]) == 0.0
+            assert resultado["confirmado_por"] == u_admin.id
+            assert resultado["fecha_confirmacion"] is not None
 
     def test_liquidacion_con_servicios_adicionales(self, app):
         """Liquidacion incluye precio de servicios adicionales."""
@@ -912,7 +937,19 @@ class TestLiquidacionExtra:
             db.session.add(servicio)
             db.session.commit()
 
-            resultado = procesar_liquidacion(r.id, "Transferencia")
+            u_admin = Usuario(
+                nombre="Admin",
+                apellido="Test",
+                email=f"admin_liq_serv_{id(self)}@test.com",
+                rol=RolEnum.admin,
+            )
+            u_admin.password = "Pass1234!"
+            db.session.add(u_admin)
+            db.session.flush()
+
+            resultado = procesar_liquidacion(r.id, "Transferencia", None, u_admin)
 
             assert resultado["tipo"] == "Liquidacion"
             assert resultado["metodo"] == "Transferencia"
+            assert resultado["confirmado_por"] == u_admin.id
+            assert resultado["fecha_confirmacion"] is not None

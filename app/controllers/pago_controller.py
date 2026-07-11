@@ -117,7 +117,7 @@ def procesar_liquidacion(current_user, reserva_id):
 
     try:
         resultado = pago_service.procesar_liquidacion(
-            reserva_id, metodo, payment_method_id
+            reserva_id, metodo, payment_method_id, current_user
         )
         return (
             jsonify(
