@@ -5,7 +5,7 @@
         <h2 class="text-2xl font-bold text-white">Reservas</h2>
         <p class="text-sm text-gray-500 mt-1">Gestión y control de reservas</p>
       </div>
-      <BaseButton @click="openCreate">+ Nueva Reserva</BaseButton>
+      <BaseButton @click="openCreate" :disabled="loading">+ Nueva Reserva</BaseButton>
     </div>
 
     <!-- Filtros de disponibilidad -->
@@ -170,6 +170,15 @@ const showCancelConfirm = ref(false);
 const reservaAEliminar = ref(null);
 const reservaACancelar = ref(null);
 const deleting = ref(false);
+const loading = ref(true);
+
+async function cargarTodo() {
+  try {
+    await Promise.all([cargarReservas(), cargarHabitaciones(), cargarHuespedes()]);
+  } finally {
+    loading.value = false;
+  }
+}
 const defaultForm = { id_habitacion: '', id_huesped: '', fecha_entrada: '', fecha_salida: '', notas: '' };
 const form = ref({ ...defaultForm });
 
@@ -337,7 +346,7 @@ const estadoClass = (e) => ({
   Cancelada: 'bg-red-900/50 text-red-300'
 }[e] || 'bg-gray-800 text-gray-400');
 
-onMounted(() => { cargarReservas(); cargarHabitaciones(); cargarHuespedes(); });
+onMounted(cargarTodo);
 </script>
 
 <style scoped>
