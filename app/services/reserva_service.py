@@ -258,7 +258,10 @@ def cancelar(reserva_id, motivo=None, current_user=None):
 
 def hacer_checkin(reserva_id, realizado_por_id=None):
     """Realiza el check-in de una reserva."""
-    reserva = db.session.get(Reserva, reserva_id)
+    # Lock pesimista sobre la reserva para evitar race condition en upsert CheckInCheckOut
+    reserva = db.session.execute(
+        select(Reserva).filter_by(id=reserva_id).with_for_update()
+    ).scalar_one_or_none()
     if not reserva:
         raise LookupError(f"Reserva con id {reserva_id} no encontrada.")
 

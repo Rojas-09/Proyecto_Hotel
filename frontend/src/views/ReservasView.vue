@@ -74,8 +74,8 @@
         <div class="flex gap-2 flex-wrap">
           <button v-if="['Pendiente'].includes(item.estado)" @click="confirmarReserva(item.id)" class="text-xs text-green-400 hover:text-green-300 transition-colors">Confirmar</button>
           <button v-if="['Confirmada', 'Pendiente'].includes(item.estado)" @click="openEdit(item)" class="text-xs text-hotel-gold hover:text-yellow-400 transition-colors">Editar</button>
-          <button v-if="['Pendiente', 'Confirmada'].includes(item.estado)" @click="cancelar(item.id)" class="text-xs text-red-400 hover:text-red-300 transition-colors">Cancelar</button>
-          <button v-if="canDelete" @click="confirmarEliminarReserva(item)" class="text-xs text-red-400 hover:text-red-300 transition-colors">Eliminar</button>
+          <button v-if="['Pendiente', 'Confirmada'].includes(item.estado)" @click="cancelar(item.id)" class="text-xs text-red-400 hover:text-red-300 transition-colors">Cancelar reserva</button>
+          <button v-if="canDelete" @click="confirmarEliminarReserva(item)" class="text-xs text-red-400 hover:text-red-300 transition-colors">Eliminar reserva</button>
         </div>
       </template>
     </BaseTable>
@@ -83,8 +83,8 @@
     <!-- Modal Confirmar Eliminación -->
     <BaseConfirmModal
       v-model="showDeleteConfirm"
-      message="¿Eliminar esta reserva? Se cancelará permanentemente."
-      confirmText="Eliminar"
+      message="¿Eliminar esta reserva? Se borrará permanentemente."
+      confirmText="Eliminar reserva"
       variant="danger"
       :loading="deleting"
       @confirm="eliminarReserva"
@@ -92,8 +92,8 @@
     <!-- Modal Confirmar Cancelación -->
     <BaseConfirmModal
       v-model="showCancelConfirm"
-      message="¿Cancelar esta reserva? No se podrá revertir."
-      confirmText="Sí, cancelar"
+      message="¿Cancelar esta reserva? Se cambiará el estado a cancelada."
+      confirmText="Sí, cancelar reserva"
       variant="danger"
       @confirm="ejecutarCancelacion"
     />
@@ -106,6 +106,9 @@
             <label class="label">Habitación</label>
             <select v-model.number="form.id_habitacion" required class="input-field w-full">
               <option value="" disabled>Seleccionar...</option>
+              <option v-if="!editingItem && habitacionesDisponiblesModal.length === 0" disabled>
+                No hay habitaciones disponibles para estas fechas
+              </option>
               <option v-for="h in habitacionesDisponiblesModal" :key="h.id" :value="h.id">{{ h.numero }} – {{ h.tipo }} — ${{ Number(h.precio_noche).toLocaleString('es-CO') }}</option>
             </select>
           </div>
@@ -173,13 +176,15 @@ const form = ref({ ...defaultForm });
 const canDelete = computed(() => authStore.userRole === 'admin');
 
 const habitacionesDisponiblesModal = computed(() => {
-  let list = todasHabitaciones.value.filter(h => h.estado?.toLowerCase() === 'disponible');
   if (editingItem.value) {
-    const actual = todasHabitaciones.value.find(h => h.id === editingItem.value.id_habitacion);
-    if (actual && actual.estado?.toLowerCase() !== 'disponible') list.unshift(actual);
+    // Editar: disponibles + la actual
+    return todasHabitaciones.value.filter(h => 
+      h.estado?.toLowerCase() === 'disponible' || h.id === editingItem.value.id_habitacion
+    )
   }
-  return list;
-});
+  // Crear: SOLO disponibles
+  return todasHabitaciones.value.filter(h => h.estado?.toLowerCase() === 'disponible')
+})
 
 const columns = [
   { key: 'id', label: '#' },

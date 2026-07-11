@@ -4,24 +4,142 @@ Genera reportes de ocupación, ingresos y estadísticas en formato xlsx y pdf.
 """
 
 import os
-from datetime import date, datetime
+import io
+from datetime import date, datetime, timedelta
 from decimal import Decimal
 
 from openpyxl import Workbook
+from openpyxl.chart import BarChart, LineChart, Reference
 from openpyxl.styles import Alignment, Font, PatternFill, Border, Side
 from openpyxl.utils import get_column_letter
 from reportlab.lib import colors
-from sqlalchemy import func, select
 from reportlab.lib.pagesizes import A4, landscape
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import mm
-from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
+from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle, Image
+from sqlalchemy import func, select
 
 from app import db
 from app.models.habitacion import Habitacion, TipoHabitacion
 from app.models.huesped import Huesped
 from app.models.pago import EstadoPago, Pago
 from app.models.reserva import EstadoReserva, Reserva
+from app.models.checkin_checkout import CheckInCheckOut
+
+# Matplotlib para gráficos en PDF
+import matplotlib
+matplotlib.use("Agg")  # Backend sin GUI
+import matplotlib.pyplot as plt
+
+
+# ---------------------------------------------------------------------------
+# Chart generation (matplotlib -> bytes)
+# ---------------------------------------------------------------------------
+
+
+def _grafico_ocupacion_por_tipo(labels, ocupaciones, ingresos) -> bytes:
+    """Bar chart grouped: ocupación% + ingresos por tipo. Retorna PNG bytes."""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    fig, ax1 = plt.subplots(figsize=(8, 4))
+    x = range(len(labels))
+    width = 0.35
+
+    bars1 = ax1.bar([i - width / 2 for i in x], ocupaciones, width, label="Ocupación %", color="#3498db")
+    ax1.set_ylabel("Ocupación %", color="#3498db")
+    ax1.tick_params(axis="y", labelcolor="#3498db")
+    max_ocup = max(ocupaciones) if ocupaciones else 0
+    ax1.set_ylim(0, max(max_ocup * 1.2, 10))
+
+    ax2 = ax1.twinx()
+    bars2 = ax2.bar([i + width / 2 for i in x], ingresos, width, label="Ingresos ($)", color="#f39c12")
+    ax2.set_ylabel("Ingresos (COP)", color="#f39c12")
+    ax2.tick_params(axis="y", labelcolor="#f39c12")
+
+    ax1.set_xticks(x)
+    ax1.set_xticklabels(labels, rotation=45, ha="right")
+    ax1.set_title("Ocupación e Ingresos por Tipo de Habitación")
+
+    lines1, labels1 = ax1.get_legend_handles_labels()
+    lines2, labels2 = ax2.get_legend_handles_labels()
+    ax1.legend(lines1 + lines2, labels1 + labels2, loc="upper left")
+
+    plt.tight_layout()
+    buf = io.BytesIO()
+    plt.savefig(buf, format="png", dpi=150, bbox_inches="tight")
+    plt.close(fig)
+    buf.seek(0)
+    return buf.read()
+
+
+def _grafico_tendencia_diaria(fechas, ocupaciones, adrs) -> bytes:
+    """Line chart dual axis: ocupación% + ADR por día."""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    import matplotlib.dates as mdates
+
+    fig, ax1 = plt.subplots(figsize=(8, 4))
+
+    ax1.plot(fechas, ocupaciones, "o-", color="#3498db", label="Ocupación %")
+    ax1.set_ylabel("Ocupación %", color="#3498db")
+    ax1.tick_params(axis="y", labelcolor="#3498db")
+    ax1.set_ylim(0, max(ocupaciones) * 1.2 if ocupaciones else 100)
+
+    ax2 = ax1.twinx()
+    ax2.plot(fechas, adrs, "s-", color="#f39c12", label="ADR (COP)")
+    ax2.set_ylabel("ADR (COP)", color="#f39c12")
+    ax2.tick_params(axis="y", labelcolor="#f39c12")
+
+    ax1.xaxis.set_major_formatter(mdates.DateFormatter("%d/%m"))
+    ax1.xaxis.set_major_locator(mdates.DayLocator(interval=max(1, len(fechas) // 10)))
+    plt.setp(ax1.xaxis.get_majorticklabels(), rotation=45, ha="right")
+
+    lines1, labels1 = ax1.get_legend_handles_labels()
+    lines2, labels2 = ax2.get_legend_handles_labels()
+    ax1.legend(lines1 + lines2, labels1 + labels2, loc="upper left")
+
+    ax1.set_title("Tendencia Diaria: Ocupación y ADR")
+    plt.tight_layout()
+    buf = io.BytesIO()
+    plt.savefig(buf, format="png", dpi=150, bbox_inches="tight")
+    plt.close(fig)
+    buf.seek(0)
+    return buf.read()
+
+
+def _grafico_top_habitaciones(labels, ingresos, noches) -> bytes:
+    """Horizontal bar chart: Top 5 habitaciones por ingresos y noches."""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 4), sharey=True)
+
+    y_pos = range(len(labels))
+
+    ax1.barh(y_pos, ingresos, color="#27ae60")
+    ax1.set_xlabel("Ingresos (COP)")
+    ax1.set_title("Top 5 por Ingresos")
+    ax1.invert_yaxis()
+
+    ax2.barh(y_pos, noches, color="#2980b9")
+    ax2.set_xlabel("Noches Ocupadas")
+    ax2.set_title("Top 5 por Noches")
+    ax2.invert_yaxis()
+
+    for ax in (ax1, ax2):
+        ax.set_yticks(y_pos)
+        ax.set_yticklabels(labels, fontsize=9)
+
+    plt.tight_layout()
+    buf = io.BytesIO()
+    plt.savefig(buf, format="png", dpi=150, bbox_inches="tight")
+    plt.close(fig)
+    buf.seek(0)
+    return buf.read()
 
 
 def _crear_directorio_reportes() -> str:
@@ -179,20 +297,382 @@ def _generar_pdf(datos: list, nombre_archivo: str, titulo: str) -> str:
 # ---------------------------------------------------------------------------
 
 
+def _fecha_default_mes_anterior():
+    """Retorna (fecha_inicio, fecha_fin) del mes anterior completo."""
+    hoy = date.today()
+    primer_dia_mes_actual = hoy.replace(day=1)
+    fin = primer_dia_mes_actual - timedelta(days=1)
+    inicio = fin.replace(day=1)
+    return _fecha_str(inicio), _fecha_str(fin)
+
+
+def _formatear_numero(valor) -> float:
+    """Crea y retorna la ruta del directorio de reportes."""
+    directorio = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
+        "static",
+        "reportes",
+    )
+    if not os.path.exists(directorio):
+        os.makedirs(directorio)
+    return directorio
+
+
+def _parse_fecha(fecha_str: str) -> date:
+    """Convierte string YYYY-MM-DD a objeto date."""
+    return datetime.strptime(fecha_str, "%Y-%m-%d").date()
+
+
+def _fecha_str(fecha: date) -> str:
+    """Convierte date a string YYYY-MM-DD."""
+    return fecha.strftime("%Y-%m-%d")
+
+
+def _fecha_default_mes_anterior():
+    """Retorna (fecha_inicio, fecha_fin) del mes anterior completo."""
+    hoy = date.today()
+    primer_dia_mes_actual = hoy.replace(day=1)
+    fin = primer_dia_mes_actual - timedelta(days=1)
+    inicio = fin.replace(day=1)
+    return _fecha_str(inicio), _fecha_str(fin)
+
+
+def _formatear_numero(valor) -> float:
+    """Convierte Decimal o número a float."""
+    if isinstance(valor, Decimal):
+        return float(valor)
+    return float(valor)
+
+
+# ---------------------------------------------------------------------------
+# Helpers de generación de archivos
+# ---------------------------------------------------------------------------
+
+
+def _crear_directorio_reportes() -> str:
+    """Crea y retorna la ruta del directorio de reportes."""
+    directorio = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
+        "static",
+        "reportes",
+    )
+    if not os.path.exists(directorio):
+        os.makedirs(directorio)
+    return directorio
+
+
+def _generar_xlsx(datos: list, nombre_archivo: str, encabezados: list) -> str:
+    """
+    Genera un archivo xlsx con datos y encabezados dados.
+    Retorna la ruta del archivo creado.
+    """
+    directorio = _crear_directorio_reportes()
+    ruta = os.path.join(directorio, nombre_archivo)
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = nombre_archivo.replace(".xlsx", "")[:31]
+
+    header_font = Font(name="Calibri", bold=True, color="FFFFFF", size=11)
+    header_fill = PatternFill(
+        start_color="2C3E50", end_color="2C3E50", fill_type="solid"
+    )
+    header_align = Alignment(horizontal="center", vertical="center", wrap_text=True)
+
+    border = Border(
+        left=Side(style="thin"),
+        right=Side(style="thin"),
+        top=Side(style="thin"),
+        bottom=Side(style="thin"),
+    )
+
+    for col_idx, encabezado in enumerate(encabezados, 1):
+        cell = ws.cell(row=1, column=col_idx, value=encabezado)
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = header_align
+        cell.border = border
+
+    cell_align = Alignment(horizontal="left", vertical="center")
+    for row_idx, fila in enumerate(datos, 2):
+        for col_idx, valor in enumerate(fila, 1):
+            cell = ws.cell(row=row_idx, column=col_idx, value=valor)
+            cell.alignment = cell_align
+            cell.border = border
+
+    for col_idx in range(1, len(encabezados) + 1):
+        max_length = max(
+            len(str(ws.cell(row=r, column=col_idx).value or ""))
+            for r in range(1, len(datos) + 2)
+        )
+        ws.column_dimensions[get_column_letter(col_idx)].width = min(max_length + 3, 40)
+
+    wb.save(ruta)
+    return ruta
+    """
+    Genera un archivo pdf con una tabla de datos.
+    Retorna la ruta del archivo creado.
+    """
+    directorio = _crear_directorio_reportes()
+    ruta = os.path.join(directorio, nombre_archivo)
+
+    doc = SimpleDocTemplate(
+        ruta,
+        pagesize=landscape(A4),
+        rightMargin=15 * mm,
+        leftMargin=15 * mm,
+        topMargin=15 * mm,
+        bottomMargin=15 * mm,
+    )
+
+    styles = getSampleStyleSheet()
+    styles.add(
+        ParagraphStyle(
+            name="TitleCenter",
+            parent=styles["Heading1"],
+            alignment=1,
+            fontSize=16,
+            spaceAfter=6,
+        )
+    )
+
+    elements = []
+    elements.append(Paragraph(titulo, styles["TitleCenter"]))
+    elements.append(Spacer(1, 4 * mm))
+
+    if not datos:
+        elements.append(
+            Paragraph("No hay datos disponibles para este reporte.", styles["Normal"])
+        )
+    else:
+        encabezados = datos[0]
+        filas = datos[1:]
+
+        table_data = [encabezados] + filas
+        col_count = len(encabezados)
+        col_width = (210 * mm - 30 * mm) / col_count
+
+        tabla = Table(table_data, colWidths=[col_width] * col_count)
+        tabla.setStyle(
+            TableStyle(
+                [
+                    ("FONTSIZE", (0, 0), (-1, -1), 9),
+                    ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                    ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#2C3E50")),
+                    ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+                    ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                    ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                    ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+                    ("TOPPADDING", (0, 0), (-1, -1), 5),
+                ]
+            )
+        )
+        elements.append(tabla)
+
+    doc.build(elements)
+    return ruta
+
+
+def _generar_pdf_con_graficos(secciones: list, nombre_archivo: str, titulo: str) -> str:
+    """
+    Genera PDF con múltiples secciones y gráficos incrustados.
+    secciones = [
+        {"titulo": "KPIs", "datos": [[...]], "grafico": bytes_png},
+        {"titulo": "Por Tipo", "datos": [[...]], "grafico": bytes_png},
+        ...
+    ]
+    """
+    directorio = _crear_directorio_reportes()
+    ruta = os.path.join(directorio, nombre_archivo)
+
+    doc = SimpleDocTemplate(
+        ruta,
+        pagesize=landscape(A4),
+        rightMargin=15 * mm,
+        leftMargin=15 * mm,
+        topMargin=15 * mm,
+        bottomMargin=15 * mm,
+    )
+
+    styles = getSampleStyleSheet()
+    styles.add(
+        ParagraphStyle(
+            name="TitleCenter",
+            parent=styles["Heading1"],
+            alignment=1,
+            fontSize=16,
+            spaceAfter=6,
+        )
+    )
+    styles.add(
+        ParagraphStyle(
+            name="SectionTitle",
+            parent=styles["Heading2"],
+            alignment=0,
+            fontSize=12,
+            spaceAfter=4,
+            spaceBefore=10,
+            textColor=colors.HexColor("#2C3E50"),
+        )
+    )
+
+    elements = []
+    elements.append(Paragraph(titulo, styles["TitleCenter"]))
+    elements.append(Spacer(1, 4 * mm))
+
+    for i, sec in enumerate(secciones):
+        if sec.get("titulo"):
+            elements.append(Paragraph(sec["titulo"], styles["SectionTitle"]))
+            elements.append(Spacer(1, 2 * mm))
+
+        if sec.get("datos"):
+            encabezados = sec["datos"][0]
+            filas = sec["datos"][1:]
+            table_data = [encabezados] + filas
+            col_count = len(encabezados)
+            col_width = (210 * mm - 30 * mm) / col_count
+
+            tabla = Table(table_data, colWidths=[col_width] * col_count)
+            tabla.setStyle(
+                TableStyle(
+                    [
+                        ("FONTSIZE", (0, 0), (-1, -1), 9),
+                        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#2C3E50")),
+                        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+                        ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                        ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
+                        ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+                        ("TOPPADDING", (0, 0), (-1, -1), 5),
+                    ]
+                )
+            )
+            elements.append(tabla)
+            elements.append(Spacer(1, 4 * mm))
+
+        if sec.get("grafico"):
+            img_buf = io.BytesIO(sec["grafico"])
+            img = Image(img_buf, width=160 * mm, height=80 * mm)
+            elements.append(img)
+            elements.append(Spacer(1, 6 * mm))
+
+        # Salto de página entre secciones (excepto la última)
+        if i < len(secciones) - 1:
+            from reportlab.platypus import PageBreak
+            elements.append(PageBreak())
+
+    doc.build(elements)
+    return ruta
+
+
+def _generar_xlsx_con_graficos(secciones: list, nombre_archivo: str, encabezados: list) -> str:
+    """
+    Genera XLSX con múltiples hojas y gráficos.
+    secciones = [
+        {"hoja": "KPIs", "datos": [...], "grafico": {"tipo": "bar", ...}},
+        {"hoja": "Por Tipo", "datos": [...], "grafico": {"tipo": "bar", ...}},
+        ...
+    ]
+    """
+    directorio = _crear_directorio_reportes()
+    ruta = os.path.join(directorio, nombre_archivo)
+
+    wb = Workbook()
+    # Eliminar hoja por defecto
+    wb.remove(wb.active)
+
+    for sec in secciones:
+        ws = wb.create_sheet(title=sec.get("hoja", "Hoja")[:31])
+
+        # Encabezados
+        header_font = Font(name="Calibri", bold=True, color="FFFFFF", size=11)
+        header_fill = PatternFill(start_color="2C3E50", end_color="2C3E50", fill_type="solid")
+        header_align = Alignment(horizontal="center", vertical="center", wrap_text=True)
+        border = Border(
+            left=Side(style="thin"), right=Side(style="thin"),
+            top=Side(style="thin"), bottom=Side(style="thin")
+        )
+
+        for col_idx, encabezado in enumerate(encabezados, 1):
+            cell = ws.cell(row=1, column=col_idx, value=encabezado)
+            cell.font = header_font
+            cell.fill = header_fill
+            cell.alignment = header_align
+            cell.border = border
+
+        cell_align = Alignment(horizontal="left", vertical="center")
+        for row_idx, fila in enumerate(sec["datos"], 2):
+            for col_idx, valor in enumerate(fila, 1):
+                cell = ws.cell(row=row_idx, column=col_idx, value=valor)
+                cell.alignment = cell_align
+                cell.border = border
+
+        # Auto-ajustar ancho
+        for col_idx in range(1, len(encabezados) + 1):
+            max_length = max(
+                len(str(ws.cell(row=r, column=col_idx).value or ""))
+                for r in range(1, len(sec["datos"]) + 2)
+            )
+            ws.column_dimensions[get_column_letter(col_idx)].width = min(max_length + 3, 40)
+
+        # Gráfico si se proporciona
+        if sec.get("grafico"):
+            grafico_info = sec["grafico"]
+            if grafico_info["tipo"] == "bar":
+                chart = BarChart()
+                chart.type = "col"
+                chart.style = 10
+            elif grafico_info["tipo"] == "line":
+                chart = LineChart()
+                chart.style = 10
+            else:
+                chart = BarChart()
+
+            # Datos del gráfico
+            data_ref = Reference(ws, min_col=grafico_info["data_min_col"], max_col=grafico_info["data_max_col"], min_row=1, max_row=len(sec["datos"]))
+            cats_ref = Reference(ws, min_col=grafico_info["cats_col"], min_row=2, max_row=len(sec["datos"]))
+            chart.add_data(data_ref, titles_from_data=True)
+            chart.set_categories(cats_ref)
+            chart.title = grafico_info.get("title", "Gráfico")
+            chart.x_axis.title = grafico_info.get("x_title", "")
+            chart.y_axis.title = grafico_info.get("y_title", "")
+
+            ws.add_chart(chart, grafico_info.get("posicion", "E2"))
+
+    wb.save(ruta)
+    return ruta
+
+
+# ---------------------------------------------------------------------------
+# Reporte de Ocupación (mejorado con 4 secciones + gráficos)
+# ---------------------------------------------------------------------------
+
+
 def generar_ocupacion(
-    fecha_inicio: str, fecha_fin: str, formato: str = "xlsx", creado_por: int = None
+    fecha_inicio: str = None, fecha_fin: str = None, formato: str = "xlsx", creado_por: int = None
 ) -> dict:
     """
-    Genera reporte de ocupación de habitaciones.
-    Incluye: habitaciones ocupadas vs disponibles,
-    porcentaje de ocupación por tipo, días promedio de estancia.
+    Genera reporte de ocupación de habitaciones con 4 secciones:
+    1. KPIs Principales (Ocupación%, ADR, RevPAR, Ingresos, Reservas, Noches)
+    2. Por Tipo de Habitación (Tabla + gráfico barras agrupadas)
+    3. Tendencia Diaria (últimos 30 días / período) - línea dual Ocupación% + ADR
+    4. Top 5 Habitaciones (ranking ingresos + noches)
+
+    Si fecha_inicio/fecha_fin son None, usa mes anterior completo.
     """
+    # Fechas por defecto: mes anterior completo
+    if fecha_inicio is None or fecha_fin is None:
+        fecha_inicio, fecha_fin = _fecha_default_mes_anterior()
+
     inicio = _parse_fecha(fecha_inicio)
     fin = _parse_fecha(fecha_fin)
 
     if inicio > fin:
         raise ValueError("La fecha de inicio debe ser anterior a la fecha de fin.")
 
+    # Reservas en el período (check-in dentro del rango)
     reservas_periodo = (
         db.session.execute(
             select(Reserva).filter(
@@ -209,43 +689,97 @@ def generar_ocupacion(
         select(func.count()).select_from(Habitacion).filter_by(activo=True)
     ).scalar()
     total_reservas = len(reservas_periodo)
+    dias_periodo = (fin - inicio).days + 1
 
+    # --- 1. KPIs PRINCIPALES ---
+    noches_totales = sum(r.noches for r in reservas_periodo)
+    ingresos_totales = sum(float(r.total) for r in reservas_periodo)
+    adr = round(ingresos_totales / noches_totales, 2) if noches_totales > 0 else 0
+    revpar = round(ingresos_totales / total_habitaciones, 2) if total_habitaciones > 0 else 0
+    ocupacion_general = round(total_reservas / total_habitaciones * 100, 2) if total_habitaciones > 0 else 0
+    dias_promedio = round(sum(r.noches for r in reservas_periodo) / total_reservas, 2) if total_reservas > 0 else 0
+
+    # --- 2. POR TIPO DE HABITACIÓN ---
     reservas_por_tipo = {}
     for tipo in TipoHabitacion:
         reservas_tipo = [r for r in reservas_periodo if r.habitacion.tipo == tipo]
         total_tipo = db.session.execute(
-            select(func.count())
-            .select_from(Habitacion)
-            .filter_by(tipo=tipo, activo=True)
+            select(func.count()).select_from(Habitacion).filter_by(tipo=tipo, activo=True)
         ).scalar()
-        ocupacion_tipo = (
-            (len(reservas_tipo) / total_tipo * 100) if total_tipo > 0 else 0
-        )
+        ingresos_tipo = sum(float(r.total) for r in reservas_tipo)
+        adr_tipo = round(ingresos_tipo / sum(r.noches for r in reservas_tipo), 2) if reservas_tipo else 0
+        revpar_tipo = round(ingresos_tipo / total_tipo, 2) if total_tipo > 0 else 0
+        ocupacion_tipo = round(len(reservas_tipo) / total_tipo * 100, 2) if total_tipo > 0 else 0
+
         reservas_por_tipo[tipo.value] = {
+            "habitaciones": total_tipo,
             "reservas": len(reservas_tipo),
-            "habitaciones_total": total_tipo,
-            "porcentaje_ocupacion": round(ocupacion_tipo, 2),
+            "noches": sum(r.noches for r in reservas_tipo),
+            "ingresos": round(ingresos_tipo, 2),
+            "ocupacion_pct": ocupacion_tipo,
+            "adr": adr_tipo,
+            "revpar": revpar_tipo,
         }
 
-    dias_totales = sum(r.noches for r in reservas_periodo)
-    dias_promedio = round(dias_totales / total_reservas, 2) if total_reservas > 0 else 0
+    # --- 3. TENDENCIA DIARIA (días en el período) ---
+    tendencia_fechas = []
+    tendencia_ocupacion = []
+    tendencia_adr = []
+    tendencia_ingresos = []
 
-    ocupacion_general = (
-        round(total_reservas / total_habitaciones * 100, 2)
-        if total_habitaciones > 0
-        else 0
+    # Pre-calcular reservas por día de check-in
+    reservas_por_dia = {}
+    for r in reservas_periodo:
+        key = r.fecha_entrada
+        if key not in reservas_por_dia:
+            reservas_por_dia[key] = {"reservas": 0, "noches": 0, "ingresos": 0}
+        reservas_por_dia[key]["reservas"] += 1
+        reservas_por_dia[key]["noches"] += r.noches
+        reservas_por_dia[key]["ingresos"] += float(r.total)
+
+    # Generar serie diaria completa
+    dia_actual = inicio
+    while dia_actual <= fin:
+        tendencia_fechas.append(dia_actual)
+        info = reservas_por_dia.get(dia_actual, {"reservas": 0, "noches": 0, "ingresos": 0})
+        ocup_dia = round(info["reservas"] / total_habitaciones * 100, 2) if total_habitaciones > 0 else 0
+        adr_dia = round(info["ingresos"] / info["noches"], 2) if info["noches"] > 0 else 0
+        tendencia_ocupacion.append(ocup_dia)
+        tendencia_adr.append(adr_dia)
+        tendencia_ingresos.append(info["ingresos"])
+        dia_actual += timedelta(days=1)
+
+    # --- 4. TOP 5 HABITACIONES ---
+    top_ingresos = (
+        db.session.query(
+            Habitacion.numero,
+            func.sum(Reserva.total).label("ingresos"),
+            func.sum(Reserva.noches).label("noches"),
+        )
+        .join(Reserva, Reserva.id_habitacion == Habitacion.id)
+        .filter(
+            Reserva.fecha_entrada >= inicio,
+            Reserva.fecha_entrada <= fin,
+            Reserva.estado.in_([EstadoReserva.ocupada, EstadoReserva.completada]),
+        )
+        .group_by(Habitacion.id, Habitacion.numero)
+        .order_by(func.sum(Reserva.total).desc())
+        .limit(5)
+        .all()
     )
 
-    # Preparar detalle por habitación (para dashboard)
+    top_hab_labels = [f"Hab {h.numero}" for h in top_ingresos]
+    top_hab_ingresos = [float(h.ingresos) for h in top_ingresos]
+    top_hab_noches = [int(h.noches) for h in top_ingresos]
+
+    # --- DETALLE POR HABITACIÓN (para dashboard) ---
     detalle_ocupacion = []
-    habitaciones_activas = (
-        db.session.execute(select(Habitacion).filter_by(activo=True)).scalars().all()
-    )
+    habitaciones_activas = db.session.execute(select(Habitacion).filter_by(activo=True)).scalars().all()
     for h in habitaciones_activas:
         reservas_hab = [r for r in reservas_periodo if r.id_habitacion == h.id]
         noches_ocupadas = sum(r.noches for r in reservas_hab)
         ingreso_hab = sum(float(r.total) for r in reservas_hab)
-        total_noches_periodo = (fin - inicio).days or 1
+        total_noches_periodo = dias_periodo
         pct = round(noches_ocupadas / total_noches_periodo * 100, 1) if total_noches_periodo > 0 else 0
         detalle_ocupacion.append({
             "numero": h.numero,
@@ -255,55 +789,128 @@ def generar_ocupacion(
             "ocupacion_pct": min(pct, 100),
         })
 
-    datos_xlsx = [
-        ["Tipo de Habitación", "Habitaciones", "Reservas", "Ocupación (%)"],
+    # --- GENERAR GRÁFICOS ---
+    # Gráfico 1: Ocupación e Ingresos por Tipo
+    labels_tipo = list(reservas_por_tipo.keys())
+    ocup_tipo = [reservas_por_tipo[t]["ocupacion_pct"] for t in labels_tipo]
+    ing_tipo = [reservas_por_tipo[t]["ingresos"] for t in labels_tipo]
+    grafico_tipo = _grafico_ocupacion_por_tipo(labels_tipo, ocup_tipo, ing_tipo)
+
+    # Gráfico 2: Tendencia Diaria
+    grafico_tendencia = _grafico_tendencia_diaria(tendencia_fechas, tendencia_ocupacion, tendencia_adr)
+
+    # Gráfico 3: Top 5 Habitaciones
+    grafico_top = _grafico_top_habitaciones(top_hab_labels, top_hab_ingresos, top_hab_noches)
+
+    # --- PREPARAR SECCIONES PARA PDF/EXCEL ---
+    secciones_pdf = []
+
+    # Sección 1: KPIs
+    datos_kpis = [
+        ["KPI", "Valor"],
+        ["Ocupación General (%)", f"{ocupacion_general:.2f}%"],
+        ["ADR (COP)", f"${adr:,.2f}"],
+        ["RevPAR (COP)", f"${revpar:,.2f}"],
+        ["Ingresos Totales (COP)", f"${ingresos_totales:,.2f}"],
+        ["Total Reservas", str(total_reservas)],
+        ["Noches Totales", str(sum(r.noches for r in reservas_periodo))],
+        ["Días Promedio Estancia", f"{dias_promedio:.2f}"],
+        ["Período", f"{fecha_inicio} a {fecha_fin} ({dias_periodo} días)"],
+    ]
+    secciones_pdf.append({"titulo": "1. KPIs Principales", "datos": datos_kpis, "grafico": None})
+
+    # Sección 2: Por Tipo
+    datos_tipo = [
+        ["Tipo", "Habitaciones", "Reservas", "Noches", "Ingresos (COP)", "Ocupación (%)", "ADR (COP)", "RevPAR (COP)"],
     ]
     for tipo, info in reservas_por_tipo.items():
-        datos_xlsx.append(
-            [
-                tipo,
-                info["habitaciones_total"],
-                info["reservas"],
-                info["porcentaje_ocupacion"],
-            ]
-        )
-    datos_xlsx.append(["", "", "", ""])
-    datos_xlsx.append(["RESUMEN", "", "", ""])
-    datos_xlsx.append(["Total habitaciones activas", total_habitaciones, "", ""])
-    datos_xlsx.append(["Total reservas en período", total_reservas, "", ""])
-    datos_xlsx.append(["Ocupación general (%)", ocupacion_general, "", ""])
-    datos_xlsx.append(["Días promedio de estancia", dias_promedio, "", ""])
+        datos_tipo.append([
+            tipo,
+            info["habitaciones"],
+            info["reservas"],
+            info["noches"],
+            f"${info['ingresos']:,.2f}",
+            f"{info['ocupacion_pct']:.2f}%",
+            f"${info['adr']:,.2f}",
+            f"${info['revpar']:,.2f}",
+        ])
+    secciones_pdf.append({"titulo": "2. Desglose por Tipo de Habitación", "datos": datos_tipo, "grafico": grafico_tipo})
+
+    # Sección 3: Tendencia Diaria
+    datos_tendencia = [["Fecha", "Ocupación (%)", "ADR (COP)", "Ingresos (COP)"]]
+    for i, f in enumerate(tendencia_fechas):
+        datos_tendencia.append([
+            f.strftime("%Y-%m-%d"),
+            f"{tendencia_ocupacion[i]:.2f}%",
+            f"${tendencia_adr[i]:,.2f}",
+            f"${tendencia_ingresos[i]:,.2f}",
+        ])
+    secciones_pdf.append({"titulo": "3. Tendencia Diaria (Ocupación + ADR)", "datos": datos_tendencia, "grafico": grafico_tendencia})
+
+    # Sección 4: Top 5
+    datos_top = [["Habitación", "Ingresos (COP)", "Noches"]]
+    for i, h in enumerate(top_ingresos):
+        datos_top.append([f"Hab {h.numero}", f"${float(h.ingresos):,.2f}", int(h.noches)])
+    secciones_pdf.append({"titulo": "4. Top 5 Habitaciones", "datos": datos_top, "grafico": grafico_top})
+
+    # --- EXCEL: 4 hojas + gráficos ---
+    secciones_xlsx = [
+        {
+            "hoja": "1. KPIs",
+            "datos": datos_kpis,
+            "grafico": None,
+        },
+        {
+            "hoja": "2. Por Tipo",
+            "datos": datos_tipo,
+            "grafico": {
+                "tipo": "bar",
+                "data_min_col": 5,  # Ingresos
+                "data_max_col": 8,  # RevPAR
+                "cats_col": 1,      # Tipo
+                "title": "Ocupación e Ingresos por Tipo",
+                "x_title": "Tipo",
+                "y_title": "Valor",
+                "posicion": "J2",
+            },
+        },
+        {
+            "hoja": "3. Tendencia",
+            "datos": datos_tendencia,
+            "grafico": {
+                "tipo": "line",
+                "data_min_col": 2,  # Ocupación
+                "data_max_col": 4,  # Ingresos
+                "cats_col": 1,      # Fecha
+                "title": "Tendencia Diaria: Ocupación y ADR",
+                "x_title": "Fecha",
+                "y_title": "Valor",
+                "posicion": "F2",
+            },
+        },
+        {
+            "hoja": "4. Top 5",
+            "datos": datos_top,
+            "grafico": {
+                "tipo": "bar",
+                "data_min_col": 2,  # Ingresos
+                "data_max_col": 3,  # Noches
+                "cats_col": 1,      # Habitación
+                "title": "Top 5 Habitaciones",
+                "x_title": "Habitación",
+                "y_title": "Valor",
+                "posicion": "E2",
+            },
+        },
+    ]
 
     nombre_archivo = f"ocupacion_{fecha_inicio}_{fecha_fin}.{formato}"
     if formato == "pdf":
-        datos_pdf = [
-            ["Tipo", "Habitaciones", "Reservas", "Ocupación (%)"],
-        ]
-        for tipo, info in reservas_por_tipo.items():
-            datos_pdf.append(
-                [
-                    tipo,
-                    info["habitaciones_total"],
-                    info["reservas"],
-                    info["porcentaje_ocupacion"],
-                ]
-            )
-        datos_pdf.append(["", "", "", ""])
-        datos_pdf.append(["RESUMEN GENERAL", "", "", ""])
-        datos_pdf.append(["Total habitaciones activas", total_habitaciones, "", ""])
-        datos_pdf.append(["Total reservas en período", total_reservas, "", ""])
-        datos_pdf.append(["Ocupación general (%)", ocupacion_general, "", ""])
-        datos_pdf.append(["Días promedio de estancia", dias_promedio, "", ""])
-        datos_pdf.append(["Período", f"{fecha_inicio} a {fecha_fin}", "", ""])
-        ruta = _generar_pdf(datos_pdf, nombre_archivo, "Reporte de Ocupación")
+        ruta = _generar_pdf_con_graficos(secciones_pdf, nombre_archivo, "Reporte de Ocupación")
     elif formato == "json":
         ruta = None
     else:
-        ruta = _generar_xlsx(
-            datos_xlsx,
-            nombre_archivo,
-            ["Tipo de Habitación", "Habitaciones", "Reservas", "Ocupación (%)"],
-        )
+        ruta = _generar_xlsx_con_graficos(secciones_xlsx, nombre_archivo, [])
 
     reporte_registrado = None
     if creado_por:
@@ -319,6 +926,9 @@ def generar_ocupacion(
                 "total_habitaciones": total_habitaciones,
                 "total_reservas": total_reservas,
                 "ocupacion_general": ocupacion_general,
+                "adr": adr,
+                "revpar": revpar,
+                "ingresos_totales": ingresos_totales,
                 "dias_promedio": dias_promedio,
             },
         )
@@ -333,11 +943,28 @@ def generar_ocupacion(
             "total_habitaciones": total_habitaciones,
             "total_reservas": total_reservas,
             "ocupacion_general": ocupacion_general,
+            "adr": adr,
+            "revpar": revpar,
+            "ingresos_totales": ingresos_totales,
             "dias_promedio": dias_promedio,
             "porcentaje_ocupacion": ocupacion_general,
             "habitaciones_disponibles": total_habitaciones - total_reservas,
         },
         "detalle": detalle_ocupacion,
+        "por_tipo": reservas_por_tipo,
+        "tendencia_diaria": [
+            {
+                "fecha": f.strftime("%Y-%m-%d"),
+                "ocupacion_pct": tendencia_ocupacion[i],
+                "adr": tendencia_adr[i],
+                "ingresos": tendencia_ingresos[i],
+            }
+            for i, f in enumerate(tendencia_fechas)
+        ],
+        "top_habitaciones": [
+            {"numero": f"Hab {h.numero}", "ingresos": float(h.ingresos), "noches": int(h.noches)}
+            for h in top_ingresos
+        ],
         "historial": reporte_registrado,
     }
 
