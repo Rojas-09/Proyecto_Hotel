@@ -86,6 +86,7 @@ class DevelopmentConfig(Config):
     )
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ECHO = False
+    STRIPE_MOCK = True
 
 
 class TestingConfig(Config):
