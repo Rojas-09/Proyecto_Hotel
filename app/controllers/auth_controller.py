@@ -69,6 +69,11 @@ def register_admin():
             400,
         )
     result, status = AuthService.crear_primer_admin(data)
+    if isinstance(result, tuple):
+        result, status, access_token, refresh_token = result
+        resp = jsonify(result)
+        _set_auth_cookies(resp, access_token, refresh_token)
+        return resp, status
     return jsonify(result), status
 
 
@@ -87,7 +92,16 @@ def register():
             ),
             422,
         )
-    result, status = AuthService.registrar(data)
+    result = AuthService.registrar(data)
+    if isinstance(result, tuple):
+        if len(result) == 4:
+            result, status, access_token, refresh_token = result
+        else:
+            result, status = result
+    else:
+        # Should not happen
+        result, status = result, 500
+
     if status not in (200, 201):
         return jsonify(result), status
 
@@ -105,9 +119,7 @@ def register():
                 pass
 
     resp = jsonify(result)
-    _set_auth_cookies(
-        resp, result["data"].get("access_token"), result["data"].get("refresh_token")
-    )
+    _set_auth_cookies(resp, access_token, refresh_token)
     return resp, status
 
 
@@ -126,13 +138,19 @@ def login():
             ),
             422,
         )
-    result, status = AuthService.login(data)
+    result = AuthService.login(data)
+    if isinstance(result, tuple):
+        if len(result) == 4:
+            result, status, access_token, refresh_token = result
+        else:
+            result, status = result
+    else:
+        result, status = result, 500
+
     if status != 200:
         return jsonify(result), status
     resp = jsonify(result)
-    _set_auth_cookies(
-        resp, result["data"].get("access_token"), result["data"].get("refresh_token")
-    )
+    _set_auth_cookies(resp, access_token, refresh_token)
     return resp, status
 
 
@@ -145,13 +163,20 @@ def refresh():
     Recibe refresh_token de la cookie, verifica, rota y emite par nuevo.
     """
     refresh_token = request.cookies.get("refresh_token")
-    result, status = AuthService.refrescar_token(refresh_token)
+    result = AuthService.refrescar_token(refresh_token)
+    if isinstance(result, tuple):
+        if len(result) == 4:
+            result, status, access_token, refresh_token = result
+        else:
+            result, status = result
+    else:
+        result, status = result, 500
+
     if status != 200:
         return jsonify(result), status
+        result, status, access_token, refresh_token = result
     resp = jsonify(result)
-    _set_auth_cookies(
-        resp, result["data"].get("access_token"), result["data"].get("refresh_token")
-    )
+    _set_auth_cookies(resp, access_token, refresh_token)
     return resp, status
 
 

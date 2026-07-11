@@ -21,7 +21,7 @@ class AuthService:
         return usuario.rol.value if hasattr(usuario.rol, "value") else usuario.rol
 
     @staticmethod
-    def _emitir_tokens(usuario) -> dict:
+    def _emitir_tokens(usuario):
         """Genera access_token (15 min) + refresh_token (7 días revocable)."""
         rol = AuthService._rol_normalizado(usuario)
         access_token = generar_token_acceso(
@@ -34,10 +34,7 @@ class AuthService:
             usuario.id,
             dias=current_app.config.get("JWT_REFRESH_DIAS", 7),
         )
-        return {
-            "access_token": access_token,
-            "refresh_token": refresh_token_plano,
-        }
+        return access_token, refresh_token_plano
 
     @staticmethod
     def _nivel_rol(rol: str) -> int:
@@ -134,17 +131,15 @@ class AuthService:
 
             db.session.commit()
 
-            tokens = AuthService._emitir_tokens(existing_user)
+            access_token, refresh_token = AuthService._emitir_tokens(existing_user)
 
             return {
                 "success": True,
                 "data": {
                     "usuario": existing_user.to_dict(),
-                    "access_token": tokens["access_token"],
-                    "refresh_token": tokens["refresh_token"],
                 },
                 "message": "Cuenta reactivada exitosamente.",
-            }, 200
+            }, 200, access_token, refresh_token
 
         if len(data["password"]) < 8:
             return {
@@ -178,17 +173,15 @@ class AuthService:
 
         db.session.commit()
 
-        tokens = AuthService._emitir_tokens(usuario)
+        access_token, refresh_token = AuthService._emitir_tokens(usuario)
 
         return {
             "success": True,
             "data": {
                 "usuario": usuario.to_dict(),
-                "access_token": tokens["access_token"],
-                "refresh_token": tokens["refresh_token"],
             },
             "message": "Cuenta creada exitosamente.",
-        }, 201
+        }, 201, access_token, refresh_token
 
     @staticmethod
     def _revocar_refresh_usuario(id_usuario: int):
@@ -236,17 +229,15 @@ class AuthService:
             }, 401
 
         AuthService._revocar_refresh_usuario(usuario.id)
-        tokens = AuthService._emitir_tokens(usuario)
+        access_token, refresh_token = AuthService._emitir_tokens(usuario)
 
         return {
             "success": True,
             "data": {
                 "usuario": usuario.to_dict(),
-                "access_token": tokens["access_token"],
-                "refresh_token": tokens["refresh_token"],
             },
             "message": "Sesión iniciada correctamente.",
-        }, 200
+        }, 200, access_token, refresh_token
 
     @staticmethod
     def refrescar_token(refresh_token_plano: str) -> dict:
@@ -285,17 +276,15 @@ class AuthService:
 
         rt.revocar()
 
-        tokens = AuthService._emitir_tokens(usuario)
+        access_token, refresh_token = AuthService._emitir_tokens(usuario)
 
         return {
             "success": True,
             "data": {
                 "usuario": usuario.to_dict(),
-                "access_token": tokens["access_token"],
-                "refresh_token": tokens["refresh_token"],
             },
             "message": "Token refrescado correctamente.",
-        }, 200
+        }, 200, access_token, refresh_token
 
     @staticmethod
     def crear_usuario_admin(data: dict) -> dict:
@@ -392,17 +381,15 @@ class AuthService:
         db.session.add(usuario)
         db.session.commit()
 
-        tokens = AuthService._emitir_tokens(usuario)
+        access_token, refresh_token = AuthService._emitir_tokens(usuario)
 
         return {
             "success": True,
             "data": {
                 "usuario": usuario.to_dict(),
-                "access_token": tokens["access_token"],
-                "refresh_token": tokens["refresh_token"],
             },
             "message": "Primer administrador creado exitosamente.",
-        }, 201
+        }, 201, access_token, refresh_token
 
     @staticmethod
     def editar_mi_perfil(current_user, data: dict) -> dict:

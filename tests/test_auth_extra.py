@@ -20,7 +20,7 @@ def test_crear_primer_admin_exitoso(app):
             "email": "root@test.com",
             "password": "Admin1234",
         }
-        result, status = AuthService.crear_primer_admin(data)
+        result, status, *_ = AuthService.crear_primer_admin(data)
         assert status == 201
         assert result["success"] is True
         assert result["data"]["usuario"]["rol"] == "admin"

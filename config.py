@@ -87,6 +87,9 @@ class DevelopmentConfig(Config):
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ECHO = False
     STRIPE_MOCK = True
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SAMESITE = "Lax"
+    SESSION_COOKIE_SECURE = False
 
 
 class TestingConfig(Config):
@@ -100,6 +103,9 @@ class TestingConfig(Config):
     WTF_CSRF_ENABLED = False
     STRIPE_MOCK = True
     STRIPE_SECRET_KEY = None
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SAMESITE = "Lax"
+    SESSION_COOKIE_SECURE = False
 
 
 class ProductionConfig(Config):
