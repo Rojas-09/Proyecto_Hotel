@@ -75,5 +75,13 @@ def create_app(config_name="development"):
     if config_name in ("development", "testing"):
         with app.app_context():
             db.create_all()
+            
+    # Manejador global de errores 500
+    @app.errorhandler(500)
+    def manejar_error_interno(error):
+        msg = "Error interno del servidor."
+        if app.debug:
+            msg = str(error)
+        return {"success": False, "error": {"code": "INTERNAL_ERROR", "message": msg}}, 500
 
     return app
