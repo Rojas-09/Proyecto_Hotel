@@ -111,10 +111,10 @@ async function cargar() {
   try {
     const [resR] = await Promise.all([api.get('/reservas/')]);
     const reservas = resR.data.data || resR.data;
-    reservasCompletadas.value = reservas.filter(r => r.estado === 'Completada');
+    const completadas = reservas.filter(r => r.estado === 'Completada');
 
     const facturasList = await Promise.all(
-      reservasCompletadas.value.map(async (r) => {
+      completadas.map(async (r) => {
         try {
           const resF = await api.get(`/facturas/reserva/${r.id}`);
           if (resF.data.success && resF.data.data) return resF.data.data;
@@ -124,8 +124,14 @@ async function cargar() {
     );
 
     facturas.value = facturasList.filter(Boolean);
-    reservasCompletadas.value = reservasCompletadas.value.filter(
-      r => !facturas.value.some(f => f.id_reserva === r.id)
+
+    // Solo excluir reservas cuya factura ya fue emitida/pagada/anulada
+    const facturasEmitidas = new Set(
+      facturas.value.filter(f => f.estado !== 'pendiente').map(f => f.id_reserva)
+    );
+
+    reservasCompletadas.value = completadas.filter(
+      r => !facturasEmitidas.has(r.id)
     );
     currentPage.value = Math.min(currentPage.value, totalPages.value);
   } catch { toast?.value?.add('Error al cargar datos', 'error'); }
