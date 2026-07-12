@@ -127,7 +127,7 @@ async function cargar() {
 
     // Solo excluir reservas cuya factura ya fue emitida/pagada/anulada
     const facturasEmitidas = new Set(
-      facturas.value.filter(f => f.estado !== 'pendiente').map(f => f.id_reserva)
+      facturas.value.filter(f => f.estado !== 'Pendiente').map(f => f.id_reserva)
     );
 
     reservasCompletadas.value = completadas.filter(
