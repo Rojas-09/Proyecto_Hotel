@@ -1,0 +1,44 @@
+services:
+
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: hotelbook
+      POSTGRES_USER: hotelbook
+      POSTGRES_PASSWORD: changeme_in_prod
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hotelbook"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  backend:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      FLASK_ENV: production
+      DATABASE_URL: postgresql://hotelbook:changeme_in_prod@db:5432/hotelbook
+      SECRET_KEY: ${SECRET_KEY:-cambia-esta-clave-en-produccion}
+      CORS_ORIGINS: https://${DOMAIN:-localhost}
+    volumes:
+      - static_data:/app/static
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+
+volumes:
+  pgdata:
+  static_data:
