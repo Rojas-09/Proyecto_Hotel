@@ -333,11 +333,13 @@ async function guardar() {
   }
   saving.value = true;
   try {
+    const datos = { ...form.value };
+    delete datos.notas;
     if (editingItem.value) {
-      await api.patch(`/reservas/${editingItem.value.id}`, form.value);
+      await api.patch(`/reservas/${editingItem.value.id}`, datos);
       toast?.value?.add('Reserva actualizada', 'success');
     } else {
-      await api.post('/reservas/', form.value);
+      await api.post('/reservas/', datos);
       toast?.value?.add('Reserva creada correctamente', 'success');
     }
     showModal.value = false;
