@@ -366,7 +366,10 @@ class TestEliminarReserva:
 
         resp = client.delete(f"/api/v1/reservas/{reserva_id}", headers=admin_user)
         assert resp.status_code == 200
-        assert resp.get_json()["data"]["estado"] == "Cancelada"
+        assert resp.get_json()["data"]["mensaje"] == "Reserva eliminada permanentemente."
+        # Verificar que la reserva ya no existe
+        resp_get = client.get(f"/api/v1/reservas/{reserva_id}", headers=admin_user)
+        assert resp_get.status_code == 404
 
     def test_eliminar_inexistente(self, client, admin_user):
         resp = client.delete("/api/v1/reservas/99999", headers=admin_user)

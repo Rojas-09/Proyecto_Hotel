@@ -2,6 +2,7 @@
 Reserva Service - Lógica de negocio para reservas
 """
 
+import os
 import smtplib
 import threading
 from email.mime.text import MIMEText
@@ -516,23 +517,44 @@ El equipo de HotelBook Pro
 
 
 def eliminar(reserva_id, motivo=None):
-    """Soft-delete: cancela la reserva (solo admin, sin validaciones de 24h ni reembolso)."""
+    """Hard-delete: elimina la reserva y todos sus registros relacionados de la BD."""
     reserva = db.session.get(Reserva, reserva_id)
     if not reserva:
         raise LookupError(f"Reserva con id {reserva_id} no encontrada.")
 
-    if reserva.estado == EstadoReserva.cancelada:
-        raise ValueError("La reserva ya está cancelada.")
-
-    reserva.estado = EstadoReserva.cancelada
-    reserva.motivo_cancelacion = motivo or "Eliminada por administrador"
-    reserva.updated_at = ahora_colombia()
-
+    # Liberar habitación si está ocupada
     if reserva.habitacion and reserva.habitacion.estado == EstadoHabitacion.ocupada:
         reserva.habitacion.estado = EstadoHabitacion.disponible
 
+    # Eliminar registros relacionados en orden (evitar FK violations)
+    if reserva.checkin_checkout:
+        db.session.delete(reserva.checkin_checkout)
+
+    for n in reserva.notificaciones:
+        db.session.delete(n)
+
+    for p in reserva.pagos:
+        if p.reembolso:
+            db.session.delete(p.reembolso)
+        db.session.delete(p)
+
+    if reserva.factura:
+        if reserva.factura.pdf_path and os.path.exists(reserva.factura.pdf_path):
+            try:
+                os.remove(reserva.factura.pdf_path)
+            except OSError:
+                pass
+        db.session.delete(reserva.factura)
+
+    for s in reserva.servicios_adicionales:
+        db.session.delete(s)
+
+    if reserva.puntos_fidelidad:
+        db.session.delete(reserva.puntos_fidelidad)
+
+    db.session.delete(reserva)
     db.session.commit()
-    return reserva.to_dict()
+    return {"mensaje": "Reserva eliminada permanentemente."}
 
 
 def actualizar(reserva_id, datos: dict, current_user=None):
