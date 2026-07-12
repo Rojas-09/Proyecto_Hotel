@@ -101,43 +101,69 @@
     <!-- Modal Crear / Editar -->
     <BaseModal v-model="showModal" :title="editingItem ? 'Editar Reserva' : 'Nueva Reserva'">
       <form id="reserva-form" @submit.prevent="guardar" class="space-y-4">
+        <!-- PASO 1: Fechas (obligatorio antes de buscar habitaciones) -->
         <div class="grid grid-cols-2 gap-4">
           <div>
-            <label class="label">Habitación</label>
-            <select v-model.number="form.id_habitacion" required class="input-field w-full">
-              <option value="" disabled>Seleccionar...</option>
-              <option v-if="!editingItem && habitacionesDisponiblesModal.length === 0" disabled>
-                No hay habitaciones disponibles para estas fechas
-              </option>
-              <option v-for="h in habitacionesDisponiblesModal" :key="h.id" :value="h.id">{{ h.numero }} – {{ h.tipo }} — ${{ Number(h.precio_noche).toLocaleString('es-CO') }}</option>
-            </select>
+            <label class="label">Fecha de entrada <span class="text-red-400">*</span></label>
+            <input v-model="form.fecha_entrada" type="date" required class="input-field w-full" @change="validarFechas" :min="hoy" />
           </div>
           <div>
-            <label class="label">ID Huésped</label>
+            <label class="label">Fecha de salida <span class="text-red-400">*</span></label>
+            <input v-model="form.fecha_salida" type="date" required class="input-field w-full" @change="validarFechas" :min="manana" />
+          </div>
+        </div>
+
+        <!-- PASO 2: Botón consultar disponibilidad -->
+        <div v-if="!editingItem" class="flex justify-center">
+          <BaseButton 
+            variant="secondary" 
+            type="button" 
+            @click="buscarHabitacionesDisponibles"
+            :disabled="!form.fecha_entrada || !form.fecha_salida || buscandoHabitaciones"
+            class="w-full max-w-md"
+          >
+            {{ buscandoHabitaciones ? 'Buscando...' : '🔍 Consultar habitaciones disponibles' }}
+          </BaseButton>
+        </div>
+
+        <!-- Mensaje si no hay fechas o no hay resultados -->
+        <p v-if="!editingItem && (!form.fecha_entrada || !form.fecha_salida)" class="text-center text-gray-500 text-sm">
+          Primero selecciona las fechas y pulsa "Consultar habitaciones disponibles"
+        </p>
+        <p v-if="!editingItem && habitacionesParaModal.length === 0 && !buscandoHabitaciones && form.fecha_entrada && form.fecha_salida" class="text-center text-red-400 text-sm">
+          No hay habitaciones disponibles para esas fechas. Cambia las fechas e inténtalo de nuevo.
+        </p>
+
+        <!-- PASO 3: Habitación (solo las disponibles para las fechas seleccionadas) -->
+        <div v-if="editingItem || habitacionesParaModal.length > 0">
+          <label class="label">Habitación <span class="text-red-400">*</span></label>
+          <select v-model.number="form.id_habitacion" required class="input-field w-full" :disabled="!habitacionesParaModal.length">
+            <option value="" disabled>Seleccionar...</option>
+            <option v-for="h in habitacionesParaModal" :key="h.id" :value="h.id">
+              {{ h.numero }} – {{ h.tipo }} — ${{ Number(h.precio_noche).toLocaleString('es-CO') }}
+            </option>
+          </select>
+        </div>
+
+        <!-- PASO 4: Huésped -->
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="label">ID Huésped <span class="text-red-400">*</span></label>
             <select v-model.number="form.id_huesped" required class="input-field w-full">
               <option value="" disabled>Seleccionar...</option>
               <option v-for="h in huespedes" :key="h.id" :value="h.id">{{ h.nombre }} {{ h.apellido }} — {{ h.documento_id }}</option>
             </select>
           </div>
         </div>
-        <div class="grid grid-cols-2 gap-4">
-          <div>
-            <label class="label">Fecha de entrada</label>
-            <input v-model="form.fecha_entrada" type="date" required class="input-field w-full" />
-          </div>
-          <div>
-            <label class="label">Fecha de salida</label>
-            <input v-model="form.fecha_salida" type="date" required class="input-field w-full" />
-          </div>
-        </div>
+
         <div>
           <label class="label">Notas</label>
           <textarea v-model="form.notas" rows="2" class="input-field w-full" placeholder="Notas opcionales..."></textarea>
         </div>
       </form>
       <template #footer>
-        <BaseButton variant="secondary" @click="showModal = false">Cancelar</BaseButton>
-        <BaseButton type="submit" form="reserva-form" :disabled="saving">{{ saving ? 'Guardando...' : 'Guardar' }}</BaseButton>
+        <BaseButton variant="secondary" @click="cerrarModal">Cancelar</BaseButton>
+        <BaseButton type="submit" form="reserva-form" :disabled="saving || !habitacionesParaModal.length">{{ saving ? 'Guardando...' : 'Guardar' }}</BaseButton>
       </template>
     </BaseModal>
   </div>
@@ -161,6 +187,7 @@ const habitacionesDisponibles = ref([]);
 const showModal = ref(false);
 const editingItem = ref(null);
 const saving = ref(false);
+const buscandoHabitaciones = ref(false);
 const currentPage = ref(1);
 const ITEMS_PER_PAGE = 10;
 
@@ -171,29 +198,19 @@ const reservaAEliminar = ref(null);
 const reservaACancelar = ref(null);
 const deleting = ref(false);
 const loading = ref(true);
+const habitacionesParaModal = ref([]);
 
-async function cargarTodo() {
-  try {
-    await Promise.all([cargarReservas(), cargarHabitaciones(), cargarHuespedes()]);
-  } finally {
-    loading.value = false;
-  }
-}
+const hoy = computed(() => new Date().toISOString().split('T')[0]);
+const manana = computed(() => {
+  const d = new Date();
+  d.setDate(d.getDate() + 1);
+  return d.toISOString().split('T')[0];
+});
+
 const defaultForm = { id_habitacion: '', id_huesped: '', fecha_entrada: '', fecha_salida: '', notas: '' };
 const form = ref({ ...defaultForm });
 
 const canDelete = computed(() => authStore.userRole === 'admin');
-
-const habitacionesDisponiblesModal = computed(() => {
-  if (editingItem.value) {
-    // Editar: disponibles + la actual
-    return todasHabitaciones.value.filter(h => 
-      h.estado?.toLowerCase() === 'disponible' || h.id === editingItem.value.id_habitacion
-    )
-  }
-  // Crear: SOLO disponibles
-  return todasHabitaciones.value.filter(h => h.estado?.toLowerCase() === 'disponible')
-})
 
 const columns = [
   { key: 'id', label: '#' },
@@ -244,6 +261,14 @@ async function cargarHuespedes() {
   } catch {}
 }
 
+async function cargarTodo() {
+  try {
+    await Promise.all([cargarReservas(), cargarHabitaciones(), cargarHuespedes()]);
+  } finally {
+    loading.value = false;
+  }
+}
+
 async function consultarDisponibilidad() {
   if (!disponibilidad.value.entrada || !disponibilidad.value.salida) {
     toast?.value?.add('Selecciona las fechas de entrada y salida', 'error');
@@ -258,8 +283,14 @@ async function consultarDisponibilidad() {
   } catch { toast?.value?.add('Error al consultar disponibilidad', 'error'); }
 }
 
-function openCreate() { editingItem.value = null; form.value = { ...defaultForm }; showModal.value = true; }
-function openEdit(item) {
+function openCreate() { 
+  editingItem.value = null; 
+  form.value = { ...defaultForm }; 
+  habitacionesParaModal.value = []; 
+  showModal.value = true; 
+}
+
+async function openEdit(item) {
   editingItem.value = item;
   form.value = {
     id_habitacion: item.id_habitacion,
@@ -268,10 +299,59 @@ function openEdit(item) {
     fecha_salida: item.fecha_salida,
     notas: item.notas || ''
   };
+  // En edición, cargar habitaciones disponibles para esas fechas (incluyendo la actual)
+  try {
+    const res = await api.get('/habitaciones/disponibles', {
+      params: { fecha_entrada: item.fecha_entrada, fecha_salida: item.fecha_salida }
+    });
+    const disponibles = res.data.data || res.data;
+    // Incluir la habitación actual aunque no esté "disponible" en el resultado
+    const actual = todasHabitaciones.value.find(h => h.id === item.id_habitacion);
+    habitacionesParaModal.value = actual ? [...disponibles, actual] : disponibles;
+  } catch {
+    habitacionesParaModal.value = [];
+  }
   showModal.value = true;
 }
 
+function cerrarModal() {
+  showModal.value = false;
+  editingItem.value = null;
+  form.value = { ...defaultForm };
+  habitacionesParaModal.value = [];
+}
+
+async function buscarHabitacionesDisponibles() {
+  if (!form.value.fecha_entrada || !form.value.fecha_salida) {
+    toast?.value?.add('Selecciona las fechas de entrada y salida', 'error');
+    return;
+  }
+  if (new Date(form.value.fecha_entrada) >= new Date(form.value.fecha_salida)) {
+    toast?.value?.add('La fecha de salida debe ser posterior a la de entrada', 'error');
+    return;
+  }
+  buscandoHabitaciones.value = true;
+  try {
+    const res = await api.get('/habitaciones/disponibles', {
+      params: { fecha_entrada: form.value.fecha_entrada, fecha_salida: form.value.fecha_salida }
+    });
+    habitacionesParaModal.value = res.data.data || res.data;
+    if (!habitacionesParaModal.value.length) {
+      toast?.value?.add('No hay habitaciones disponibles para esas fechas', 'error');
+    }
+  } catch {
+    toast?.value?.add('Error al buscar habitaciones', 'error');
+    habitacionesParaModal.value = [];
+  } finally {
+    buscandoHabitaciones.value = false;
+  }
+}
+
 async function guardar() {
+  if (!habitacionesParaModal.value.length) {
+    toast?.value?.add('Primero consulta habitaciones disponibles', 'error');
+    return;
+  }
   saving.value = true;
   try {
     if (editingItem.value) {
@@ -288,66 +368,6 @@ async function guardar() {
     toast?.value?.add(msg, 'error');
   } finally { saving.value = false; }
 }
-
-async function confirmarReserva(id) {
-  try {
-    // Procesar garantía confirma automáticamente la reserva en el backend
-    await api.post(`/pagos/garantia/${id}`, { metodo: 'Efectivo' });
-    toast?.value?.add('Reserva confirmada (Garantía pagada)', 'success');
-    await cargarReservas();
-  } catch (err) {
-    const msg = err.response?.data?.error || err.response?.data?.mensaje || 'Error al confirmar';
-    toast?.value?.add(msg, 'error');
-  }
-}
-
-function cancelar(id) {
-  reservaACancelar.value = id;
-  showCancelConfirm.value = true;
-}
-
-async function ejecutarCancelacion() {
-  if (!reservaACancelar.value) return;
-  try {
-    await api.put(`/reservas/${reservaACancelar.value}/cancelar`);
-    toast?.value?.add('Reserva cancelada', 'success');
-    showCancelConfirm.value = false;
-    await cargarReservas();
-  } catch (err) {
-    const msg = err.response?.data?.mensaje || 'Error al cancelar';
-    toast?.value?.add(msg, 'error');
-  }
-}
-
-function confirmarEliminarReserva(item) {
-  reservaAEliminar.value = item;
-  showDeleteConfirm.value = true;
-}
-
-async function eliminarReserva() {
-  if (!reservaAEliminar.value) return;
-  deleting.value = true;
-  try {
-    await api.delete(`/reservas/${reservaAEliminar.value.id}`);
-    toast?.value?.add('Reserva eliminada correctamente', 'success');
-    showDeleteConfirm.value = false;
-    await cargarReservas();
-  } catch (err) {
-    const msg = err.response?.data?.mensaje || 'Error al eliminar';
-    toast?.value?.add(msg, 'error');
-  } finally { deleting.value = false; }
-}
-
-const estadoClass = (e) => ({
-  Confirmada: 'bg-blue-900/50 text-blue-300',
-  Pendiente: 'bg-yellow-900/50 text-yellow-300',
-  Ocupada: 'bg-green-900/50 text-green-300',
-  Completada: 'bg-gray-700 text-gray-300',
-  Cancelada: 'bg-red-900/50 text-red-300'
-}[e] || 'bg-gray-800 text-gray-400');
-
-onMounted(cargarTodo);
-</script>
 
 <style scoped>
 @reference "../style.css";
