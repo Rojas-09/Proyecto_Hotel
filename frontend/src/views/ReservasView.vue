@@ -52,6 +52,7 @@
           <button v-if="['Pendiente'].includes(item.estado)" @click="confirmarReserva(item.id)" class="text-xs text-green-400 hover:text-green-300 transition-colors">Confirmar</button>
           <button v-if="['Confirmada', 'Pendiente'].includes(item.estado)" @click="openEdit(item)" class="text-xs text-hotel-gold hover:text-yellow-400 transition-colors">Editar</button>
           <button v-if="['Pendiente', 'Confirmada'].includes(item.estado)" @click="cancelar(item.id)" class="text-xs text-red-400 hover:text-red-300 transition-colors">Cancelar</button>
+          <button v-if="canDelete && item.estado === 'Pendiente'" @click="confirmarEliminarReserva(item)" class="text-xs text-red-600 hover:text-red-500 transition-colors">Eliminar</button>
         </div>
       </template>
     </BaseTable>
