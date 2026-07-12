@@ -148,6 +148,7 @@
 
 <script setup>
 import { ref, computed, onMounted, inject } from 'vue';
+import { useAuthStore } from '../stores/auth';
 import api from '../services/api';
 import BaseButton from '../components/BaseButton.vue';
 import BaseTable from '../components/BaseTable.vue';
@@ -408,6 +409,12 @@ const estadoClass = (e) => ({
   Completada: 'bg-gray-700 text-gray-300',
   Cancelada: 'bg-red-900/50 text-red-300'
 }[e] || 'bg-gray-800 text-gray-400');
+
+async function cargarTodo() {
+  loading.value = true;
+  await Promise.all([cargarReservas(), cargarHabitaciones(), cargarHuespedes()]);
+  loading.value = false;
+}
 
 onMounted(cargarTodo);
 </script>
