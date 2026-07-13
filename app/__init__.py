@@ -79,6 +79,11 @@ def create_app(config_name="development"):
         with app.app_context():
             db.create_all()
             
+    # Health check para Docker
+    @app.route("/health")
+    def health():
+        return {"status": "ok", "app": "HotelBook Pro"}, 200
+
     # Manejador global de errores 500
     @app.errorhandler(500)
     def manejar_error_interno(error):
