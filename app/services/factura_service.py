@@ -239,7 +239,10 @@ def _generar_pdf_factura(factura: Factura) -> str:
     elements.append(t_header)
     elements.append(Spacer(1, 3 * mm))
 
-    title_bar = Table([[Paragraph("FACTURA DE ALOJAMIENTO", styles["HBPTitle"]) ]], colWidths=[176 * mm])
+    title_bar = Table(
+        [[Paragraph("FACTURA DE ALOJAMIENTO", styles["HBPTitle"])]],
+        colWidths=[176 * mm],
+    )
     title_bar.setStyle(TableStyle([
         ("BACKGROUND", (0, 0), (-1, -1), NAVY),
         ("LEFTPADDING", (0, 0), (-1, -1), 8),
@@ -402,7 +405,10 @@ def _generar_pdf_factura(factura: Factura) -> str:
         [
             Paragraph("Hospedaje", styles["HBPValue"]),
             Paragraph(
-                f"{reserva.noches} noche(s) · Habitación {habitacion.numero if habitacion else '-'}",
+                (
+                    f"{reserva.noches} noche(s) · Hab "
+                    f" {habitacion.numero if habitacion else '-'}"
+                ),
                 styles["HBPValue"],
             ),
             Paragraph(str(reserva.noches or 0), styles["HBPValue"]),
@@ -445,11 +451,26 @@ def _generar_pdf_factura(factura: Factura) -> str:
 
     saldo = Decimal("0.00") if factura.estado == EstadoFactura.pagada else total_general
     resumen_financiero = [
-        [Paragraph("Subtotal hospedaje", styles["HBPValue"]), Paragraph(_money(subtotal), styles["HBPValue"])],
-        [Paragraph("IVA", styles["HBPValue"]), Paragraph(_money(impuestos), styles["HBPValue"])],
-        [Paragraph("Servicios adicionales", styles["HBPValue"]), Paragraph(_money(servicios_total), styles["HBPValue"])],
-        [Paragraph("TOTAL FACTURA", styles["HBPLabel"]), Paragraph(_money(total_general), styles["HBPLabel"])],
-        [Paragraph("Saldo por pagar", styles["HBPLabel"]), Paragraph(_money(saldo), styles["HBPLabel"])],
+        [
+            Paragraph("Subtotal hospedaje", styles["HBPValue"]),
+            Paragraph(_money(subtotal), styles["HBPValue"]),
+        ],
+        [
+            Paragraph("IVA", styles["HBPValue"]),
+            Paragraph(_money(impuestos), styles["HBPValue"]),
+        ],
+        [
+            Paragraph("Servicios adicionales", styles["HBPValue"]),
+            Paragraph(_money(servicios_total), styles["HBPValue"]),
+        ],
+        [
+            Paragraph("TOTAL FACTURA", styles["HBPLabel"]),
+            Paragraph(_money(total_general), styles["HBPLabel"]),
+        ],
+        [
+            Paragraph("Saldo por pagar", styles["HBPLabel"]),
+            Paragraph(_money(saldo), styles["HBPLabel"]),
+        ],
     ]
     resumen_table = Table(resumen_financiero, colWidths=[104 * mm, 72 * mm])
     resumen_table.setStyle(TableStyle([

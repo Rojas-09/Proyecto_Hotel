@@ -47,14 +47,20 @@ def _grafico_ocupacion_por_tipo(labels, ocupaciones, ingresos) -> bytes:
     x = range(len(labels))
     width = 0.35
 
-    bars1 = ax1.bar([i - width / 2 for i in x], ocupaciones, width, label="Ocupación %", color="#3498db")
+    bars1 = ax1.bar(
+        [i - width / 2 for i in x], ocupaciones, width,
+        label="Ocupación %", color="#3498db",
+    )
     ax1.set_ylabel("Ocupación %", color="#3498db")
     ax1.tick_params(axis="y", labelcolor="#3498db")
     max_ocup = max(ocupaciones) if ocupaciones else 0
     ax1.set_ylim(0, max(max_ocup * 1.2, 10))
 
     ax2 = ax1.twinx()
-    bars2 = ax2.bar([i + width / 2 for i in x], ingresos, width, label="Ingresos ($)", color="#f39c12")
+    bars2 = ax2.bar(
+        [i + width / 2 for i in x], ingresos, width,
+        label="Ingresos ($)", color="#f39c12",
+    )
     ax2.set_ylabel("Ingresos (COP)", color="#f39c12")
     ax2.tick_params(axis="y", labelcolor="#f39c12")
 
@@ -631,8 +637,19 @@ def _generar_xlsx_con_graficos(secciones: list, nombre_archivo: str, encabezados
                 chart = BarChart()
 
             # Datos del gráfico
-            data_ref = Reference(ws, min_col=grafico_info["data_min_col"], max_col=grafico_info["data_max_col"], min_row=1, max_row=len(sec["datos"]))
-            cats_ref = Reference(ws, min_col=grafico_info["cats_col"], min_row=2, max_row=len(sec["datos"]))
+            data_ref = Reference(
+                ws,
+                min_col=grafico_info["data_min_col"],
+                max_col=grafico_info["data_max_col"],
+                min_row=1,
+                max_row=len(sec["datos"]),
+            )
+            cats_ref = Reference(
+                ws,
+                min_col=grafico_info["cats_col"],
+                min_row=2,
+                max_row=len(sec["datos"]),
+            )
             chart.add_data(data_ref, titles_from_data=True)
             chart.set_categories(cats_ref)
             chart.title = grafico_info.get("title", "Gráfico")
@@ -696,8 +713,14 @@ def generar_ocupacion(
     ingresos_totales = sum(float(r.total) for r in reservas_periodo)
     adr = round(ingresos_totales / noches_totales, 2) if noches_totales > 0 else 0
     revpar = round(ingresos_totales / total_habitaciones, 2) if total_habitaciones > 0 else 0
-    ocupacion_general = round(total_reservas / total_habitaciones * 100, 2) if total_habitaciones > 0 else 0
-    dias_promedio = round(sum(r.noches for r in reservas_periodo) / total_reservas, 2) if total_reservas > 0 else 0
+    ocupacion_general = (
+        round(total_reservas / total_habitaciones * 100, 2)
+        if total_habitaciones > 0 else 0
+    )
+    dias_promedio = (
+        round(sum(r.noches for r in reservas_periodo) / total_reservas, 2)
+        if total_reservas > 0 else 0
+    )
 
     # --- 2. POR TIPO DE HABITACIÓN ---
     reservas_por_tipo = {}
@@ -707,7 +730,10 @@ def generar_ocupacion(
             select(func.count()).select_from(Habitacion).filter_by(tipo=tipo, activo=True)
         ).scalar()
         ingresos_tipo = sum(float(r.total) for r in reservas_tipo)
-        adr_tipo = round(ingresos_tipo / sum(r.noches for r in reservas_tipo), 2) if reservas_tipo else 0
+        adr_tipo = (
+            round(ingresos_tipo / sum(r.noches for r in reservas_tipo), 2)
+            if reservas_tipo else 0
+        )
         revpar_tipo = round(ingresos_tipo / total_tipo, 2) if total_tipo > 0 else 0
         ocupacion_tipo = round(len(reservas_tipo) / total_tipo * 100, 2) if total_tipo > 0 else 0
 
@@ -742,7 +768,10 @@ def generar_ocupacion(
     while dia_actual <= fin:
         tendencia_fechas.append(dia_actual)
         info = reservas_por_dia.get(dia_actual, {"reservas": 0, "noches": 0, "ingresos": 0})
-        ocup_dia = round(info["reservas"] / total_habitaciones * 100, 2) if total_habitaciones > 0 else 0
+        ocup_dia = (
+            round(info["reservas"] / total_habitaciones * 100, 2)
+            if total_habitaciones > 0 else 0
+        )
         adr_dia = round(info["ingresos"] / info["noches"], 2) if info["noches"] > 0 else 0
         tendencia_ocupacion.append(ocup_dia)
         tendencia_adr.append(adr_dia)
@@ -774,13 +803,19 @@ def generar_ocupacion(
 
     # --- DETALLE POR HABITACIÓN (para dashboard) ---
     detalle_ocupacion = []
-    habitaciones_activas = db.session.execute(select(Habitacion).filter_by(activo=True)).scalars().all()
+    habitaciones_activas = (
+        db.session.execute(select(Habitacion).filter_by(activo=True))
+        .scalars().all()
+    )
     for h in habitaciones_activas:
         reservas_hab = [r for r in reservas_periodo if r.id_habitacion == h.id]
         noches_ocupadas = sum(r.noches for r in reservas_hab)
         ingreso_hab = sum(float(r.total) for r in reservas_hab)
         total_noches_periodo = dias_periodo
-        pct = round(noches_ocupadas / total_noches_periodo * 100, 1) if total_noches_periodo > 0 else 0
+        pct = (
+            round(noches_ocupadas / total_noches_periodo * 100, 1)
+            if total_noches_periodo > 0 else 0
+        )
         detalle_ocupacion.append({
             "numero": h.numero,
             "tipo": h.tipo.value,
@@ -797,7 +832,9 @@ def generar_ocupacion(
     grafico_tipo = _grafico_ocupacion_por_tipo(labels_tipo, ocup_tipo, ing_tipo)
 
     # Gráfico 2: Tendencia Diaria
-    grafico_tendencia = _grafico_tendencia_diaria(tendencia_fechas, tendencia_ocupacion, tendencia_adr)
+    grafico_tendencia = _grafico_tendencia_diaria(
+        tendencia_fechas, tendencia_ocupacion, tendencia_adr,
+    )
 
     # Gráfico 3: Top 5 Habitaciones
     grafico_top = _grafico_top_habitaciones(top_hab_labels, top_hab_ingresos, top_hab_noches)
@@ -820,9 +857,10 @@ def generar_ocupacion(
     secciones_pdf.append({"titulo": "1. KPIs Principales", "datos": datos_kpis, "grafico": None})
 
     # Sección 2: Por Tipo
-    datos_tipo = [
-        ["Tipo", "Habitaciones", "Reservas", "Noches", "Ingresos (COP)", "Ocupación (%)", "ADR (COP)", "RevPAR (COP)"],
-    ]
+    datos_tipo = [[
+        "Tipo", "Habitaciones", "Reservas", "Noches",
+        "Ingresos (COP)", "Ocupación (%)", "ADR (COP)", "RevPAR (COP)",
+    ]]
     for tipo, info in reservas_por_tipo.items():
         datos_tipo.append([
             tipo,
@@ -834,7 +872,10 @@ def generar_ocupacion(
             f"${info['adr']:,.2f}",
             f"${info['revpar']:,.2f}",
         ])
-    secciones_pdf.append({"titulo": "2. Desglose por Tipo de Habitación", "datos": datos_tipo, "grafico": grafico_tipo})
+    secciones_pdf.append({
+        "titulo": "2. Desglose por Tipo de Habitación",
+        "datos": datos_tipo, "grafico": grafico_tipo,
+    })
 
     # Sección 3: Tendencia Diaria
     datos_tendencia = [["Fecha", "Ocupación (%)", "ADR (COP)", "Ingresos (COP)"]]
@@ -845,13 +886,19 @@ def generar_ocupacion(
             f"${tendencia_adr[i]:,.2f}",
             f"${tendencia_ingresos[i]:,.2f}",
         ])
-    secciones_pdf.append({"titulo": "3. Tendencia Diaria (Ocupación + ADR)", "datos": datos_tendencia, "grafico": grafico_tendencia})
+    secciones_pdf.append({
+        "titulo": "3. Tendencia Diaria (Ocupación + ADR)",
+        "datos": datos_tendencia, "grafico": grafico_tendencia,
+    })
 
     # Sección 4: Top 5
     datos_top = [["Habitación", "Ingresos (COP)", "Noches"]]
     for i, h in enumerate(top_ingresos):
         datos_top.append([f"Hab {h.numero}", f"${float(h.ingresos):,.2f}", int(h.noches)])
-    secciones_pdf.append({"titulo": "4. Top 5 Habitaciones", "datos": datos_top, "grafico": grafico_top})
+    secciones_pdf.append({
+        "titulo": "4. Top 5 Habitaciones",
+        "datos": datos_top, "grafico": grafico_top,
+    })
 
     # --- EXCEL: 4 hojas + gráficos ---
     secciones_xlsx = [
