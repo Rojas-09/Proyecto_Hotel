@@ -174,7 +174,6 @@ def refresh():
 
     if status != 200:
         return jsonify(result), status
-        result, status, access_token, refresh_token = result
     resp = jsonify(result)
     _set_auth_cookies(resp, access_token, refresh_token)
     return resp, status
