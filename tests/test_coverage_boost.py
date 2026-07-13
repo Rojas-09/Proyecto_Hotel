@@ -490,3 +490,371 @@ class TestReservaServiceEmail:
                 {"fecha_entrada": str(hoy + timedelta(days=5))}
             )
             assert isinstance(resultado, list)
+
+
+# ---------------------------------------------------------------------------
+# AuthService cobertura — validaciones no cubiertas por tests vía controlador
+# ---------------------------------------------------------------------------
+
+
+class TestAuthServiceCobertura:
+    """Cubre caminos de validación en AuthService que no se ejercitan via HTTP."""
+
+    def test_login_sin_email(self, app):
+        """login() retorna error 400 sin email."""
+        with app.app_context():
+            from app.services.auth_service import AuthService
+
+            result, status, *_ = AuthService.login({"email": "", "password": "x"})
+            assert status == 400
+            assert "requeridos" in result["error"]["message"].lower()
+
+    def test_registrar_password_corta(self, app):
+        """registrar() retorna error para password < 8 caracteres."""
+        with app.app_context():
+            from app.services.auth_service import AuthService
+
+            data = {
+                "nombre": "Test",
+                "apellido": "User",
+                "email": "reg_short@t.com",
+                "password": "123",
+                "rol": "cliente",
+                "documento_id": "CC12345",
+            }
+            result, status = AuthService.registrar(data)[:2]
+            assert status == 400
+            assert "8 caracteres" in result["error"]["message"]
+
+    def test_crear_usuario_recepcionista_sin_permiso(self, app):
+        """editar_usuario() como recepcionista no permite asignar admin."""
+        with app.app_context():
+            rec = _usuario(RolEnum.recepcionista, "rec_nop")
+            target = _usuario(RolEnum.cliente, "cli_nop")
+            db.session.commit()
+
+            from app.services.auth_service import AuthService
+
+            result, status = AuthService.editar_usuario(
+                target.id, rec, {"rol": "admin"}
+            )[:2]
+            assert status == 403
+            assert "superiores" in result["error"]["message"]
+
+    def test_registrar_reactivacion_usuario_inactivo(self, app):
+        """registrar() reactiva usuario desactivado."""
+        with app.app_context():
+            from app.models.huesped import Huesped
+
+            u = Usuario(
+                nombre="Old", apellido="User", email="react@t.com",
+                rol="cliente", activo=False,
+            )
+            u.password = "OldPass123"
+            db.session.add(u)
+            db.session.flush()
+            h = Huesped(id_usuario=u.id, documento_id="CC99999", tipo_documento="CC",
+                        activo=False)
+            db.session.add(h)
+            db.session.commit()
+
+            from app.services.auth_service import AuthService
+
+            data = {
+                "nombre": "New", "apellido": "Name", "email": "react@t.com",
+                "password": "NewPass1234", "rol": "cliente",
+                "documento_id": "CC99999",
+            }
+            result = AuthService.registrar(data)[0]
+            assert result["success"]
+            assert "reactivada" in result["message"].lower()
+
+
+# ---------------------------------------------------------------------------
+# PagoService cobertura — estado invariante y filtros
+# ---------------------------------------------------------------------------
+
+
+class TestPagoServiceCobertura:
+    """Cubre caminos de validación en pago_service no ejercitados."""
+
+    def test_listar_por_metodo_invalido(self, app):
+        """listar() lanza ValueError con método inválido."""
+        with app.app_context():
+            from app.services import pago_service
+
+            with pytest.raises(ValueError, match="inválido|Método"):
+                pago_service.listar({"metodo": "INVALIDO"})
+
+    def test_listar_por_reserva(self, app):
+        """listar() filtra por id_reserva."""
+        with app.app_context():
+            u = _usuario(RolEnum.cliente, "cli_lpr1")
+            h = _huesped(u)
+            hab = _habitacion()
+            r = _reserva(h, hab)
+            _garantia(r)
+            db.session.commit()
+
+            from app.services import pago_service
+
+            result = pago_service.listar({"id_reserva": r.id})
+            assert len(result) == 1
+
+    def test_anular_ya_anulado(self, app):
+        """anular() lanza ValueError si ya está anulado."""
+        with app.app_context():
+            u = _usuario(RolEnum.cliente, "cli_an1")
+            h = _huesped(u)
+            hab = _habitacion()
+            r = _reserva(h, hab)
+            pago = _garantia(r)
+            pago.estado = EstadoPago.anulado
+            db.session.commit()
+
+            from app.services.pago_service import anular
+
+            with pytest.raises(ValueError, match="anulado"):
+                anular(pago.id)
+
+    def test_anular_ya_reembolsado(self, app):
+        """anular() lanza ValueError si ya está reembolsado."""
+        with app.app_context():
+            u = _usuario(RolEnum.cliente, "cli_an2")
+            h = _huesped(u)
+            hab = _habitacion()
+            r = _reserva(h, hab)
+            pago = _garantia(r)
+            pago.estado = EstadoPago.reembolsado
+            db.session.commit()
+
+            from app.services.pago_service import anular
+
+            with pytest.raises(ValueError, match="reembolsado"):
+                anular(pago.id)
+
+    def test_anular_ya_rechazado(self, app):
+        """anular() lanza ValueError si ya está rechazado."""
+        with app.app_context():
+            u = _usuario(RolEnum.cliente, "cli_an3")
+            h = _huesped(u)
+            hab = _habitacion()
+            r = _reserva(h, hab)
+            pago = _garantia(r)
+            pago.estado = EstadoPago.rechazado
+            db.session.commit()
+
+            from app.services.pago_service import anular
+
+            with pytest.raises(ValueError, match="rechazado"):
+                anular(pago.id)
+
+    def test_registrar_sin_nombre(self, app):
+        with app.app_context():
+            from app.services.auth_service import AuthService
+
+            result, status = AuthService.registrar({
+                "nombre": "", "apellido": "X", "email": "x@x.com",
+                "password": "Pass1234", "rol": "cliente",
+            })[:2]
+            assert status == 400
+            assert "requerido" in result["error"]["message"]
+
+    def test_refresh_token_usuario_inactivo(self, app):
+        with app.app_context():
+            from datetime import timedelta
+            from app.models.refresh_token import RefreshToken
+            from app.services.auth_service import AuthService
+
+            u = _usuario(RolEnum.cliente, "cli_rtok")
+            raw, rt = RefreshToken.crear(u.id)
+            db.session.commit()
+            u.activo = False
+            db.session.commit()
+
+            result, status = AuthService.refrescar_token(raw)[:2]
+            assert status == 401
+
+    def test_crear_cliente_sin_documento(self, app):
+        with app.app_context():
+            from app.services.auth_service import AuthService
+
+            result, status = AuthService.registrar({
+                "nombre": "NoDoc", "apellido": "Test", "email": "nodoc@t.com",
+                "password": "Pass1234", "rol": "cliente",
+            })[:2]
+            assert status == 400
+            assert "documento_id" in result["error"]["message"].lower()
+
+    def test_registrar_usuario_activo_sin_huesped(self, app):
+        with app.app_context():
+            from app.services.auth_service import AuthService
+
+            u = Usuario(
+                nombre="Old", apellido="NoHuesped", email="no_huesp@t.com",
+                rol="cliente", activo=True,
+            )
+            u.password = "Pass1234"
+            db.session.add(u)
+            db.session.commit()
+
+            result, status = AuthService.registrar({
+                "nombre": "New", "apellido": "Name", "email": "no_huesp@t.com",
+                "password": "NewPass1234", "rol": "cliente",
+                "documento_id": "CC12345",
+            })[:2]
+            assert status == 409
+            assert "activa" in result["error"]["message"].lower()
+
+    def test_registrar_reactivar_sin_huesped(self, app):
+        with app.app_context():
+            from app.services.auth_service import AuthService
+
+            u = Usuario(
+                nombre="Inact", apellido="NoHuesp", email="ino_huesp@t.com",
+                rol="cliente", activo=False,
+            )
+            u.password = "OldPass123"
+            db.session.add(u)
+            db.session.commit()
+
+            result = AuthService.registrar({
+                "nombre": "NewName", "apellido": "LastName",
+                "email": "ino_huesp@t.com",
+                "password": "NewPass1234", "rol": "cliente",
+                "documento_id": "CC12345",
+            })[0]
+            assert result["success"]
+
+
+# ---------------------------------------------------------------------------
+# HabitacionService cobertura
+# ---------------------------------------------------------------------------
+
+
+class TestHabitacionServiceCobertura:
+    def test_listar_filtrar_por_estado(self, app):
+        with app.app_context():
+            from app.services.habitacion_service import obtener_todas
+
+            h1 = _habitacion()
+            h2 = _habitacion()
+            h2.estado = EstadoHabitacion.ocupada
+            db.session.commit()
+
+            result = obtener_todas({"estado": "disponible"})
+            assert all(r["estado"] == "disponible" for r in result)
+
+    def test_listar_filtrar_por_piso(self, app):
+        with app.app_context():
+            from app.services.habitacion_service import obtener_todas
+
+            h1 = _habitacion()
+            h1.piso = 1
+            h2 = _habitacion()
+            h2.piso = 2
+            db.session.commit()
+
+            result = obtener_todas({"piso": 1})
+            assert all(r["piso"] == 1 for r in result)
+
+    def test_crear_capacidad_cero(self, app):
+        with app.app_context():
+            from app.services.habitacion_service import crear
+
+            with pytest.raises(ValueError, match="capacidad"):
+                crear({"numero": "9999", "tipo": "Doble", "precio_noche": 100000, "capacidad": 0})
+
+    def test_actualizar_capacidad_cero(self, app):
+        with app.app_context():
+            from app.services.habitacion_service import actualizar
+
+            hab = _habitacion()
+            db.session.commit()
+
+            with pytest.raises(ValueError, match="capacidad"):
+                actualizar(hab.id, {"capacidad": 0})
+
+    def test_actualizar_campos(self, app):
+        with app.app_context():
+            from app.services.habitacion_service import actualizar
+
+            hab = _habitacion()
+            db.session.commit()
+
+            result = actualizar(hab.id, {
+                "numero": "9998",
+                "estado": "ocupada",
+                "descripcion": "Nueva descripción",
+                "piso": 5,
+            })
+            assert result["numero"] == "9998"
+            assert result["descripcion"] == "Nueva descripción"
+            assert result["piso"] == 5
+
+
+# ---------------------------------------------------------------------------
+# HuespedService cobertura
+# ---------------------------------------------------------------------------
+
+
+class TestHuespedServiceCobertura:
+    def test_eliminar_huesped(self, app):
+        with app.app_context():
+            from app.services.huesped_service import eliminar
+
+            u = _usuario(RolEnum.cliente, "cli_hsrv")
+            h = _huesped(u)
+            db.session.commit()
+
+            result = eliminar(h.id)
+            assert result["id"] == h.id
+            assert "desactivado" in result["mensaje"].lower()
+
+
+# ---------------------------------------------------------------------------
+# AuthController cobertura — crear_primer_admin
+# ---------------------------------------------------------------------------
+
+
+class TestAuthControllerCrearPrimerAdmin:
+    """Cubre crear_primer_admin en auth_controller.py."""
+
+    def test_register_admin_sin_body(self, client, app):
+        with app.app_context():
+            app.config["ADMIN_BOOTSTRAP_ENABLED"] = True
+        resp = client.post(
+            "/api/v1/auth/register-admin",
+            data="not-json",
+            content_type="application/json",
+        )
+        assert resp.status_code == 400
+
+    def test_register_admin_secret_invalido(self, client, app):
+        with app.app_context():
+            app.config["ADMIN_BOOTSTRAP_ENABLED"] = True
+            app.config["ADMIN_BOOTSTRAP_SECRET"] = "misecreto"
+        resp = client.post(
+            "/api/v1/auth/register-admin",
+            json={"nombre": "Root", "apellido": "Admin", "email": "root2@h.com",
+                  "password": "Root12345"},
+            headers={"X-Bootstrap-Secret": "wrong"},
+        )
+        assert resp.status_code == 401
+
+    def test_register_admin_deshabilitado(self, client, app):
+        with app.app_context():
+            app.config["ADMIN_BOOTSTRAP_ENABLED"] = False
+        resp = client.post(
+            "/api/v1/auth/register-admin",
+            json={"nombre": "Root", "apellido": "Admin", "email": "root3@h.com",
+                  "password": "Root12345"},
+        )
+        assert resp.status_code == 403
+        assert "deshabilitado" in resp.get_json()["error"]["message"].lower()
+
+    def test_me_sin_token(self, client, app):
+        resp = client.get("/api/v1/auth/me")
+        assert resp.status_code == 401
+
+

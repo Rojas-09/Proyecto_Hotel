@@ -743,3 +743,65 @@ class TestServicioControllerEndpoints:
             headers=headers,
         )
         assert resp.status_code == 400
+
+    def test_post_con_fecha_hora(self, client, app):
+        with app.app_context():
+            rec = _usuario(RolEnum.recepcionista, "rec_fh1")
+            u_cli = _usuario(RolEnum.cliente, "cli_fh1")
+            h = _huesped(u_cli)
+            hab = _habitacion()
+            r = _reserva(h, hab)
+            db.session.commit()
+            headers = _token(rec)
+            rid = r.id
+
+        resp = client.post(
+            f"/api/v1/reservas/{rid}/servicios",
+            json={
+                "tipo": "Spa",
+                "descripcion": "Masaje relajante",
+                "costo": 60000,
+                "fecha_hora": ahora_colombia().isoformat(),
+            },
+            headers=headers,
+        )
+        assert resp.status_code == 201
+        data = resp.get_json()
+        assert data["data"]["tipo"] == "Spa"
+
+    def test_get_servicio_individual(self, client, app):
+        with app.app_context():
+            rec = _usuario(RolEnum.recepcionista, "rec_gs1")
+            u_cli = _usuario(RolEnum.cliente, "cli_gs1")
+            h = _huesped(u_cli)
+            hab = _habitacion()
+            r = _reserva(h, hab)
+            s = _servicio(r)
+            db.session.commit()
+            headers = _token(rec)
+            sid = s.id
+
+        resp = client.get(f"/api/v1/servicios/{sid}", headers=headers)
+        assert resp.status_code == 200
+        data = resp.get_json()
+        assert data["data"]["id"] == sid
+        assert "Servicio encontrado" in data["mensaje"]
+
+    def test_put_costo_invalido(self, client, app):
+        with app.app_context():
+            rec = _usuario(RolEnum.recepcionista, "rec_ci1")
+            u_cli = _usuario(RolEnum.cliente, "cli_ci1")
+            h = _huesped(u_cli)
+            hab = _habitacion()
+            r = _reserva(h, hab)
+            s = _servicio(r)
+            db.session.commit()
+            headers = _token(rec)
+            sid = s.id
+
+        resp = client.put(
+            f"/api/v1/servicios/{sid}",
+            json={"costo": -5000},
+            headers=headers,
+        )
+        assert resp.status_code == 400

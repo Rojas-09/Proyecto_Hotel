@@ -3,8 +3,12 @@ HotelBook Pro - Configuración global de pytest
 Fixtures compartidas por todos los tests
 """
 
+import os
 import pytest
-from app import create_app, db as _db
+
+os.environ.pop("RATELIMIT_STORAGE_URL", None)
+
+from app import create_app, db as _db  # noqa: E402
 from app.models.usuario import Usuario, RolEnum
 from app.models.huesped import Huesped
 
