@@ -9,6 +9,7 @@ from app import db
 from app.models.usuario import Usuario, RolEnum
 from app.models.reporte import ReporteGenerado
 from app.services import reporte_service
+from app.utils.fecha_helper import ahora_colombia
 
 # -- helpers --------------------------------------------------------------
 
@@ -134,7 +135,7 @@ class TestListarHistorial:
             r2 = _crear_reporte(admin, tipo="b")
             db.session.commit()
             resultados = reporte_service.listar_historial(
-                {"fecha_desde": date.today().isoformat()}
+                {"fecha_desde": ahora_colombia().date().isoformat()}
             )
             ids = [r["id"] for r in resultados]
             assert r1.id in ids
