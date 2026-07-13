@@ -4,7 +4,6 @@ Gestión de facturas: consulta, emisión, descarga y anulación.
 """
 
 import io
-import os
 
 from flask import Blueprint, jsonify, request, send_file
 from sqlalchemy import select

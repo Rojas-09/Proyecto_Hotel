@@ -95,7 +95,6 @@ def _generar_pdf_factura(factura: Factura) -> str:
     habitacion = reserva.habitacion
 
     # Tokens visuales del documento
-    GOLD = colors.HexColor("#C8A45C")
     NAVY = colors.HexColor("#1E2A3A")
     SLATE = colors.HexColor("#2F3F52")
     INK = colors.HexColor("#2D3138")
@@ -265,7 +264,7 @@ def _generar_pdf_factura(factura: Factura) -> str:
         estado_color = colors.HexColor("#B91C1C")
 
     estado_box = Table(
-        [[Paragraph(f"Estado de la factura: {factura.estado.value.upper()}", styles["HBPValue"]) ]],
+        [[Paragraph(f"Estado de la factura: {factura.estado.value.upper()}", styles["HBPValue"])]],
         colWidths=[176 * mm],
     )
     estado_box.setStyle(TableStyle([

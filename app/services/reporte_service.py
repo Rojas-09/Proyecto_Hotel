@@ -24,12 +24,9 @@ from app.models.habitacion import Habitacion, TipoHabitacion
 from app.models.huesped import Huesped
 from app.models.pago import EstadoPago, Pago
 from app.models.reserva import EstadoReserva, Reserva
-from app.models.checkin_checkout import CheckInCheckOut
-
 # Matplotlib para gráficos en PDF
 import matplotlib
 matplotlib.use("Agg")  # Backend sin GUI
-import matplotlib.pyplot as plt
 
 
 # ---------------------------------------------------------------------------
@@ -39,15 +36,13 @@ import matplotlib.pyplot as plt
 
 def _grafico_ocupacion_por_tipo(labels, ocupaciones, ingresos) -> bytes:
     """Bar chart grouped: ocupación% + ingresos por tipo. Retorna PNG bytes."""
-    import matplotlib
-    matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
     fig, ax1 = plt.subplots(figsize=(8, 4))
     x = range(len(labels))
     width = 0.35
 
-    bars1 = ax1.bar(
+    ax1.bar(
         [i - width / 2 for i in x], ocupaciones, width,
         label="Ocupación %", color="#3498db",
     )
@@ -57,7 +52,7 @@ def _grafico_ocupacion_por_tipo(labels, ocupaciones, ingresos) -> bytes:
     ax1.set_ylim(0, max(max_ocup * 1.2, 10))
 
     ax2 = ax1.twinx()
-    bars2 = ax2.bar(
+    ax2.bar(
         [i + width / 2 for i in x], ingresos, width,
         label="Ingresos ($)", color="#f39c12",
     )
@@ -82,10 +77,8 @@ def _grafico_ocupacion_por_tipo(labels, ocupaciones, ingresos) -> bytes:
 
 def _grafico_tendencia_diaria(fechas, ocupaciones, adrs) -> bytes:
     """Line chart dual axis: ocupación% + ADR por día."""
-    import matplotlib
-    matplotlib.use("Agg")
-    import matplotlib.pyplot as plt
     import matplotlib.dates as mdates
+    import matplotlib.pyplot as plt
 
     fig, ax1 = plt.subplots(figsize=(8, 4))
 
@@ -118,8 +111,6 @@ def _grafico_tendencia_diaria(fechas, ocupaciones, adrs) -> bytes:
 
 def _grafico_top_habitaciones(labels, ingresos, noches) -> bytes:
     """Horizontal bar chart: Top 5 habitaciones por ingresos y noches."""
-    import matplotlib
-    matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 4), sharey=True)
@@ -175,6 +166,15 @@ def _formatear_numero(valor) -> float:
     if isinstance(valor, Decimal):
         return float(valor)
     return float(valor)
+
+
+def _fecha_default_mes_anterior():
+    """Retorna (fecha_inicio, fecha_fin) del mes anterior completo."""
+    hoy = date.today()
+    primer_dia_mes_actual = hoy.replace(day=1)
+    fin = primer_dia_mes_actual - timedelta(days=1)
+    inicio = fin.replace(day=1)
+    return _fecha_str(inicio), _fecha_str(fin)
 
 
 # ---------------------------------------------------------------------------
@@ -301,183 +301,6 @@ def _generar_pdf(datos: list, nombre_archivo: str, titulo: str) -> str:
 # ---------------------------------------------------------------------------
 # Reporte de Ocupación
 # ---------------------------------------------------------------------------
-
-
-def _fecha_default_mes_anterior():
-    """Retorna (fecha_inicio, fecha_fin) del mes anterior completo."""
-    hoy = date.today()
-    primer_dia_mes_actual = hoy.replace(day=1)
-    fin = primer_dia_mes_actual - timedelta(days=1)
-    inicio = fin.replace(day=1)
-    return _fecha_str(inicio), _fecha_str(fin)
-
-
-def _formatear_numero(valor) -> float:
-    """Crea y retorna la ruta del directorio de reportes."""
-    directorio = os.path.join(
-        os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
-        "static",
-        "reportes",
-    )
-    if not os.path.exists(directorio):
-        os.makedirs(directorio)
-    return directorio
-
-
-def _parse_fecha(fecha_str: str) -> date:
-    """Convierte string YYYY-MM-DD a objeto date."""
-    return datetime.strptime(fecha_str, "%Y-%m-%d").date()
-
-
-def _fecha_str(fecha: date) -> str:
-    """Convierte date a string YYYY-MM-DD."""
-    return fecha.strftime("%Y-%m-%d")
-
-
-def _fecha_default_mes_anterior():
-    """Retorna (fecha_inicio, fecha_fin) del mes anterior completo."""
-    hoy = date.today()
-    primer_dia_mes_actual = hoy.replace(day=1)
-    fin = primer_dia_mes_actual - timedelta(days=1)
-    inicio = fin.replace(day=1)
-    return _fecha_str(inicio), _fecha_str(fin)
-
-
-def _formatear_numero(valor) -> float:
-    """Convierte Decimal o número a float."""
-    if isinstance(valor, Decimal):
-        return float(valor)
-    return float(valor)
-
-
-# ---------------------------------------------------------------------------
-# Helpers de generación de archivos
-# ---------------------------------------------------------------------------
-
-
-def _crear_directorio_reportes() -> str:
-    """Crea y retorna la ruta del directorio de reportes."""
-    directorio = os.path.join(
-        os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
-        "static",
-        "reportes",
-    )
-    if not os.path.exists(directorio):
-        os.makedirs(directorio)
-    return directorio
-
-
-def _generar_xlsx(datos: list, nombre_archivo: str, encabezados: list) -> str:
-    """
-    Genera un archivo xlsx con datos y encabezados dados.
-    Retorna la ruta del archivo creado.
-    """
-    directorio = _crear_directorio_reportes()
-    ruta = os.path.join(directorio, nombre_archivo)
-
-    wb = Workbook()
-    ws = wb.active
-    ws.title = nombre_archivo.replace(".xlsx", "")[:31]
-
-    header_font = Font(name="Calibri", bold=True, color="FFFFFF", size=11)
-    header_fill = PatternFill(
-        start_color="2C3E50", end_color="2C3E50", fill_type="solid"
-    )
-    header_align = Alignment(horizontal="center", vertical="center", wrap_text=True)
-
-    border = Border(
-        left=Side(style="thin"),
-        right=Side(style="thin"),
-        top=Side(style="thin"),
-        bottom=Side(style="thin"),
-    )
-
-    for col_idx, encabezado in enumerate(encabezados, 1):
-        cell = ws.cell(row=1, column=col_idx, value=encabezado)
-        cell.font = header_font
-        cell.fill = header_fill
-        cell.alignment = header_align
-        cell.border = border
-
-    cell_align = Alignment(horizontal="left", vertical="center")
-    for row_idx, fila in enumerate(datos, 2):
-        for col_idx, valor in enumerate(fila, 1):
-            cell = ws.cell(row=row_idx, column=col_idx, value=valor)
-            cell.alignment = cell_align
-            cell.border = border
-
-    for col_idx in range(1, len(encabezados) + 1):
-        max_length = max(
-            len(str(ws.cell(row=r, column=col_idx).value or ""))
-            for r in range(1, len(datos) + 2)
-        )
-        ws.column_dimensions[get_column_letter(col_idx)].width = min(max_length + 3, 40)
-
-    wb.save(ruta)
-    return ruta
-    """
-    Genera un archivo pdf con una tabla de datos.
-    Retorna la ruta del archivo creado.
-    """
-    directorio = _crear_directorio_reportes()
-    ruta = os.path.join(directorio, nombre_archivo)
-
-    doc = SimpleDocTemplate(
-        ruta,
-        pagesize=landscape(A4),
-        rightMargin=15 * mm,
-        leftMargin=15 * mm,
-        topMargin=15 * mm,
-        bottomMargin=15 * mm,
-    )
-
-    styles = getSampleStyleSheet()
-    styles.add(
-        ParagraphStyle(
-            name="TitleCenter",
-            parent=styles["Heading1"],
-            alignment=1,
-            fontSize=16,
-            spaceAfter=6,
-        )
-    )
-
-    elements = []
-    elements.append(Paragraph(titulo, styles["TitleCenter"]))
-    elements.append(Spacer(1, 4 * mm))
-
-    if not datos:
-        elements.append(
-            Paragraph("No hay datos disponibles para este reporte.", styles["Normal"])
-        )
-    else:
-        encabezados = datos[0]
-        filas = datos[1:]
-
-        table_data = [encabezados] + filas
-        col_count = len(encabezados)
-        col_width = (210 * mm - 30 * mm) / col_count
-
-        tabla = Table(table_data, colWidths=[col_width] * col_count)
-        tabla.setStyle(
-            TableStyle(
-                [
-                    ("FONTSIZE", (0, 0), (-1, -1), 9),
-                    ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-                    ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#2C3E50")),
-                    ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
-                    ("ALIGN", (0, 0), (-1, -1), "CENTER"),
-                    ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-                    ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
-                    ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
-                    ("TOPPADDING", (0, 0), (-1, -1), 5),
-                ]
-            )
-        )
-        elements.append(tabla)
-
-    doc.build(elements)
-    return ruta
 
 
 def _generar_pdf_con_graficos(secciones: list, nombre_archivo: str, titulo: str) -> str:
