@@ -1,8 +1,15 @@
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
 
   db:
     image: postgres:16-alpine
     restart: unless-stopped
+    logging: *default-logging
     volumes:
       - pgdata:/var/lib/postgresql/data
     environment:
@@ -15,11 +22,24 @@ services:
       timeout: 3s
       retries: 5
 
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    logging: *default-logging
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
   backend:
     build: .
     restart: unless-stopped
+    logging: *default-logging
     depends_on:
       db:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     environment:
       FLASK_ENV: production
@@ -28,6 +48,7 @@ services:
       SECRET_KEY: ${SECRET_KEY}
       CORS_ORIGINS: http://localhost https://${DOMAIN:-localhost}
       RESERVA_EXPIRA_MINUTOS: 30
+      RATELIMIT_STORAGE_URL: redis://redis:6379/0
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/health')"]
       interval: 10s
@@ -42,6 +63,7 @@ services:
       context: .
       dockerfile: frontend/Dockerfile
     restart: unless-stopped
+    logging: *default-logging
     ports:
       - "80:80"
     depends_on:

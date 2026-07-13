@@ -38,6 +38,9 @@ python-decouple==3.8
 # Utilities
 requests==2.33.0
 
+# Rate Limiting (Redis)
+redis>=5.0,<5.3
+
 # Testing
 pytest==9.0.3
 pytest-cov==6.0.0
