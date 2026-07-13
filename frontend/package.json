@@ -14,6 +14,14 @@
     "vue": "^3.5.34",
     "vue-router": "^5.0.7"
   },
+  "overrides": {
+    "form-data": "4.0.6"
+  },
+  "pnpm": {
+    "overrides": {
+      "form-data": "4.0.6"
+    }
+  },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.0",
     "@tailwindcss/vite": "^4.3.0",
