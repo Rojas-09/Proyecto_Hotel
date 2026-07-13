@@ -79,7 +79,7 @@ def listar(filtros=None):
 
 
 def _generar_pdf_factura(factura: Factura) -> str:
-    """Genera el PDF de la factura con diseño profesional open-source."""
+    """Genera el PDF de la factura con un diseño más claro e itemizado."""
     static_dir = os.path.join(
         os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
         "static",
@@ -94,15 +94,23 @@ def _generar_pdf_factura(factura: Factura) -> str:
     huesped = reserva.huesped
     habitacion = reserva.habitacion
 
-    # ── Colores corporativos ──
-    GOLD = "#C8A45C"
-    DARK = "#1E2A3A"
-    MID = "#2C3E50"
-    LIGHT = "#F5F5F0"
+    # Tokens visuales del documento
+    GOLD = colors.HexColor("#C8A45C")
+    NAVY = colors.HexColor("#1E2A3A")
+    SLATE = colors.HexColor("#2F3F52")
+    INK = colors.HexColor("#2D3138")
+    MUTED = colors.HexColor("#6B7280")
+    BORDER = colors.HexColor("#E2E6EA")
+    SOFT_BG = colors.HexColor("#F8FAFC")
     WHITE = colors.white
-    BLACK = colors.HexColor("#333333")
-    GRAY = colors.HexColor("#888888")
-    LIGHT_GRAY = colors.HexColor("#E8E8E3")
+
+    def _money(value) -> str:
+        return f"${float(value):,.2f}"
+
+    def _date_or_dash(value, with_time=False) -> str:
+        if not value:
+            return "-"
+        return value.strftime("%Y-%m-%d %H:%M") if with_time else value.strftime("%Y-%m-%d")
 
     doc = SimpleDocTemplate(
         pdf_path,
@@ -115,105 +123,189 @@ def _generar_pdf_factura(factura: Factura) -> str:
 
     styles = getSampleStyleSheet()
 
-    # ── Estilos personalizados ──
-    styles.add(ParagraphStyle(
-        name="BrandHeader", fontName="Helvetica-Bold", fontSize=22,
-        textColor=colors.HexColor(DARK), spaceAfter=2, alignment=1,
-    ))
-    styles.add(ParagraphStyle(
-        name="BrandSub", fontName="Helvetica", fontSize=8,
-        textColor=GRAY, spaceAfter=0, alignment=1,
-    ))
-    styles.add(ParagraphStyle(
-        name="InvoiceTitle", fontName="Helvetica-Bold", fontSize=14,
-        textColor=colors.HexColor(GOLD), spaceBefore=4, spaceAfter=2, alignment=1,
-    ))
-    styles.add(ParagraphStyle(
-        name="SectionH", fontName="Helvetica-Bold", fontSize=9,
-        textColor=colors.HexColor(MID), spaceBefore=10, spaceAfter=4,
-        borderPadding=(0, 0, 2, 0),
-    ))
-    styles.add(ParagraphStyle(
-        name="CellLabel", fontName="Helvetica-Bold", fontSize=8,
-        textColor=colors.HexColor(MID),
-    ))
-    styles.add(ParagraphStyle(
-        name="CellValue", fontName="Helvetica", fontSize=8,
-        textColor=BLACK,
-    ))
-    styles.add(ParagraphStyle(
-        name="FooterText", fontName="Helvetica", fontSize=7.5,
-        textColor=GRAY, alignment=1, spaceBefore=4,
-    ))
+    styles.add(
+        ParagraphStyle(
+            name="HBPBrand",
+            fontName="Helvetica-Bold",
+            fontSize=20,
+            textColor=NAVY,
+            leading=22,
+        )
+    )
+    styles.add(
+        ParagraphStyle(
+            name="HBPMuted",
+            fontName="Helvetica",
+            fontSize=8,
+            textColor=MUTED,
+            leading=11,
+        )
+    )
+    styles.add(
+        ParagraphStyle(
+            name="HBPTitle",
+            fontName="Helvetica-Bold",
+            fontSize=13,
+            textColor=WHITE,
+            alignment=1,
+        )
+    )
+    styles.add(
+        ParagraphStyle(
+            name="HBPSection",
+            fontName="Helvetica-Bold",
+            fontSize=9,
+            textColor=SLATE,
+            spaceBefore=8,
+            spaceAfter=3,
+            leading=11,
+        )
+    )
+    styles.add(
+        ParagraphStyle(
+            name="HBPLabel",
+            fontName="Helvetica-Bold",
+            fontSize=8,
+            textColor=SLATE,
+            leading=10,
+        )
+    )
+    styles.add(
+        ParagraphStyle(
+            name="HBPValue",
+            fontName="Helvetica",
+            fontSize=8,
+            textColor=INK,
+            leading=10,
+        )
+    )
+    styles.add(
+        ParagraphStyle(
+            name="HBPFooter",
+            fontName="Helvetica",
+            fontSize=7.5,
+            textColor=MUTED,
+            alignment=1,
+            leading=10,
+        )
+    )
 
     elements = []
 
-    # ── ENCABEZADO: Logo + Empresa ──
+    # Encabezado principal
     logo_path = os.path.join(
         os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
         "static",
         "logo.png",
     )
+    logo_cell = Spacer(1, 0.1 * mm)
     if os.path.exists(logo_path):
         from reportlab.platypus import Image
-        logo = Image(logo_path, width=45 * mm, height=15 * mm)
-        elements.append(logo)
-        elements.append(Spacer(1, 2 * mm))
+
+        logo_cell = Image(logo_path, width=38 * mm, height=13 * mm)
+
+    header_left = [
+        logo_cell,
+        Paragraph("HOTELBOOK PRO", styles["HBPBrand"]),
+        Paragraph(
+            "NIT: 123.456.789-0<br/>"
+            "Av. Principal 123, Pereira<br/>"
+            "Tel: (606) 123 4567 · hotelbook@example.com",
+            styles["HBPMuted"],
+        ),
+    ]
+    header_right = [
+        Paragraph("FACTURA", styles["HBPBrand"]),
+        Paragraph(f"No. {str(factura.id).zfill(8)}", styles["HBPValue"]),
+        Paragraph(f"Reserva: {str(factura.id_reserva).zfill(6)}", styles["HBPValue"]),
+        Paragraph(
+            f"Emitida: {_date_or_dash(factura.fecha_emision, with_time=True)}",
+            styles["HBPMuted"],
+        ),
+    ]
 
     header_data = [
-        [Paragraph("HOTELBOOK PRO", styles["BrandHeader"]), "", ""],
-        [Paragraph("NIT: 123.456.789-0", styles["BrandSub"]),
-         Paragraph("Av. Principal 123, Pereira", styles["BrandSub"]),
-         Paragraph("Tel: (606) 123 4567", styles["BrandSub"])],
+        [header_left, header_right],
     ]
-    t_header = Table(header_data, colWidths=[58 * mm, 58 * mm, 58 * mm])
+    t_header = Table(header_data, colWidths=[110 * mm, 66 * mm])
     t_header.setStyle(TableStyle([
-        ("SPAN", (0, 0), (-1, 0)),
-        ("ALIGN", (0, 0), (-1, -1), "CENTER"),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 1),
+        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+        ("ALIGN", (1, 0), (1, 0), "RIGHT"),
+        ("LEFTPADDING", (0, 0), (-1, -1), 0),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+        ("TOPPADDING", (0, 0), (-1, -1), 0),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
     ]))
     elements.append(t_header)
-
-    # ── Línea decorativa ──
-    line_data = [["", "", ""]]
-    t_line = Table(line_data, colWidths=[58 * mm, 58 * mm, 58 * mm])
-    t_line.setStyle(TableStyle([
-        ("LINEBELOW", (0, 0), (-1, -1), 1.5, colors.HexColor(GOLD)),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
-    ]))
-    elements.append(t_line)
     elements.append(Spacer(1, 3 * mm))
 
-    # ── Título ──
-    elements.append(Paragraph("FACTURA DE ALOJAMIENTO", styles["InvoiceTitle"]))
+    title_bar = Table([[Paragraph("FACTURA DE ALOJAMIENTO", styles["HBPTitle"]) ]], colWidths=[176 * mm])
+    title_bar.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, -1), NAVY),
+        ("LEFTPADDING", (0, 0), (-1, -1), 8),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 8),
+        ("TOPPADDING", (0, 0), (-1, -1), 6),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+    ]))
+    elements.append(title_bar)
     elements.append(Spacer(1, 4 * mm))
 
-    # ── INFO FACTURA ──
+    # Estado destacado
+    estado_color = SLATE
+    if factura.estado == EstadoFactura.pagada:
+        estado_color = colors.HexColor("#0F766E")
+    elif factura.estado == EstadoFactura.emitida:
+        estado_color = colors.HexColor("#1D4ED8")
+    elif factura.estado == EstadoFactura.pendiente:
+        estado_color = colors.HexColor("#B45309")
+    elif factura.estado == EstadoFactura.anulada:
+        estado_color = colors.HexColor("#B91C1C")
+
+    estado_box = Table(
+        [[Paragraph(f"Estado de la factura: {factura.estado.value.upper()}", styles["HBPValue"]) ]],
+        colWidths=[176 * mm],
+    )
+    estado_box.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, -1), SOFT_BG),
+        ("LINEBEFORE", (0, 0), (0, -1), 3, estado_color),
+        ("BOX", (0, 0), (-1, -1), 0.4, BORDER),
+        ("LEFTPADDING", (0, 0), (-1, -1), 8),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 8),
+        ("TOPPADDING", (0, 0), (-1, -1), 5),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+    ]))
+    elements.append(estado_box)
+    elements.append(Spacer(1, 5 * mm))
+
+    # Datos de factura y cliente
     info_data = [
-        [Paragraph("Factura N°", styles["CellLabel"]),
-         Paragraph(str(factura.id).zfill(8), styles["CellValue"]),
-         Paragraph("Reserva N°", styles["CellLabel"]),
-         Paragraph(str(factura.id_reserva).zfill(6), styles["CellValue"])],
-        [Paragraph("Fecha Emisión", styles["CellLabel"]),
-         Paragraph(factura.fecha_emision.strftime("%Y-%m-%d"), styles["CellValue"]),
-         Paragraph("Estado", styles["CellLabel"]),
-         Paragraph(factura.estado.value, styles["CellValue"])],
+        [
+            Paragraph("Comprobante", styles["HBPLabel"]),
+            Paragraph(f"FACT-{str(factura.id).zfill(8)}", styles["HBPValue"]),
+            Paragraph("Reserva", styles["HBPLabel"]),
+            Paragraph(str(factura.id_reserva).zfill(6), styles["HBPValue"]),
+        ],
+        [
+            Paragraph("Fecha de emisión", styles["HBPLabel"]),
+            Paragraph(_date_or_dash(factura.fecha_emision, with_time=True), styles["HBPValue"]),
+            Paragraph("Tipo", styles["HBPLabel"]),
+            Paragraph("Factura electrónica interna", styles["HBPValue"]),
+        ],
     ]
     t_info = Table(info_data, colWidths=[28 * mm, 45 * mm, 28 * mm, 45 * mm])
     t_info.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, 0), LIGHT_GRAY),
-        ("BACKGROUND", (0, 1), (-1, 1), LIGHT_GRAY),
-        ("BOX", (0, 0), (-1, -1), 0.5, LIGHT_GRAY),
-        ("INNERGRID", (0, 0), (-1, -1), 0.3, LIGHT_GRAY),
-        ("TOPPADDING", (0, 0), (-1, -1), 3),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
-        ("LEFTPADDING", (0, 0), (-1, -1), 5),
+        ("BACKGROUND", (0, 0), (-1, -1), SOFT_BG),
+        ("BOX", (0, 0), (-1, -1), 0.4, BORDER),
+        ("INNERGRID", (0, 0), (-1, -1), 0.25, BORDER),
+        ("TOPPADDING", (0, 0), (-1, -1), 4),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+        ("LEFTPADDING", (0, 0), (-1, -1), 6),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 6),
     ]))
     elements.append(t_info)
-    elements.append(Spacer(1, 6 * mm))
+    elements.append(Spacer(1, 5 * mm))
 
-    # ── INFORMACIÓN DEL CLIENTE ──
-    elements.append(Paragraph("INFORMACIÓN DEL CLIENTE", styles["SectionH"]))
+    elements.append(Paragraph("DATOS DEL HUÉSPED", styles["HBPSection"]))
     nombre_cliente = (
         f"{huesped.usuario.nombre} {huesped.usuario.apellido}"
         if huesped and huesped.usuario else "No disponible"
@@ -223,140 +315,188 @@ def _generar_pdf_factura(factura: Factura) -> str:
     email_cliente = (
         huesped.usuario.email if huesped and huesped.usuario else "No disponible"
     )
+    telefono_cliente = (
+        huesped.usuario.telefono if huesped and huesped.usuario and huesped.usuario.telefono
+        else "No disponible"
+    )
     cliente_data = [
-        [Paragraph("Nombre", styles["CellLabel"]),
-         Paragraph(nombre_cliente, styles["CellValue"]),
-         Paragraph("Documento", styles["CellLabel"]),
-         Paragraph(f"{tipo_doc} {documento}", styles["CellValue"])],
-        [Paragraph("Email", styles["CellLabel"]),
-         Paragraph(email_cliente, styles["CellValue"]), "", ""],
+        [
+            Paragraph("Nombre", styles["HBPLabel"]),
+            Paragraph(nombre_cliente, styles["HBPValue"]),
+            Paragraph("Documento", styles["HBPLabel"]),
+            Paragraph(f"{tipo_doc} {documento}", styles["HBPValue"]),
+        ],
+        [
+            Paragraph("Email", styles["HBPLabel"]),
+            Paragraph(email_cliente, styles["HBPValue"]),
+            Paragraph("Teléfono", styles["HBPLabel"]),
+            Paragraph(telefono_cliente, styles["HBPValue"]),
+        ],
     ]
-    t_cliente = Table(cliente_data, colWidths=[24 * mm, 73 * mm, 24 * mm, 55 * mm])
+    t_cliente = Table(cliente_data, colWidths=[24 * mm, 70 * mm, 24 * mm, 58 * mm])
     t_cliente.setStyle(TableStyle([
-        ("SPAN", (1, 1), (-1, 1)),
-        ("BOX", (0, 0), (-1, -1), 0.5, LIGHT_GRAY),
-        ("INNERGRID", (0, 0), (-1, -1), 0.3, LIGHT_GRAY),
-        ("TOPPADDING", (0, 0), (-1, -1), 3),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
-        ("LEFTPADDING", (0, 0), (-1, -1), 5),
+        ("BOX", (0, 0), (-1, -1), 0.4, BORDER),
+        ("INNERGRID", (0, 0), (-1, -1), 0.25, BORDER),
+        ("TOPPADDING", (0, 0), (-1, -1), 4),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+        ("LEFTPADDING", (0, 0), (-1, -1), 6),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 6),
     ]))
     elements.append(t_cliente)
-    elements.append(Spacer(1, 6 * mm))
+    elements.append(Spacer(1, 5 * mm))
 
-    # ── DETALLE DE LA ESTANCIA ──
-    elements.append(Paragraph("DETALLE DE LA ESTANCIA", styles["SectionH"]))
+    elements.append(Paragraph("DETALLE DE ESTANCIA", styles["HBPSection"]))
     estancia_data = [
-        [Paragraph("Habitación", styles["CellLabel"]),
-         Paragraph(f"N° {habitacion.numero} — {habitacion.tipo.value}", styles["CellValue"]),
-         Paragraph("Noches", styles["CellLabel"]),
-         Paragraph(str(reserva.noches), styles["CellValue"])],
-        [Paragraph("Entrada", styles["CellLabel"]),
-         Paragraph(reserva.fecha_entrada.strftime("%Y-%m-%d"), styles["CellValue"]),
-         Paragraph("Salida", styles["CellLabel"]),
-         Paragraph(reserva.fecha_salida.strftime("%Y-%m-%d"), styles["CellValue"])],
+        [
+            Paragraph("Habitación", styles["HBPLabel"]),
+            Paragraph(
+                (
+                    f"N° {habitacion.numero} · {habitacion.tipo.value}"
+                    if habitacion else "No disponible"
+                ),
+                styles["HBPValue"],
+            ),
+            Paragraph("Noches", styles["HBPLabel"]),
+            Paragraph(str(reserva.noches or 0), styles["HBPValue"]),
+        ],
+        [
+            Paragraph("Entrada", styles["HBPLabel"]),
+            Paragraph(_date_or_dash(reserva.fecha_entrada), styles["HBPValue"]),
+            Paragraph("Salida", styles["HBPLabel"]),
+            Paragraph(_date_or_dash(reserva.fecha_salida), styles["HBPValue"]),
+        ],
     ]
     t_estancia = Table(estancia_data, colWidths=[24 * mm, 73 * mm, 24 * mm, 55 * mm])
     t_estancia.setStyle(TableStyle([
-        ("BOX", (0, 0), (-1, -1), 0.5, LIGHT_GRAY),
-        ("INNERGRID", (0, 0), (-1, -1), 0.3, LIGHT_GRAY),
-        ("TOPPADDING", (0, 0), (-1, -1), 3),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
-        ("LEFTPADDING", (0, 0), (-1, -1), 5),
+        ("BOX", (0, 0), (-1, -1), 0.4, BORDER),
+        ("INNERGRID", (0, 0), (-1, -1), 0.25, BORDER),
+        ("TOPPADDING", (0, 0), (-1, -1), 4),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+        ("LEFTPADDING", (0, 0), (-1, -1), 6),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 6),
     ]))
     elements.append(t_estancia)
-    elements.append(Spacer(1, 8 * mm))
+    elements.append(Spacer(1, 6 * mm))
 
-    # ── RESUMEN DE CARGOS ──
-    elements.append(Paragraph("RESUMEN DE CARGOS", styles["SectionH"]))
+    elements.append(Paragraph("DETALLE DE CARGOS", styles["HBPSection"]))
 
     servicios = (
         db.session.execute(select(ServicioAdicional).filter_by(id_reserva=reserva.id))
         .scalars().all()
     )
+    subtotal = Decimal(str(factura.subtotal))
+    impuestos = Decimal(str(factura.impuestos))
+    servicios_total = Decimal(str(factura.servicios_adicionales_total))
+    total_general = Decimal(str(factura.total))
 
-    resumen_data = [
-        [Paragraph("CONCEPTO", styles["CellLabel"]),
-         Paragraph("DETALLE", styles["CellLabel"]),
-         Paragraph("VALOR", styles["CellLabel"])],
-        [Paragraph("Hospedaje (Subtotal)", styles["CellValue"]),
-         Paragraph(f"{reserva.noches} noches x ${float(habitacion.precio_noche):,.2f}", styles["CellValue"]),
-         Paragraph(f"${float(reserva.subtotal):,.2f}", styles["CellValue"])],
-        [Paragraph("IVA 19%", styles["CellValue"]),
-         Paragraph("Impuesto sobre alojamiento", styles["CellValue"]),
-         Paragraph(f"${float(reserva.impuestos):,.2f}", styles["CellValue"])],
+    precio_noche = Decimal(str(habitacion.precio_noche)) if habitacion else Decimal("0")
+
+    detalle_rows = [
+        [
+            Paragraph("ITEM", styles["HBPLabel"]),
+            Paragraph("DESCRIPCIÓN", styles["HBPLabel"]),
+            Paragraph("CANT.", styles["HBPLabel"]),
+            Paragraph("V. UNITARIO", styles["HBPLabel"]),
+            Paragraph("TOTAL", styles["HBPLabel"]),
+        ],
+        [
+            Paragraph("Hospedaje", styles["HBPValue"]),
+            Paragraph(
+                f"{reserva.noches} noche(s) · Habitación {habitacion.numero if habitacion else '-'}",
+                styles["HBPValue"],
+            ),
+            Paragraph(str(reserva.noches or 0), styles["HBPValue"]),
+            Paragraph(_money(precio_noche), styles["HBPValue"]),
+            Paragraph(_money(subtotal), styles["HBPValue"]),
+        ],
     ]
 
-    if servicios:
-        resumen_data.append([
-            Paragraph("SERVICIOS ADICIONALES", styles["CellLabel"]), "", ""
-        ])
-        for s in servicios:
-            resumen_data.append([
-                Paragraph(f"  {s.tipo.value}", styles["CellValue"]),
-                Paragraph(s.descripcion or "", styles["CellValue"]),
-                Paragraph(f"${float(s.costo):,.2f}", styles["CellValue"]),
-            ])
+    for servicio in servicios:
+        detalle_rows.append(
+            [
+                Paragraph(f"Servicio · {servicio.tipo.value}", styles["HBPValue"]),
+                Paragraph(servicio.descripcion or "Servicio adicional", styles["HBPValue"]),
+                Paragraph("1", styles["HBPValue"]),
+                Paragraph(_money(servicio.costo), styles["HBPValue"]),
+                Paragraph(_money(servicio.costo), styles["HBPValue"]),
+            ]
+        )
 
-    total_general = (
-        float(reserva.subtotal) + float(reserva.impuestos)
-        + float(factura.servicios_adicionales_total)
+    detalle_table = Table(
+        detalle_rows,
+        colWidths=[30 * mm, 72 * mm, 16 * mm, 26 * mm, 32 * mm],
+        repeatRows=1,
     )
-    resumen_data.append(["", "", ""])
-    resumen_data.append([
-        Paragraph("TOTAL A PAGAR", ParagraphStyle("TotalLabel",
-            fontName="Helvetica-Bold", fontSize=10, textColor=colors.HexColor(GOLD))),
-        "",
-        Paragraph(f"${total_general:,.2f}", ParagraphStyle("TotalVal",
-            fontName="Helvetica-Bold", fontSize=10, textColor=colors.HexColor(GOLD))),
-    ])
-
-    t_resumen = Table(resumen_data, colWidths=[55 * mm, 78 * mm, 43 * mm])
-    t_resumen.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor(DARK)),
+    detalle_table.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), NAVY),
         ("TEXTCOLOR", (0, 0), (-1, 0), WHITE),
-        ("BACKGROUND", (0, -1), (-1, -1), colors.HexColor(LIGHT)),
-        ("BOX", (0, 0), (-1, -1), 0.5, LIGHT_GRAY),
-        ("INNERGRID", (0, 0), (-1, -1), 0.3, LIGHT_GRAY),
-        ("ALIGN", (2, 1), (2, -1), "RIGHT"),
+        ("BOX", (0, 0), (-1, -1), 0.4, BORDER),
+        ("INNERGRID", (0, 0), (-1, -1), 0.25, BORDER),
+        ("ALIGN", (2, 1), (4, -1), "RIGHT"),
         ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-        ("TOPPADDING", (0, 0), (-1, -1), 3),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
-        ("LEFTPADDING", (0, 0), (-1, -1), 5),
-        ("RIGHTPADDING", (0, 0), (-1, -1), 5),
+        ("LEFTPADDING", (0, 0), (-1, -1), 6),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 6),
+        ("TOPPADDING", (0, 0), (-1, -1), 4),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [WHITE, SOFT_BG]),
     ]))
-    elements.append(t_resumen)
-    elements.append(Spacer(1, 10 * mm))
+    elements.append(detalle_table)
+    elements.append(Spacer(1, 5 * mm))
 
-    # ── ESTADO DE PAGO ──
-    elements.append(Paragraph("ESTADO DE PAGO", styles["SectionH"]))
-    estado_texto = f"PENDIENTE DE PAGO — Total adeudado: ${total_general:,.2f}"
-    if factura.estado.value == "Pagada":
-        estado_texto = f"PAGADA — Total cancelado: ${total_general:,.2f}"
-    elif factura.estado.value == "Emitida":
-        estado_texto = f"EMITIDA — Pendiente de pago: ${total_general:,.2f}"
-    elif factura.estado.value == "Anulada":
-        estado_texto = "ANULADA"
-    elements.append(Paragraph(estado_texto, styles["Normal"]))
+    saldo = Decimal("0.00") if factura.estado == EstadoFactura.pagada else total_general
+    resumen_financiero = [
+        [Paragraph("Subtotal hospedaje", styles["HBPValue"]), Paragraph(_money(subtotal), styles["HBPValue"])],
+        [Paragraph("IVA", styles["HBPValue"]), Paragraph(_money(impuestos), styles["HBPValue"])],
+        [Paragraph("Servicios adicionales", styles["HBPValue"]), Paragraph(_money(servicios_total), styles["HBPValue"])],
+        [Paragraph("TOTAL FACTURA", styles["HBPLabel"]), Paragraph(_money(total_general), styles["HBPLabel"])],
+        [Paragraph("Saldo por pagar", styles["HBPLabel"]), Paragraph(_money(saldo), styles["HBPLabel"])],
+    ]
+    resumen_table = Table(resumen_financiero, colWidths=[104 * mm, 72 * mm])
+    resumen_table.setStyle(TableStyle([
+        ("BOX", (0, 0), (-1, -1), 0.4, BORDER),
+        ("INNERGRID", (0, 0), (-1, -1), 0.25, BORDER),
+        ("ALIGN", (1, 0), (1, -1), "RIGHT"),
+        ("BACKGROUND", (0, 3), (-1, 3), colors.HexColor("#EFF6FF")),
+        ("BACKGROUND", (0, 4), (-1, 4), colors.HexColor("#FFFBEB")),
+        ("LEFTPADDING", (0, 0), (-1, -1), 6),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 6),
+        ("TOPPADDING", (0, 0), (-1, -1), 4),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+    ]))
+    elements.append(resumen_table)
+    elements.append(Spacer(1, 7 * mm))
+
+    # Pie legal
+    condiciones = Table(
+        [[
+            Paragraph(
+                "Observaciones: Esta factura refleja los cargos de alojamiento y servicios "
+                "registrados en la reserva. Para solicitudes de aclaración contacte al área "
+                "de facturación del hotel.",
+                styles["HBPMuted"],
+            )
+        ]],
+        colWidths=[176 * mm],
+    )
+    condiciones.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, -1), SOFT_BG),
+        ("BOX", (0, 0), (-1, -1), 0.4, BORDER),
+        ("LEFTPADDING", (0, 0), (-1, -1), 8),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 8),
+        ("TOPPADDING", (0, 0), (-1, -1), 6),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+    ]))
+    elements.append(condiciones)
     elements.append(Spacer(1, 6 * mm))
 
-    # ── Línea separadora ──
-    line_data2 = [[""]]
-    t_line2 = Table(line_data2, colWidths=[174 * mm])
-    t_line2.setStyle(TableStyle([
-        ("LINEBELOW", (0, 0), (-1, -1), 0.5, LIGHT_GRAY),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
-    ]))
-    elements.append(t_line2)
-
-    # ── PIE DE PÁGINA ──
     elements.append(Paragraph(
         "HotelBook Pro — Av. Principal 123, Pereira, Risaralda, Colombia<br/>"
         "NIT: 123.456.789-0 — Tel: (606) 123 4567 — Email: hotelbook@example.com",
-        styles["FooterText"],
+        styles["HBPFooter"],
     ))
     elements.append(Paragraph(
         "Gracias por su preferencia. Esta factura es un documento oficial de HotelBook Pro.",
-        styles["FooterText"],
+        styles["HBPFooter"],
     ))
 
     doc.build(elements)

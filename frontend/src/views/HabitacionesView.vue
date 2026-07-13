@@ -12,17 +12,17 @@
     <!-- Filtros -->
     <div class="bg-gray-900 border border-gray-800 rounded-xl p-4 mb-6 flex flex-wrap gap-3">
       <select v-model="filtroEstado" class="bg-gray-800 border border-gray-700 text-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-hotel-gold">
-        <option value="">Todos los estados</option>
-        <option value="disponible">Disponible</option>
-        <option value="ocupada">Ocupada</option>
-        <option value="mantenimiento">Mantenimiento</option>
+        <option value="">📋 Todos los estados</option>
+        <option value="disponible">🟢 Disponible</option>
+        <option value="ocupada">🔴 Ocupada</option>
+        <option value="mantenimiento">🟡 Mantenimiento</option>
       </select>
       <select v-model="filtroTipo" class="bg-gray-800 border border-gray-700 text-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-hotel-gold">
-        <option value="">Todos los tipos</option>
-        <option value="simple">Simple</option>
-        <option value="doble">Doble</option>
-        <option value="suite">Suite</option>
-        <option value="deluxe">Deluxe</option>
+        <option value="">🏨 Todos los tipos</option>
+        <option value="simple">🛏️ Simple</option>
+        <option value="doble">🛌 Doble</option>
+        <option value="suite">🏆 Suite</option>
+        <option value="deluxe">💎 Deluxe</option>
       </select>
       <button @click="cargarHabitaciones" class="ml-auto text-xs text-gray-400 hover:text-white transition-colors">↻ Actualizar</button>
     </div>
@@ -70,10 +70,10 @@
         <div>
             <label class="block text-xs font-medium text-gray-400 mb-1">Tipo</label>
             <select v-model="form.tipo" required class="input-field w-full">
-              <option value="simple">Simple</option>
-              <option value="doble">Doble</option>
-              <option value="suite">Suite</option>
-              <option value="deluxe">Deluxe</option>
+              <option value="simple">🛏️ Simple</option>
+              <option value="doble">🛌 Doble</option>
+              <option value="suite">🏆 Suite</option>
+              <option value="deluxe">💎 Deluxe</option>
             </select>
           </div>
           <div>
@@ -89,9 +89,9 @@
           <div>
             <label class="block text-xs font-medium text-gray-400 mb-1">Estado</label>
             <select v-model="form.estado" class="input-field w-full">
-              <option value="disponible">Disponible</option>
-              <option value="ocupada">Ocupada</option>
-              <option value="mantenimiento">Mantenimiento</option>
+              <option value="disponible">🟢 Disponible</option>
+              <option value="ocupada">🔴 Ocupada</option>
+              <option value="mantenimiento">🟡 Mantenimiento</option>
             </select>
           </div>
         </div>

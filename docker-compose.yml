@@ -24,8 +24,10 @@ services:
     environment:
       FLASK_ENV: production
       DATABASE_URL: postgresql://hotelbook:changeme_in_prod@db:5432/hotelbook
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-cambia-esta-clave-en-produccion}
       SECRET_KEY: ${SECRET_KEY:-cambia-esta-clave-en-produccion}
-      CORS_ORIGINS: https://${DOMAIN:-localhost}
+      CORS_ORIGINS: http://localhost https://${DOMAIN:-localhost}
+      RESERVA_EXPIRA_MINUTOS: 30
     volumes:
       - static_data:/app/static
 

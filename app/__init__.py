@@ -5,8 +5,10 @@ HotelBook Pro - Application Factory
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
+from flask_migrate import Migrate
 
 db = SQLAlchemy()
+migrate = Migrate()
 
 
 def create_app(config_name="development"):
@@ -20,6 +22,7 @@ def create_app(config_name="development"):
 
     # Inicializar extensiones
     db.init_app(app)
+    migrate.init_app(app, db)
     CORS(
         app,
         resources={r"/api/*": {"origins": app.config["CORS_ORIGINS"]}},

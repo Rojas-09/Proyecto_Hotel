@@ -9,12 +9,12 @@
     <div class="bg-gray-900 border border-gray-800 rounded-xl p-5 mb-6">
       <label class="label mb-2">Seleccionar reserva en curso (estado: Ocupada)</label>
       <div class="flex gap-3 flex-wrap items-center">
-        <select v-model.number="reservaId" class="input-field flex-1 min-w-48" @change="cargarServicios">
-          <option value="" disabled>Seleccionar reserva...</option>
-          <option v-for="r in reservasOcupadas" :key="r.id" :value="r.id">
-            #{{ r.id }} — Hab. {{ r.habitacion_numero || r.id_habitacion }} — {{ r.huesped_nombre || `Huésped ${r.id_huesped}` }}
-          </option>
-        </select>
+        <SearchSelect
+          v-model="reservaId"
+          :options="reservasOcupadas.map(r => ({ value: r.id, label: '#' + r.id + ' — Hab. ' + (r.habitacion_numero || r.id_habitacion) + ' — ' + (r.huesped_nombre || 'Huésped ' + r.id_huesped) }))"
+          placeholder="Seleccionar reserva..."
+          @update:model-value="cargarServicios"
+        />
         <span v-if="reservasOcupadas.length === 0" class="text-xs text-yellow-500">
           ⚠️ No hay reservas con check-in activo. Primero haz check-in.
         </span>
@@ -118,6 +118,7 @@ import { ref, computed, onMounted, inject } from 'vue';
 import api from '../services/api';
 import BaseButton from '../components/BaseButton.vue';
 import BaseConfirmModal from '../components/BaseConfirmModal.vue';
+import SearchSelect from '../components/SearchSelect.vue';
 import { useAuthStore } from '../stores/auth';
 
 const authStore = useAuthStore();

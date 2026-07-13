@@ -114,23 +114,23 @@
         <!-- PASO 3: Habitación (solo las disponibles para las fechas seleccionadas) -->
         <div v-if="editingItem || habitacionesParaModal.length > 0">
           <label class="label">Habitación <span class="text-red-400">*</span></label>
-          <select v-model.number="form.id_habitacion" required class="input-field w-full" :disabled="!habitacionesParaModal.length">
-            <option value="" disabled>Seleccionar...</option>
-            <option v-if="!editingItem && habitacionesParaModal.length === 0" disabled>
-              No hay habitaciones disponibles para esas fechas
-            </option>
-            <option v-for="h in habitacionesParaModal" :key="h.id" :value="h.id">{{ h.numero }} – {{ h.tipo }} — ${{ Number(h.precio_noche).toLocaleString('es-CO') }}</option>
-          </select>
+          <SearchSelect
+            v-model="form.id_habitacion"
+            :options="habitacionesParaModal.map(h => ({ value: h.id, label: h.numero + ' – ' + h.tipo + ' — $' + Number(h.precio_noche).toLocaleString('es-CO') }))"
+            placeholder="Seleccionar..."
+            :disabled="!habitacionesParaModal.length"
+          />
         </div>
 
         <!-- PASO 4: Huésped -->
         <div class="grid grid-cols-2 gap-4">
           <div>
-            <label class="label">ID Huésped <span class="text-red-400">*</span></label>
-            <select v-model.number="form.id_huesped" required class="input-field w-full">
-              <option value="" disabled>Seleccionar...</option>
-              <option v-for="h in huespedes" :key="h.id" :value="h.id">{{ h.nombre }} {{ h.apellido }} — {{ h.documento_id }}</option>
-            </select>
+            <label class="label">Huésped <span class="text-red-400">*</span></label>
+            <SearchSelect
+              v-model="form.id_huesped"
+              :options="huespedes.map(h => ({ value: h.id, label: h.nombre + ' ' + h.apellido + ' — ' + h.documento_id }))"
+              placeholder="Seleccionar..."
+            />
           </div>
         </div>
 
@@ -155,6 +155,7 @@ import BaseButton from '../components/BaseButton.vue';
 import BaseTable from '../components/BaseTable.vue';
 import BaseModal from '../components/BaseModal.vue';
 import BaseConfirmModal from '../components/BaseConfirmModal.vue';
+import SearchSelect from '../components/SearchSelect.vue';
 
 const authStore = useAuthStore();
 const toast = inject('toast');

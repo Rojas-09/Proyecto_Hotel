@@ -24,12 +24,11 @@
         <form @submit.prevent="hacerCheckin" class="space-y-4">
           <div>
             <label class="label">Reserva confirmada</label>
-            <select v-model.number="checkinForm.reserva_id" required class="input-field w-full">
-              <option value="" disabled>Seleccionar reserva...</option>
-              <option v-for="r in reservasConfirmadas" :key="r.id" :value="r.id">
-                #{{ r.id }} — Hab. {{ r.habitacion_numero || r.id_habitacion }} — {{ r.huesped_nombre || `Huésped ${r.id_huesped}` }}
-              </option>
-            </select>
+            <SearchSelect
+              v-model="checkinForm.reserva_id"
+              :options="reservasConfirmadas.map(r => ({ value: r.id, label: '#' + r.id + ' — Hab. ' + (r.habitacion_numero || r.id_habitacion) + ' — ' + (r.huesped_nombre || 'Huésped ' + r.id_huesped) }))"
+              placeholder="Seleccionar reserva..."
+            />
           </div>
           <div v-if="checkinForm.reserva_id" class="bg-gray-800 border border-gray-700 rounded-lg p-3 text-sm text-gray-400">
             <p v-for="r in reservasConfirmadas.filter(r => r.id === checkinForm.reserva_id)" :key="r.id">
@@ -59,12 +58,12 @@
         <form @submit.prevent="hacerCheckout" class="space-y-4">
           <div>
             <label class="label">Huésped actualmente hospedado</label>
-            <select v-model.number="checkoutForm.reserva_id" required class="input-field w-full" @change="cargarResumenCheckout">
-              <option value="" disabled>Seleccionar reserva...</option>
-              <option v-for="r in reservasEnCheckin" :key="r.id" :value="r.id">
-                #{{ r.id }} — Hab. {{ r.habitacion_numero || r.id_habitacion }} — {{ r.huesped_nombre || `Huésped ${r.id_huesped}` }}
-              </option>
-            </select>
+            <SearchSelect
+              v-model="checkoutForm.reserva_id"
+              :options="reservasEnCheckin.map(r => ({ value: r.id, label: '#' + r.id + ' — Hab. ' + (r.habitacion_numero || r.id_habitacion) + ' — ' + (r.huesped_nombre || 'Huésped ' + r.id_huesped) }))"
+              placeholder="Seleccionar reserva..."
+              @update:model-value="cargarResumenCheckout"
+            />
           </div>
           <!-- Resumen de cargos -->
           <div v-if="resumenCheckout" class="bg-gray-800 border border-gray-700 rounded-lg p-4 space-y-2">
@@ -115,6 +114,7 @@
 import { ref, onMounted, inject } from 'vue';
 import api from '../services/api';
 import BaseButton from '../components/BaseButton.vue';
+import SearchSelect from '../components/SearchSelect.vue';
 
 const toast = inject('toast');
 const activeTab = ref('checkin');

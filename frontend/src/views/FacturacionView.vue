@@ -11,12 +11,11 @@
     <div class="bg-gray-900 border border-gray-800 rounded-xl p-5 mb-6 max-w-md">
       <p class="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">Emitir factura para reserva</p>
       <div class="flex gap-3">
-        <select v-model.number="reservaSeleccionada" class="input-field flex-1">
-          <option value="" disabled>Seleccionar reserva completada...</option>
-          <option v-for="r in reservasCompletadas" :key="r.id" :value="r.id">
-            #{{ r.id }} — {{ r.huesped_nombre || `Huésped ${r.id_huesped}` }} — ${{ Number(r.total).toLocaleString('es-CO') }}
-          </option>
-        </select>
+        <SearchSelect
+          v-model="reservaSeleccionada"
+          :options="reservasCompletadas.map(r => ({ value: r.id, label: '#' + r.id + ' — ' + (r.huesped_nombre || 'Huésped ' + r.id_huesped) + ' — $' + Number(r.total).toLocaleString('es-CO') }))"
+          placeholder="Seleccionar reserva completada..."
+        />
         <BaseButton @click="emitirFactura" :disabled="!reservaSeleccionada || emitiendo">
           {{ emitiendo ? '...' : '+ Emitir' }}
         </BaseButton>
@@ -67,6 +66,7 @@ import { useAuthStore } from '../stores/auth';
 import BaseButton from '../components/BaseButton.vue';
 import BaseTable from '../components/BaseTable.vue';
 import BaseConfirmModal from '../components/BaseConfirmModal.vue';
+import SearchSelect from '../components/SearchSelect.vue';
 
 const authStore = useAuthStore();
 const toast = inject('toast');
