@@ -558,3 +558,38 @@ class TestEliminarNotificacion:
     def test_eliminar_sin_token(self, client, reserva_en_db):
         resp = client.delete(f"/api/v1/notificaciones/1")
         assert resp.status_code == 401
+
+    def test_eliminar_ya_eliminada(self, client, admin_headers, reserva_en_db):
+        resp_crear = client.post(
+            "/api/v1/notificaciones",
+            json={
+                "id_reserva": reserva_en_db,
+                "tipo": "ConfirmacionReserva",
+                "mensaje": "Doble delete",
+            },
+            headers=admin_headers,
+        )
+        nid = resp_crear.get_json()["data"]["id"]
+        client.delete(f"/api/v1/notificaciones/{nid}", headers=admin_headers)
+        resp = client.delete(f"/api/v1/notificaciones/{nid}", headers=admin_headers)
+        assert resp.status_code == 404
+
+
+class TestActualizarTipoInvalido:
+    def test_actualizar_tipo_invalido_retorna_400(self, client, admin_headers, reserva_en_db):
+        resp_crear = client.post(
+            "/api/v1/notificaciones",
+            json={
+                "id_reserva": reserva_en_db,
+                "tipo": "ConfirmacionReserva",
+                "mensaje": "Test",
+            },
+            headers=admin_headers,
+        )
+        nid = resp_crear.get_json()["data"]["id"]
+        resp = client.put(
+            f"/api/v1/notificaciones/{nid}",
+            json={"tipo": "TipoInexistente"},
+            headers=admin_headers,
+        )
+        assert resp.status_code == 400
