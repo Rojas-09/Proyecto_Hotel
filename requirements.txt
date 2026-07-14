@@ -18,7 +18,7 @@ Flask-Migrate==4.1.0
 
 # Authentication & Security
 PyJWT==2.13.0
-bcrypt==4.2.1
+bcrypt==5.0.0
 python-dotenv==1.2.2
 flask-limiter==3.10.1
 
