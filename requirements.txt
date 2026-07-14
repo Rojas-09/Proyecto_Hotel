@@ -39,7 +39,7 @@ python-decouple==3.8
 requests==2.33.0
 
 # Rate Limiting (Redis)
-redis>=5.0,<5.3
+redis>=8.0.1,<8.1
 
 # Testing
 pytest==9.0.3
