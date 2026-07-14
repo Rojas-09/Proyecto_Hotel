@@ -41,8 +41,6 @@ def crear(datos, current_user):
     if fecha_entrada >= fecha_salida:
         raise ValueError("La fecha de entrada debe ser anterior a la fecha de salida.")
 
-    from app.models.habitacion import Habitacion
-
     habitacion = db.session.execute(
         select(Habitacion).filter_by(id=id_habitacion, activo=True)
     ).scalar_one_or_none()
