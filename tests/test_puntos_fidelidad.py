@@ -477,3 +477,214 @@ class TestPuntosControllerRoles:
         assert data["success"] is True
         assert "historial" in data["data"]
         assert "total" in data["data"]
+
+
+class _DataHelper:
+    """Crea datos de prueba y retorna solo ids/tokens (no ORM objects)."""
+
+    @staticmethod
+    def crear_huesped_con_puntos(email_sufix: str, puntos=500):
+        u = Usuario(
+            nombre="Cli", apellido="T",
+            email=f"pfc_canj_{email_sufix}@test.com",
+            rol=RolEnum.cliente,
+        )
+        u.password = "Pass1234!"
+        db.session.add(u)
+        db.session.flush()
+        h = Huesped(
+            id_usuario=u.id,
+            documento_id=f"DOC_CANJ_{email_sufix}",
+            tipo_documento="CC",
+        )
+        db.session.add(h)
+        hab = Habitacion(
+            numero=f"PF-{email_sufix}", tipo=TipoHabitacion.simple,
+            precio_noche=Decimal("100000"), capacidad=1,
+            estado=EstadoHabitacion.disponible,
+        )
+        db.session.add(hab)
+        db.session.flush()
+        r = Reserva(
+            id_huesped=h.id, id_habitacion=hab.id,
+            fecha_entrada=date.today() + timedelta(days=1),
+            fecha_salida=date.today() + timedelta(days=(puntos // 10) + 1),
+            noches=puntos // 10, subtotal=Decimal("100000"),
+            impuestos=Decimal("19000"), total=Decimal("119000"),
+            estado=EstadoReserva.completada,
+        )
+        db.session.add(r)
+        db.session.commit()
+        db.session.add(PuntosFidelidad(
+            id_huesped=h.id, id_reserva=r.id,
+            puntos=puntos, concepto=f"{puntos} pts",
+        ))
+        db.session.commit()
+        token = generar_token(u.id, u.email, "cliente")
+        return h.id, token
+
+
+class TestListarCanjeos:
+    def test_exito(self, app, client):
+        with app.app_context():
+            cli = Usuario(
+                nombre="Cli", apellido="T",
+                email=f"pfc_list_{id(self)}@test.com",
+                rol=RolEnum.cliente,
+            )
+            cli.password = "Pass1234!"
+            db.session.add(cli)
+            db.session.flush()
+            h = Huesped(
+                id_usuario=cli.id,
+                documento_id=f"DOC_CLI_{id(self)}",
+                tipo_documento="CC",
+            )
+            db.session.add(h)
+            db.session.commit()
+            token = generar_token(cli.id, cli.email, "cliente")
+            hid = h.id
+        resp = client.get(
+            f"/api/v1/huespedes/{hid}/puntos/canjeos",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        assert resp.status_code == 200
+        data = resp.get_json()
+        assert data["success"] is True
+        assert len(data["data"]["canjeos"]) == 5
+
+
+class TestHistorialLookupError:
+    def test_huesped_inexistente_retorna_404(self, app, client):
+        with app.app_context():
+            u = Usuario(
+                nombre="Admin", apellido="T",
+                email=f"pfc_hist404_{id(self)}@test.com",
+                rol=RolEnum.admin,
+            )
+            u.password = "Pass1234!"
+            db.session.add(u)
+            db.session.commit()
+            token = generar_token(u.id, u.email, "admin")
+        resp = client.get(
+            "/api/v1/huespedes/99999/puntos/historial",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        assert resp.status_code == 404
+
+
+class TestCanjear:
+    def test_sin_opcion_id_retorna_400(self, app, client):
+        with app.app_context():
+            hid, token = _DataHelper.crear_huesped_con_puntos("no_op")
+        resp = client.post(
+            f"/api/v1/huespedes/{hid}/puntos/canjear",
+            json={},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        assert resp.status_code == 400
+        assert "opcion_id" in resp.get_json()["mensaje"]
+
+    def test_opcion_invalida_retorna_400(self, app, client):
+        with app.app_context():
+            hid, token = _DataHelper.crear_huesped_con_puntos("bad_op")
+        resp = client.post(
+            f"/api/v1/huespedes/{hid}/puntos/canjear",
+            json={"opcion_id": 99},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        assert resp.status_code == 400
+
+    def test_huesped_no_existe_retorna_404(self, app, client):
+        with app.app_context():
+            u = Usuario(
+                nombre="Admin", apellido="T",
+                email=f"pfc_404_{id(self)}@test.com",
+                rol=RolEnum.admin,
+            )
+            u.password = "Pass1234!"
+            db.session.add(u)
+            db.session.commit()
+            token = generar_token(u.id, u.email, "admin")
+        resp = client.post(
+            "/api/v1/huespedes/99999/puntos/canjear",
+            json={"opcion_id": 1},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        assert resp.status_code == 404
+
+    def test_puntos_insuficientes_retorna_400(self, app, client):
+        with app.app_context():
+            hid, token = _DataHelper.crear_huesped_con_puntos("no_pts", puntos=10)
+        resp = client.post(
+            f"/api/v1/huespedes/{hid}/puntos/canjear",
+            json={"opcion_id": 1},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        assert resp.status_code == 400
+
+    def test_canjear_exitoso_retorna_200(self, app, client):
+        with app.app_context():
+            hid, token = _DataHelper.crear_huesped_con_puntos("ok", puntos=500)
+        resp = client.post(
+            f"/api/v1/huespedes/{hid}/puntos/canjear",
+            json={"opcion_id": 1},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        assert resp.status_code == 200
+        data = resp.get_json()
+        assert data["success"] is True
+        assert data["data"]["canje"]["puntos"] == -100
+        assert data["data"]["puntos_restantes"] == 400
+
+
+class TestOwnershipPuntos:
+    def test_cliente_canjear_sus_propios_puntos_exito(self, app, client):
+        with app.app_context():
+            hid, token = _DataHelper.crear_huesped_con_puntos("own_ok", puntos=500)
+        resp = client.post(
+            f"/api/v1/huespedes/{hid}/puntos/canjear",
+            json={"opcion_id": 1},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        assert resp.status_code == 200
+
+    def test_cliente_canjear_puntos_de_otro_huesped_retorna_403(self, app, client):
+        with app.app_context():
+            u_cliente = Usuario(
+                nombre="Cli", apellido="T",
+                email=f"pfc_own403_{id(self)}@test.com",
+                rol=RolEnum.cliente,
+            )
+            u_cliente.password = "Pass1234!"
+            db.session.add(u_cliente)
+            db.session.flush()
+            h_propio = Huesped(
+                id_usuario=u_cliente.id,
+                documento_id="DOC_OWN_CLI",
+                tipo_documento="CC",
+            )
+            db.session.add(h_propio)
+            u_otro = Usuario(
+                nombre="Otro", apellido="T",
+                email=f"pfc_otro_{id(self)}@test.com",
+                rol=RolEnum.cliente,
+            )
+            u_otro.password = "Pass1234!"
+            db.session.add(u_otro)
+            db.session.flush()
+            h_otro = Huesped(
+                id_usuario=u_otro.id,
+                documento_id="DOC_OTRO",
+                tipo_documento="CC",
+            )
+            db.session.add(h_otro)
+            db.session.commit()
+            token = generar_token(u_cliente.id, u_cliente.email, "cliente")
+            otro_hid = h_otro.id
+        resp = client.post(
+            f"/api/v1/huespedes/{otro_hid}/puntos/canjear",
+            json={"opcion_id": 1},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        assert resp.status_code == 403
