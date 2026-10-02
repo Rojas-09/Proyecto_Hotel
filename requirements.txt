@@ -17,7 +17,7 @@ alembic==1.14.0
 Flask-Migrate==4.1.0
 
 # Authentication & Security
-PyJWT==2.13.0
+PyJWT==2.15.0
 bcrypt==4.2.1
 python-dotenv==1.2.2
 flask-limiter==3.10.1
